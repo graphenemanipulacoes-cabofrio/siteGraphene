@@ -1,36 +1,194 @@
-import { useState } from 'react';
-import { Package, Plus, Trash, LogOut } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Package, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { Link } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient';
+import { Toaster, toast } from 'sonner';
+import AdminProducts from '../components/AdminProducts';
 
 const Admin = () => {
-    const [products, setProducts] = useState([
-        { id: 1, name: 'Imunidade Blindada', category: 'Imunidade', price: 'R$ 89,90' },
-        { id: 2, name: 'NeuroFocus Pro', category: 'Foco', price: 'R$ 129,90' },
-        { id: 3, name: 'Deep Sleep', category: 'Sono', price: 'R$ 79,90' },
-    ]);
+    const [requests, setRequests] = useState([]);
+    const [expandedId, setExpandedId] = useState(null);
+    const [fullscreenImage, setFullscreenImage] = useState(null);
+    const [zoomLevel, setZoomLevel] = useState(1);
+    const [view, setView] = useState('active'); // 'active', 'trash', 'products'
 
-    const [newProduct, setNewProduct] = useState({ name: '', category: '', price: '' });
+    useEffect(() => {
+        if (view !== 'products') {
+            fetchRequests();
+        }
 
-    const handleAddProduct = (e) => {
-        e.preventDefault();
-        if (!newProduct.name) return;
-        setProducts([...products, { id: Date.now(), ...newProduct }]);
-        setNewProduct({ name: '', category: '', price: '' });
+        // Request browser notification permission
+        if ('Notification' in window) {
+            Notification.requestPermission();
+        }
+
+        // Realtime Subscription
+        const channel = supabase
+            .channel('realtime-solicitacoes')
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'solicitacoes' },
+                (payload) => {
+                    handleNewRequest(payload.new);
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
+
+    // Also refetch when view changes to active/trash
+    useEffect(() => {
+        if (view === 'active' || view === 'trash') {
+            fetchRequests();
+        }
+    }, [view]);
+
+    const handleNewRequest = (newRequest) => {
+        // 1. Play Sound
+        try {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.play().catch(e => console.log('Audio play blocked:', e));
+        } catch (e) {
+            console.error('Audio error:', e);
+        }
+
+        // 2. Browser Notification
+        if (Notification.permission === 'granted') {
+            new Notification('Nova Solicitação Recebida!', {
+                body: `${newRequest.nome_cliente} enviou uma nova receita.`,
+                icon: '/vite.svg' // Fallback icon
+            });
+        }
+
+        // 3. In-App Toast
+        toast.success(`Nova solicitação de ${newRequest.nome_cliente}!`);
+
+        // 4. Update State (add to top)
+        // Only add if we represent 'active' view logic (new requests are active by default)
+        // And if we are currently viewing 'active'
+        // Actually, let's just re-fetch or prepend safely.
+        // Prepending is better UX for immediate feedback.
+        // Check if it should be in active view (default is active)
+        if (!newRequest.status || newRequest.status === 'active') {
+            setRequests(prev => [newRequest, ...prev]);
+        }
     };
 
-    const removeProduct = (id) => {
-        setProducts(products.filter(p => p.id !== id));
+    const fetchRequests = async () => {
+        const { data, error } = await supabase
+            .from('solicitacoes')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching requests:', error);
+        } else {
+            const filtered = data.filter(req => {
+                const status = req.status || 'active';
+                return view === 'active' ? status !== 'trash' : status === 'trash';
+            });
+            setRequests(filtered || []);
+        }
+    };
+
+    const updateStatus = async (id, newStatus) => {
+        try {
+            const { error } = await supabase
+                .from('solicitacoes')
+                .update({ status: newStatus })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            setRequests(prev => prev.filter(req => req.id !== id));
+            toast.success(newStatus === 'trash' ? 'Movido para lixeira' : 'Restaurado com sucesso');
+
+        } catch (error) {
+            console.error('Error updating status:', error);
+            // alert('Erro ao atualizar status. Verifique se a coluna "status" existe no banco de dados.');
+            toast.error('Erro ao atualizar status.');
+        }
+    };
+
+    const deleteForever = async (id) => {
+        if (!confirm('Tem certeza? Isso apagará a solicitação e os arquivos permanentemente.')) return;
+
+        try {
+            const { error } = await supabase
+                .from('solicitacoes')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            setRequests(prev => prev.filter(req => req.id !== id));
+            toast.success('Excluído permanentemente.');
+        } catch (error) {
+            console.error('Error deleting:', error);
+            toast.error('Erro ao excluir.');
+        }
+    };
+
+    const toggleExpand = (id) => {
+        setExpandedId(expandedId === id ? null : id);
+    };
+
+    const handleWheel = (e) => {
+        if (fullscreenImage) {
+            e.preventDefault();
+            const delta = e.deltaY * -0.01;
+            setZoomLevel(prev => Math.min(Math.max(0.5, prev + delta), 4));
+        }
+    };
+
+    const closeFullscreen = () => {
+        setFullscreenImage(null);
+        setZoomLevel(1);
+    };
+
+    const getFiles = (urlOrJson) => {
+        try {
+            if (urlOrJson.startsWith('[')) {
+                return JSON.parse(urlOrJson);
+            }
+            return [urlOrJson];
+        } catch (e) {
+            return [urlOrJson];
+        }
     };
 
     return (
         <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', minHeight: '100vh', background: 'var(--bg-dark)' }}>
+
             {/* Sidebar */}
             <aside className="glass" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>GRAPHÈNE</h2>
                 <nav style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
-                    <Button variant="glass" style={{ justifyContent: 'flex-start' }}><Package size={18} /> Produtos</Button>
+                    <Button
+                        variant={view === 'active' ? 'primary' : 'glass'}
+                        style={{ justifyContent: 'flex-start', width: '100%' }}
+                        onClick={() => setView('active')}
+                    >
+                        <MessageCircle size={18} /> Solicitações
+                    </Button>
+                    <Button
+                        variant={view === 'products' ? 'primary' : 'glass'}
+                        style={{ justifyContent: 'flex-start', width: '100%' }}
+                        onClick={() => setView('products')}
+                    >
+                        <Package size={18} /> Produtos
+                    </Button>
+                    <Button
+                        variant={view === 'trash' ? 'primary' : 'glass'}
+                        style={{ justifyContent: 'flex-start', width: '100%' }}
+                        onClick={() => setView('trash')}
+                    >
+                        <Trash2 size={18} /> Lixeira
+                    </Button>
                 </nav>
                 <Link to="/">
                     <Button variant="outline" style={{ justifyContent: 'flex-start', width: '100%' }}><LogOut size={18} /> Sair</Button>
@@ -39,49 +197,166 @@ const Admin = () => {
 
             {/* Main Content */}
             <main style={{ padding: '3rem' }}>
+                <Toaster position="top-right" richColors />
                 <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
-                    <h1 className="text-gradient">Gerenciar Produtos</h1>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        {view === 'trash' && (
+                            <Button variant="glass" onClick={() => setView('active')} style={{ padding: '10px', borderRadius: '50%' }}>
+                                <ArrowLeft size={24} />
+                            </Button>
+                        )}
+                        <h1 className="text-gradient">
+                            {view === 'active' ? 'Solicitações de Receita' : view === 'products' ? 'Gerenciar Produtos' : 'Lixeira'}
+                        </h1>
+                    </div>
                     <span>Admin</span>
                 </header>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                    {/* List */}
-                    <Card title="Produtos Ativos">
-                        <ul style={{ listStyle: 'none' }}>
-                            {products.map(p => (
-                                <li key={p.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'center' }}>
-                                    <div>
-                                        <strong>{p.name}</strong> <span style={{ opacity: 0.7, fontSize: '0.9rem' }}>({p.category})</span>
-                                    </div>
-                                    <button onClick={() => removeProduct(p.id)} style={{ background: 'transparent', color: '#ff4d4d' }}>
-                                        <Trash size={18} />
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    </Card>
+                {view === 'products' ? (
+                    <AdminProducts />
+                ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
+                        {/* List */}
+                        <Card title={view === 'active' ? 'Novas Solicitações' : 'Itens Excluídos'}>
+                            <ul style={{ listStyle: 'none' }}>
+                                {requests.length === 0 ? (
+                                    <p style={{ padding: '1rem', opacity: 0.7 }}>
+                                        {view === 'active' ? 'Nenhuma solicitação encontrada.' : 'Lixeira vazia.'}
+                                    </p>
+                                ) : (
+                                    requests.map(req => (
+                                        <li key={req.id} style={{ display: 'flex', flexDirection: 'column', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                                                <div>
+                                                    <strong style={{ fontSize: '1.1rem' }}>{req.nome_cliente}</strong>
+                                                    <div style={{ opacity: 0.7, fontSize: '0.9rem' }}>{new Date(req.created_at).toLocaleString()}</div>
+                                                </div>
 
-                    {/* Add Form */}
-                    <Card title="Adicionar Novo">
-                        <form onSubmit={handleAddProduct} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <input
-                                placeholder="Nome do Produto"
-                                value={newProduct.name}
-                                onChange={e => setNewProduct({ ...newProduct, name: e.target.value })}
-                                style={{ padding: '10px', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', borderRadius: '5px' }}
-                            />
-                            <input
-                                placeholder="Categoria"
-                                value={newProduct.category}
-                                onChange={e => setNewProduct({ ...newProduct, category: e.target.value })}
-                                style={{ padding: '10px', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', borderRadius: '5px' }}
-                            />
-                            <Button type="submit" variant="primary" style={{ justifyContent: 'center' }}>
-                                <Plus size={18} /> Adicionar
-                            </Button>
-                        </form>
-                    </Card>
-                </div>
+                                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                                    {view === 'active' ? (
+                                                        // Active View Actions
+                                                        <>
+                                                            <a href={`https://wa.me/${req.whatsapp}`} target="_blank" rel="noopener noreferrer">
+                                                                <Button variant="outline" style={{ borderColor: '#25D366', color: '#25D366' }}>
+                                                                    <MessageCircle size={18} /> WhatsApp
+                                                                </Button>
+                                                            </a>
+
+                                                            {req.arquivo_url && (
+                                                                <Button variant="primary" onClick={() => toggleExpand(req.id)}>
+                                                                    <FileText size={18} /> Ver Arquivos
+                                                                    {expandedId === req.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                                                </Button>
+                                                            )}
+
+                                                            <button
+                                                                onClick={() => updateStatus(req.id, 'trash')}
+                                                                title="Mover para Lixeira"
+                                                                style={{ background: 'transparent', border: 'none', color: '#FF4D4D', cursor: 'pointer', padding: '8px' }}
+                                                            >
+                                                                <Trash2 size={20} />
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        // Trash View Actions
+                                                        <>
+                                                            <Button variant="outline" onClick={() => updateStatus(req.id, 'active')} style={{ borderColor: '#00E5FF', color: '#00E5FF' }}>
+                                                                <RotateCcw size={18} /> Restaurar
+                                                            </Button>
+
+                                                            <Button variant="outline" onClick={() => deleteForever(req.id)} style={{ borderColor: '#FF4D4D', color: '#FF4D4D' }}>
+                                                                <X size={18} /> Excluir
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Expanded Content */}
+                                            {expandedId === req.id && req.arquivo_url && (
+                                                <div style={{ background: 'rgba(0, 229, 255, 0.05)', padding: '1.5rem', margin: '0 1rem 1rem 1rem', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                                    <p style={{ opacity: 0.7, marginBottom: '0.5rem' }}>Arquivos Anexados:</p>
+
+                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                                                        {getFiles(req.arquivo_url).map((url, idx) => (
+                                                            <div key={idx} style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '10px' }}>
+                                                                {url.toLowerCase().endsWith('.pdf') ? (
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', textAlign: 'center' }}>
+                                                                        <FileText size={48} opacity={0.5} />
+                                                                        <p style={{ fontSize: '0.9rem' }}>Documento PDF</p>
+                                                                        <a href={url} target="_blank" download rel="noopener noreferrer">
+                                                                            <Button variant="outline" style={{ width: '100%', justifyContent: 'center' }}><Download size={16} /> Baixar</Button>
+                                                                        </a>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                                                        <div style={{ position: 'relative', cursor: 'zoom-in', height: '150px', width: '100%' }} onClick={() => setFullscreenImage(url)}>
+                                                                            <img
+                                                                                src={url}
+                                                                                alt="Receita"
+                                                                                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.1)' }}
+                                                                            />
+                                                                            <div style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(0,0,0,0.7)', padding: '3px', borderRadius: '3px' }}>
+                                                                                <Maximize2 size={14} color="white" />
+                                                                            </div>
+                                                                        </div>
+                                                                        <a href={url} target="_blank" download rel="noopener noreferrer">
+                                                                            <Button variant="outline" style={{ width: '100%', justifyContent: 'center' }}><Download size={16} /> Baixar</Button>
+                                                                        </a>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </li>
+                                    ))
+                                )}
+                            </ul>
+                        </Card>
+                    </div>
+                )}
+
+
+                {/* Lightbox / Fullscreen Viewer */}
+                {fullscreenImage && (
+                    <div
+                        style={{
+                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                            background: 'rgba(0,0,0,0.95)', zIndex: 9999,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            overflow: 'hidden'
+                        }}
+                        onWheel={handleWheel}
+                    >
+                        {/* Controls */}
+                        <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '1rem', zIndex: 10000 }}>
+                            <a href={fullscreenImage} download target="_blank" rel="noopener noreferrer">
+                                <Button variant="glass"><Download size={24} /></Button>
+                            </a>
+                            <Button variant="glass" onClick={closeFullscreen}><X size={24} /></Button>
+                        </div>
+
+                        <div style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 10000, pointerEvents: 'none' }}>
+                            <span style={{ background: 'rgba(0,0,0,0.5)', padding: '5px 10px', borderRadius: '5px' }}>
+                                Zoom: {Math.round(zoomLevel * 100)}% (Scroll para ajustar)
+                            </span>
+                        </div>
+
+                        <img
+                            src={fullscreenImage}
+                            style={{
+                                maxWidth: '100vw',
+                                maxHeight: '100vh',
+                                transform: `scale(${zoomLevel})`,
+                                transition: 'transform 0.1s ease-out',
+                                cursor: 'grab'
+                            }}
+                            draggable={false}
+                        />
+                    </div>
+                )}
             </main>
         </div>
     );

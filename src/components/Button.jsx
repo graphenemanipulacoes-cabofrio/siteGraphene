@@ -1,4 +1,4 @@
-const Button = ({ children, variant = 'primary', onClick, className = '' }) => {
+const Button = ({ children, variant = 'primary', onClick, className = '', style = {}, ...props }) => {
     const baseStyle = {
         padding: '12px 24px',
         borderRadius: '50px',
@@ -8,6 +8,9 @@ const Button = ({ children, variant = 'primary', onClick, className = '' }) => {
         display: 'inline-flex',
         alignItems: 'center',
         gap: '8px',
+        cursor: 'pointer',
+        border: 'none',
+        outline: 'none',
     };
 
     const variants = {
@@ -33,7 +36,8 @@ const Button = ({ children, variant = 'primary', onClick, className = '' }) => {
         <button
             onClick={onClick}
             className={className}
-            style={{ ...baseStyle, ...variants[variant] }}
+            style={{ ...baseStyle, ...variants[variant], ...style }}
+            {...props}
         >
             {children}
         </button>

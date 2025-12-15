@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 import 'swiper/css';
@@ -5,16 +6,32 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import Card from './Card';
 import Button from './Button';
-
-const products = [
-    { id: 1, name: 'Imunidade Blindada', desc: 'Complexo vitamínico para fortalecer suas defesas naturais.', category: 'Imunidade' },
-    { id: 2, name: 'NeuroFocus Pro', desc: 'Nootrópico natural para concentração máxima e clareza mental.', category: 'Foco' },
-    { id: 3, name: 'Deep Sleep', desc: 'Fórmula relaxante para um sono reparador e profundo.', category: 'Sono' },
-    { id: 4, name: 'Energy Boost', desc: 'Energia limpa para seus treinos e rotina intensa.', category: 'Energia' },
-    { id: 5, name: 'Beauty & Glow', desc: 'Nutrientes essenciais para saúde da pele, unhas e cabelos.', category: 'Beleza' },
-];
+import { supabase } from '../lib/supabaseClient';
 
 const ProductCarousel = () => {
+    const [products, setProducts] = useState([]);
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            const { data } = await supabase
+                .from('produtos')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (data && data.length > 0) {
+                setProducts(data);
+            } else {
+                // Fallback / Initial Data if table is empty (optional, but good for demo)
+                // Actually, let's keep it empty or show default if truly empty to avoid breakage
+                // For now, let's assume user will add products. If empty, show nothing or placeholder.
+                setProducts([]);
+            }
+        };
+        fetchProducts();
+    }, []);
+
+    if (products.length === 0) return null; // Don't show section if no products
+
     return (
         <section id="products" style={{ padding: '4rem 0' }}>
             <div className="container">
@@ -38,11 +55,28 @@ const ProductCarousel = () => {
                     {products.map((product) => (
                         <SwiperSlide key={product.id}>
                             <Card title={product.name} gradient>
-                                <div style={{ height: '150px', background: 'rgba(0,229,255,0.1)', borderRadius: '10px', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <span style={{ fontSize: '3rem', opacity: 0.5 }}>💊</span>
+                                <div style={{ height: '250px', background: 'transparent', borderRadius: '10px', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                    {product.image_url ? (
+                                        <img
+                                            src={product.image_url}
+                                            alt={product.name}
+                                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                        />
+                                    ) : (
+                                        <div style={{ opacity: 0.3, fontSize: '3rem' }}>💊</div>
+                                    )}
                                 </div>
-                                <p style={{ color: 'var(--text-gray)', marginBottom: '1.5rem' }}>{product.desc}</p>
-                                <Button variant="outline" style={{ width: '100%', justifyContent: 'center' }}>Quero saber mais</Button>
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <p style={{ color: 'var(--text-gray)', fontSize: '0.9rem', minHeight: '3em' }}>
+                                        {product.description}
+                                    </p>
+                                    {product.price && (
+                                        <p className="text-gradient" style={{ fontWeight: 'bold', fontSize: '1.2rem', marginTop: '0.5rem', textAlign: 'center' }}>
+                                            R$ {parseFloat(product.price).toFixed(2).replace('.', ',')}
+                                        </p>
+                                    )}
+                                </div>
+                                <Button variant="outline" style={{ width: '100%', justifyContent: 'center' }}>Quero este!</Button>
                             </Card>
                         </SwiperSlide>
                     ))}

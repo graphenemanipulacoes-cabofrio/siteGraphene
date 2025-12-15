@@ -1,15 +1,21 @@
 :root {
   /* Colors */
-  --primary-blue: #00E5FF; /* Neon Cyan */
+  --primary-blue: #00E5FF;
+  /* Neon Cyan */
+  --primary-green: #a3e635;
+  /* Neon Green from Logo */
   --primary-blue-glow: rgba(0, 229, 255, 0.5);
+  --primary-green-glow: rgba(163, 230, 53, 0.5);
   --bg-dark: #050510;
   --bg-card: rgba(255, 255, 255, 0.05);
   --text-white: #FFFFFF;
   --text-gray: #A0A0B0;
-  
+
   /* Gradientes */
-  --gradient-bg: radial-gradient(circle at 50% 0%, #1a1a40 0%, #050510 100%);
-  --gradient-text: linear-gradient(90deg, #FFFFFF 0%, #00E5FF 100%);
+  --gradient-bg: radial-gradient(circle at 50% 0%, #102025 0%, #050510 100%);
+  /* Slightly greenish tint at top */
+  --gradient-text: linear-gradient(135deg, #a3e635 0%, #00E5FF 100%);
+  /* Green to Blue */
 
   /* Spacing */
   --container-width: 1200px;
