@@ -42,7 +42,6 @@ const ProductCarousel = () => {
                 <Swiper
                     modules={[Pagination, Navigation, Autoplay]}
                     spaceBetween={30}
-                    spaceBetween={30}
                     navigation
                     pagination={{ clickable: true }}
                     autoplay={{ delay: 3000, disableOnInteraction: false }}
