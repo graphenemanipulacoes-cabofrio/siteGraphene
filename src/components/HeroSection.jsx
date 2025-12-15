@@ -53,13 +53,17 @@ const HeroSection = () => {
                 </div>
 
                 {/* Hero Image / Card Placeholder */}
-                <div className="glass-card hero-image" style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <span style={{ fontSize: '5rem', opacity: 0.8 }}>🧬</span>
-                        <div style={{ position: 'absolute', bottom: '20px', left: '0', right: '0', textAlign: 'center', fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)' }}>
-                            Tecnologia & Ciência
-                        </div>
-                    </div>
+                <div className="glass-card hero-image" style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0', overflow: 'hidden', border: 'none', background: 'transparent' }}>
+                    <img
+                        src="/assets/hero_3d.png"
+                        alt="Tecnologia Graphene"
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            filter: 'drop-shadow(0 0 20px rgba(0,229,255,0.3))'
+                        }}
+                    />
                 </div>
             </div>
             <style>{`
