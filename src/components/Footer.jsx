@@ -3,7 +3,7 @@ import { Phone, MapPin, Instagram, Mail } from 'lucide-react';
 const Footer = () => {
     return (
         <footer style={{ background: 'black', padding: '4rem 0', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-            <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '3rem' }}>
+            <div className="container footer-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '3rem' }}>
 
                 {/* Brand */}
                 <div>
@@ -50,5 +50,27 @@ const Footer = () => {
         </footer>
     );
 };
+
+// Add styles
+const styles = `
+    @media (max-width: 768px) {
+        .footer-grid {
+            text-align: center;
+            gap: 2rem !important;
+        }
+        .footer-grid > div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .footer-grid ul {
+            align-items: center;
+        }
+    }
+`;
+const styleSheet = document.createElement("style");
+styleSheet.innerText = styles;
+document.head.appendChild(styleSheet);
+
 
 export default Footer;

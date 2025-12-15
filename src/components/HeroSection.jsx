@@ -46,12 +46,12 @@ const HeroSection = () => {
             </div>
             <style>{`
         @media (max-width: 768px) {
-          .container { grid-template-columns: 1fr !important; text-align: center; }
-          .hero-title { fontSize: 2.5rem !important; }
-          .hero-text { margin: 0 auto 2rem auto; font-size: 1rem !important; }
-          .hero-buttons { justify-content: center; flex-direction: column; width: 100%; }
+          .container { grid-template-columns: 1fr !important; text-align: center; padding-top: 2rem; }
+          .hero-title { fontSize: 2.5rem !important; line-height: 1.1 !important; }
+          .hero-text { margin: 0 auto 2rem auto; font-size: 1rem !important; max-width: 100% !important; }
+          .hero-buttons { justify-content: center; flex-direction: column; width: 100%; gap: 1rem !important; }
           .hero-buttons button { width: 100%; }
-          .hero-image { height: 300px !important; margin-top: 2rem; }
+          .hero-image { height: 280px !important; margin-top: 3rem; }
         }
       `}</style>
         </section>

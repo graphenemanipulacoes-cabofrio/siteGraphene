@@ -42,13 +42,16 @@ const ProductCarousel = () => {
                 <Swiper
                     modules={[Pagination, Navigation, Autoplay]}
                     spaceBetween={30}
-                    slidesPerView={1}
+                    spaceBetween={30}
                     navigation
                     pagination={{ clickable: true }}
-                    autoplay={{ delay: 3000 }}
+                    autoplay={{ delay: 3000, disableOnInteraction: false }}
+                    loop={true}
+                    centeredSlides={true}
+                    slidesPerView={1.1}
                     breakpoints={{
-                        640: { slidesPerView: 2 },
-                        1024: { slidesPerView: 3 },
+                        640: { slidesPerView: 2, centeredSlides: false },
+                        1024: { slidesPerView: 3, centeredSlides: false },
                     }}
                     style={{ paddingBottom: '3rem' }}
                 >
