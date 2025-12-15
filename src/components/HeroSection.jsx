@@ -23,9 +23,22 @@ const HeroSection = () => {
                 borderRadius: '50%',
                 zIndex: 0
             }} />
+            <div className="mobile-glow" style={{
+                position: 'absolute',
+                top: '10%',
+                left: '-20%',
+                width: '300px',
+                height: '300px',
+                background: 'var(--primary-green)',
+                filter: 'blur(120px)',
+                opacity: 0.15,
+                borderRadius: '50%',
+                zIndex: 0,
+                display: 'none'
+            }} />
 
             <div className="container" style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'center' }}>
-                <div>
+                <div className="hero-content">
                     <h1 className="hero-title" style={{ fontSize: '3.5rem', lineHeight: '1.2', marginBottom: '1.5rem', fontWeight: '800' }}>
                         Saúde personalizada, <br />
                         feita para o <span className="text-gradient">seu corpo</span>
@@ -34,24 +47,79 @@ const HeroSection = () => {
                         Fórmulas manipuladas sob medida, com acompanhamento profissional e qualidade farmacêutica. Não aceite o genérico.
                     </p>
                     <div className="hero-buttons" style={{ display: 'flex', gap: '1rem' }}>
-                        <Button variant="primary">Falar com especialista agora</Button>
+                        <Button variant="primary" className="pulse-button">Falar com especialista agora</Button>
                         <Button variant="outline">Conhecer fórmulas</Button>
                     </div>
                 </div>
 
                 {/* Hero Image / Card Placeholder */}
                 <div className="glass-card hero-image" style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ opacity: 0.5 }}>Imagem Conceitual / 3D Element</span>
+                    <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                        <span style={{ fontSize: '5rem', opacity: 0.8 }}>🧬</span>
+                        <div style={{ position: 'absolute', bottom: '20px', left: '0', right: '0', textAlign: 'center', fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)' }}>
+                            Tecnologia & Ciência
+                        </div>
+                    </div>
                 </div>
             </div>
             <style>{`
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(0, 229, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
+        }
+
+        .pulse-button {
+            animation: pulse-glow 2s infinite;
+        }
+
         @media (max-width: 768px) {
-          .container { grid-template-columns: 1fr !important; text-align: center; padding-top: 2rem; }
-          .hero-title { fontSize: 2.5rem !important; line-height: 1.1 !important; }
-          .hero-text { margin: 0 auto 2rem auto; font-size: 1rem !important; max-width: 100% !important; }
-          .hero-buttons { justify-content: center; flex-direction: column; width: 100%; gap: 1rem !important; }
-          .hero-buttons button { width: 100%; }
-          .hero-image { height: 280px !important; margin-top: 3rem; }
+          .container { 
+              grid-template-columns: 1fr !important; 
+              text-align: center; 
+              padding-top: 2rem;
+              display: flex !important;
+              flex-direction: column;
+              justify-content: center;
+              min-height: 80vh;
+           }
+          .mobile-glow { display: block !important; }
+          .hero-content { order: 1; }
+          .hero-image { 
+              order: 2; 
+              height: 250px !important; 
+              width: 80%; 
+              margin: 2rem auto 0 auto; 
+              background: rgba(255, 255, 255, 0.03) !important;
+              border: 1px solid rgba(255, 255, 255, 0.1);
+          }
+          
+          .hero-title { 
+              fontSize: 2.8rem !important; 
+              line-height: 1.1 !important; 
+              margin-bottom: 1rem !important;
+          }
+          
+          .hero-text { 
+              margin: 0 auto 2rem auto; 
+              font-size: 1.1rem !important; 
+              max-width: 90% !important; 
+              line-height: 1.5;
+          }
+          
+          .hero-buttons { 
+              justify-content: center; 
+              flex-direction: column; 
+              width: 100%; 
+              gap: 1rem !important; 
+              padding: 0 1rem;
+          }
+          
+          .hero-buttons button { 
+              width: 100%; 
+              padding: 16px !important;
+              font-size: 1.1rem !important;
+          }
         }
       `}</style>
         </section>
