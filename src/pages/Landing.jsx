@@ -168,16 +168,20 @@ const Landing = () => {
                             </div>
                         </div>
 
-                        {/* Visual placeholder for "Chemist/Lab" */}
+                        {/* Attendants Image */}
                         <div className="solutions-image" style={{
                             height: '100%',
                             minHeight: '400px',
-                            background: 'linear-gradient(45deg, rgba(0,229,255,0.1), transparent)',
                             borderRadius: '20px',
+                            overflow: 'hidden',
                             border: '1px solid rgba(255,255,255,0.1)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
                         }}>
-                            <span style={{ opacity: 0.5 }}>Foto Profissional / Laboratório</span>
+                            <img
+                                src="/atendentes.jpg"
+                                alt="Atendimento Especializado Graphène"
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
                         </div>
                     </div>
                 </div>
