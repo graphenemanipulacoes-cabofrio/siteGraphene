@@ -9,7 +9,7 @@ const HeroSection = () => {
             alignItems: 'center',
             paddingTop: 'var(--header-height)',
             position: 'relative',
-            overflow: 'visible' // Changed to visible to preserve 3D context for animation
+            overflow: 'hidden'
         }}>
             {/* Background Graphic Elements */}
             <div style={{
