@@ -36,7 +36,7 @@ const ProductCarousel = () => {
         <section id="products" style={{ padding: '4rem 0' }}>
             <div className="container">
                 <h2 className="text-gradient" style={{ textAlign: 'center', fontSize: '2.5rem', marginBottom: '3rem' }}>
-                    Nossas Fórmulas
+                    Nossas Fórmulas ({products.length})
                 </h2>
 
                 <Swiper
@@ -57,13 +57,23 @@ const ProductCarousel = () => {
                     {products.map((product) => (
                         <SwiperSlide key={product.id}>
                             <Card title={product.name} gradient>
-                                <div style={{ height: '250px', background: 'transparent', borderRadius: '10px', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                <div style={{ height: '250px', border: '2px solid red', background: 'rgba(255,0,0,0.1)', borderRadius: '10px', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                                     {product.image_url ? (
-                                        <img
-                                            src={product.image_url}
-                                            alt={product.name}
-                                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                                        />
+                                        <>
+                                            <img
+                                                src={product.image_url}
+                                                alt={product.name}
+                                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentNode.innerText = 'BROKEN IMG';
+                                                }}
+                                            />
+                                            {/* Debug Text Overlay */}
+                                            <span style={{ position: 'absolute', bottom: 0, left: 0, fontSize: '10px', background: 'black' }}>
+                                                {product.image_url}
+                                            </span>
+                                        </>
                                     ) : (
                                         <div style={{ opacity: 0.3, fontSize: '3rem' }}>💊</div>
                                     )}

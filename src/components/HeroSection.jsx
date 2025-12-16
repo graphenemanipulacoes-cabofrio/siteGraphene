@@ -9,7 +9,7 @@ const HeroSection = () => {
             alignItems: 'center',
             paddingTop: 'var(--header-height)',
             position: 'relative',
-            overflow: 'hidden'
+            overflow: 'visible' // Changed to visible to preserve 3D context for animation
         }}>
             {/* Background Graphic Elements */}
             <div style={{
@@ -92,7 +92,7 @@ const HeroSection = () => {
           }
           
           .hero-title { 
-              fontSize: 2.8rem !important; 
+              font-size: 2.3rem !important; 
               line-height: 1.1 !important; 
               margin-bottom: 1rem !important;
           }
@@ -116,6 +116,10 @@ const HeroSection = () => {
               width: 100%; 
               padding: 16px !important;
               font-size: 1.1rem !important;
+              display: flex !important;
+              justify-content: center !important;
+              align-items: center !important;
+              text-align: center !important;
           }
         }
       `}</style>
