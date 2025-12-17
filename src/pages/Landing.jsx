@@ -216,7 +216,7 @@ const Landing = () => {
             </section>
 
             {/* Final CTA / Form Section */}
-            <section className="section-padding" style={{ background: 'linear-gradient(0deg, black 0%, #050510 100%)' }}>
+            <section className="section-padding last-section" style={{ background: 'linear-gradient(0deg, black 0%, #050510 100%)' }}>
                 <div className="container">
                     <div className="glass-blue form-container" style={{ padding: '4rem', borderRadius: '30px', textAlign: 'center', position: 'relative', zIndex: 10, pointerEvents: 'auto' }}>
                         <h2 style={{ fontSize: '3rem', marginBottom: '2rem' }}>Envie sua receita médica</h2>
@@ -354,6 +354,8 @@ const Landing = () => {
                     .form-group-row { grid-template-columns: 1fr !important; }
                     
                     h2 { fontSize: 2rem !important; }
+
+                    .last-section { padding-bottom: 0 !important; }
                 }
             `}</style>
         </div>

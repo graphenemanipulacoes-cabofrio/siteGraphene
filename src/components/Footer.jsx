@@ -55,11 +55,12 @@ const Footer = () => {
 const styles = `
     @media (max-width: 768px) {
         .site-footer {
-            padding: 2rem 0 !important;
+            padding: 1rem 0 !important;
+            padding-bottom: 2rem !important; /* Some bottom padding for safe area */
         }
         .footer-copyright {
-            margin-top: 1.5rem !important;
-            padding-top: 1.5rem !important;
+            margin-top: 1rem !important;
+            padding-top: 1rem !important;
         }
         .footer-grid {
             text-align: center;
