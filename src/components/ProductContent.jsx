@@ -1,6 +1,5 @@
 import Button from './Button';
 
-);
 
 const openWhatsApp = (product) => {
     const phone = '5522999361256';
