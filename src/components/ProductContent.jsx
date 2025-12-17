@@ -1,5 +1,20 @@
 import Button from './Button';
 
+);
+
+const openWhatsApp = (product) => {
+    const phone = '5522999361256';
+    let message = `Olá! Gostaria de saber mais sobre o produto: *${product.name}*`;
+
+    if (Number(product.price) > 0) {
+        const formattedPrice = parseFloat(product.price).toFixed(2).replace('.', ',');
+        message += ` (R$ ${formattedPrice})`;
+    }
+
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+};
+
 const ProductContent = ({ product }) => (
     <>
         <div style={{
@@ -48,7 +63,13 @@ const ProductContent = ({ product }) => (
                 </p>
             )}
         </div>
-        <Button variant="outline" style={{ width: '100%', justifyContent: 'center' }}>Quero este!</Button>
+        <Button
+            variant="outline"
+            style={{ width: '100%', justifyContent: 'center' }}
+            onClick={() => openWhatsApp(product)}
+        >
+            Quero este!
+        </Button>
     </>
 );
 
