@@ -246,7 +246,10 @@ const AdminProducts = () => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Button variant="outline" onClick={handleSaveOrder}>
+                    💾 Salvar Ordem
+                </Button>
                 <Button variant="primary" onClick={() => handleOpenModal()}>
                     <Plus size={20} /> Novo Produto
                 </Button>

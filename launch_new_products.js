@@ -35,7 +35,7 @@ const products = [
         name: 'Creatina Monohidratada 200g',
         description: 'Creatina Monohidratada 200g. Auxilia no aumento de força e massa muscular. Fórmula pura e sem sabor. Contém 200g (pó).',
         price: 0,
-        imagePath: 'C:/Users/thale/.gemini/antigravity/brain/d6efee8b-0b8d-4a8d-a305-6ef1a1a7e540/uploaded_image_1765958186950.png'
+        imagePath: 'C:/Users/thale/.gemini/antigravity/brain/d6efee8b-0b8d-4a8d-a305-6ef1a1a7e540/uploaded_image_1765959758422.png'
     }
 ];
 
