@@ -174,9 +174,13 @@ const AdminProducts = () => {
                             <p style={{ fontSize: '0.9rem', opacity: 0.7, marginBottom: '0.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                                 {product.description}
                             </p>
-                            {product.price > 0 && (
+                            {product.price > 0 ? (
                                 <p className="text-gradient" style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
                                     R$ {parseFloat(product.price).toFixed(2).replace('.', ',')}
+                                </p>
+                            ) : (
+                                <p style={{ fontWeight: 'bold', fontSize: '1.1rem', opacity: 0.3, filter: 'grayscale(1)' }}>
+                                    R$ 0,00
                                 </p>
                             )}
                         </div>
@@ -261,15 +265,20 @@ const AdminProducts = () => {
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 <label style={{ fontSize: '0.9rem', opacity: 0.8 }}>Preço (R$) - Opcional</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={price}
-                                    onChange={e => setPrice(e.target.value)}
-                                    placeholder="0.00"
-                                    style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', outline: 'none' }}
-                                />
-                                <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>Deixe em branco ou 0 para ocultar o preço.</span>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={price}
+                                        onChange={e => setPrice(e.target.value)}
+                                        placeholder="0.00"
+                                        style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', outline: 'none' }}
+                                    />
+                                    <Button type="button" variant="outline" onClick={() => setPrice('')} title="Remover preço">
+                                        <Trash2 size={18} />
+                                    </Button>
+                                </div>
+                                <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>Deixe em branco ou clique na lixeira para ocultar o preço.</span>
                             </div>
 
                             <Button type="submit" variant="primary" style={{ marginTop: '1rem', justifyContent: 'center' }} disabled={uploading}>
