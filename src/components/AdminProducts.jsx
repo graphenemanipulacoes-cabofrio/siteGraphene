@@ -71,12 +71,11 @@ const AdminProducts = () => {
         try {
             let imageUrl = editingProduct?.image_url;
 
-            // Upload Image if changed
             if (imageFile) {
                 const fileExt = imageFile.name.split('.').pop();
                 const fileName = `product_${Date.now()}.${fileExt}`;
                 const { error: uploadError } = await supabase.storage
-                    .from('receitas') // Using 'receitas' bucket as decided/planned
+                    .from('receitas')
                     .upload(fileName, imageFile);
 
                 if (uploadError) throw uploadError;
@@ -88,7 +87,10 @@ const AdminProducts = () => {
                 imageUrl = data.publicUrl;
             }
 
-            const finalPrice = price ? parseFloat(price) : 0;
+            // Logic: If price is empty/null, save as 0. 
+            // Frontend hides anything <= 0.
+            const finalPrice = !price ? 0 : parseFloat(price);
+
             const productData = {
                 name,
                 description,
@@ -96,32 +98,44 @@ const AdminProducts = () => {
                 image_url: imageUrl
             };
 
+            let savedProduct;
+
             if (editingProduct) {
                 // Update
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('produtos')
                     .update(productData)
-                    .eq('id', editingProduct.id);
+                    .eq('id', editingProduct.id)
+                    .select() // IMPORTANT: Return the updated row
+                    .single();
+
                 if (error) throw error;
-                if (error) throw error;
-                toast.success(`Produto atualizado! Preço: ${finalPrice}`);
+                savedProduct = data;
+
+                // Update local state immediately
+                setProducts(prev => prev.map(p => p.id === savedProduct.id ? savedProduct : p));
+                toast.success('Produto atualizado!');
             } else {
                 // Insert
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('produtos')
-                    .insert([productData]);
+                    .insert([productData])
+                    .select() // IMPORTANT: Return the new row
+                    .single();
+
                 if (error) throw error;
-                if (error) throw error;
-                toast.success(`Produto criado! Preço: ${finalPrice}`);
+                savedProduct = data;
+
+                // Add to local state
+                setProducts(prev => [...prev, savedProduct]);
+                toast.success('Produto criado!');
             }
 
             setIsModalOpen(false);
-            // Force reload to ensure DB state is fresh
-            window.location.reload();
 
         } catch (error) {
             console.error('Error saving product:', error);
-            toast.error(`Erro ao salvar: ${error.message || 'Verifique o console'}`);
+            toast.error(`Erro ao salvar: ${error.message}`);
         } finally {
             setUploading(false);
         }

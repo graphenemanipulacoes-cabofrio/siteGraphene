@@ -12,11 +12,15 @@ const Admin = () => {
     const [expandedId, setExpandedId] = useState(null);
     const [fullscreenImage, setFullscreenImage] = useState(null);
     const [zoomLevel, setZoomLevel] = useState(1);
-    const [view, setView] = useState('active'); // 'active', 'trash', 'products', 'admins'
+    const [view, setView] = useState(localStorage.getItem('admin_view') || 'active');
     const [admins, setAdmins] = useState([]);
     const [newAdminUser, setNewAdminUser] = useState('');
     const [newAdminPass, setNewAdminPass] = useState('');
     const navigate = useNavigate();
+
+    useEffect(() => {
+        localStorage.setItem('admin_view', view);
+    }, [view]);
 
     useEffect(() => {
         const session = localStorage.getItem('admin_session');
