@@ -3,12 +3,29 @@ import { supabase } from '../lib/supabaseClient';
 import Button from './Button';
 import { Plus, Pencil, Trash2, X, Upload, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragOverlay
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import SortableProductCard from './SortableProductCard';
 
 const AdminProducts = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
+    const [activeId, setActiveId] = useState(null); // For drag overlay
 
     // Form State
     const [name, setName] = useState('');
@@ -17,6 +34,17 @@ const AdminProducts = () => {
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [uploading, setUploading] = useState(false);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8, // Require 8px movement before drag starts (prevents accidental clicks)
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     useEffect(() => {
         fetchProducts();
@@ -27,15 +55,72 @@ const AdminProducts = () => {
             const { data, error } = await supabase
                 .from('produtos')
                 .select('*')
-                .order('created_at', { ascending: true });
+                .order('display_order', { ascending: true }) // Order by custom order
+                .order('created_at', { ascending: true }); // Fallback
 
             if (error) throw error;
             setProducts(data || []);
         } catch (error) {
             console.error('Error fetching products:', error);
-            // toast.error('Erro ao carregar produtos.'); 
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDragStart = (event) => {
+        setActiveId(event.active.id);
+    };
+
+    const handleDragEnd = async (event) => {
+        const { active, over } = event;
+        setActiveId(null);
+
+        if (active.id !== over.id) {
+            setProducts((items) => {
+                const oldIndex = items.findIndex((item) => item.id === active.id);
+                const newIndex = items.findIndex((item) => item.id === over.id);
+
+                const newItems = arrayMove(items, oldIndex, newIndex);
+
+                // Update Database with new order
+                updateOrder(newItems);
+
+                return newItems;
+            });
+        }
+    };
+
+    const updateOrder = async (upadtedProducts) => {
+        try {
+            const updates = upadtedProducts.map((product, index) => ({
+                id: product.id,
+                name: product.name, // RLS might require other fields or ignore them
+                display_order: index // New column
+            }));
+
+            // Supabase upsert is efficient for bulk updates if we map correctly
+            // But usually basic JS loop is safer for small lists to verify
+            // Actually, let's try upserting just ID and order if permitted, but RLS usually checks everything?
+            // Safer to just loop update for now to be explicit, or custom RPC.
+            // For < 50 items, a loop of promises is "okay". 
+            // Better: `upsert` with all fields? No, too heavy.
+            // Best: `upsert` only changed fields if table constraint allows partial.
+
+            // Let's iterate. It's robust.
+            // Actually, supabase JS client allows upserting `[{id: 1, display_order: 0}, ...]` if we are careful.
+
+            for (let i = 0; i < upadtedProducts.length; i++) {
+                await supabase
+                    .from('produtos')
+                    .update({ display_order: i })
+                    .eq('id', upadtedProducts[i].id);
+            }
+
+            // Note: If 'display_order' doesn't exist, this will fail. We need to add the column.
+
+        } catch (error) {
+            console.error('Error updating order:', error);
+            toast.error('Erro ao salvar ordem.');
         }
     };
 
@@ -87,8 +172,6 @@ const AdminProducts = () => {
                 imageUrl = data.publicUrl;
             }
 
-            // Logic: If price is empty/null, save as 0. 
-            // Frontend hides anything <= 0.
             const finalPrice = !price ? 0 : parseFloat(price);
 
             const productData = {
@@ -106,25 +189,27 @@ const AdminProducts = () => {
                     .from('produtos')
                     .update(productData)
                     .eq('id', editingProduct.id)
-                    .select() // IMPORTANT: Return the updated row
-                    .single();
+                    .select();
 
                 if (error) throw error;
-                savedProduct = data;
+                if (!data || data.length === 0) throw new Error('Permissão negada ou ID não encontrado (RLS)');
+                savedProduct = data[0];
 
                 // Update local state immediately
                 setProducts(prev => prev.map(p => p.id === savedProduct.id ? savedProduct : p));
                 toast.success('Produto atualizado!');
             } else {
                 // Insert
+                // Get max order to put at end? Or just let it be null (start) or end (max+1).
+                // Simplest: defaults to 0 or we handle fetch.
                 const { data, error } = await supabase
                     .from('produtos')
                     .insert([productData])
-                    .select() // IMPORTANT: Return the new row
-                    .single();
+                    .select();
 
                 if (error) throw error;
-                savedProduct = data;
+                if (!data || data.length === 0) throw new Error('Erro ao inserir (RLS)');
+                savedProduct = data[0];
 
                 // Add to local state
                 setProducts(prev => [...prev, savedProduct]);
@@ -167,57 +252,59 @@ const AdminProducts = () => {
                 </Button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
-                {products.length === 0 && !loading && (
-                    <p style={{ opacity: 0.5, gridColumn: '1/-1', textAlign: 'center', padding: '2rem' }}>
-                        Nenhum produto cadastrado.
-                    </p>
-                )}
-
-                {products.map(product => (
-                    <div key={product.id} className="glass" style={{ padding: '1.5rem', borderRadius: '15px', position: 'relative', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-
-                        {/* Image */}
-                        <div style={{ height: '180px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {product.image_url ? (
-                                <img src={product.image_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                            ) : (
-                                <ImageIcon size={40} opacity={0.3} />
-                            )}
-                        </div>
-
-                        {/* Info */}
-                        <div style={{ flex: 1 }}>
-                            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.5rem' }} className="text-gradient">{product.name}</h3>
-                            <p style={{ fontSize: '0.9rem', opacity: 0.7, marginBottom: '0.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                {product.description}
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+            >
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
+                    <SortableContext
+                        items={products.map(p => p.id)}
+                        strategy={rectSortingStrategy}
+                    >
+                        {products.length === 0 && !loading && (
+                            <p style={{ opacity: 0.5, gridColumn: '1/-1', textAlign: 'center', padding: '2rem' }}>
+                                Nenhum produto cadastrado.
                             </p>
-                            {Number(product.price) > 0 ? (
-                                <p className="text-gradient" style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                                    R$ {parseFloat(product.price).toFixed(2).replace('.', ',')}
-                                </p>
-                            ) : (
-                                <p style={{ fontSize: '0.9rem', color: '#888', fontStyle: 'italic' }}>
-                                    Sem Preço
-                                </p>
-                            )}
-                        </div>
+                        )}
 
-                        {/* Actions */}
-                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
-                            <Button variant="outline" style={{ flex: 1, justifyContent: 'center' }} onClick={() => handleOpenModal(product)}>
-                                <Pencil size={16} /> Editar
-                            </Button>
-                            <button
-                                onClick={() => handleDelete(product.id)}
-                                style={{ background: 'rgba(255, 77, 77, 0.1)', border: '1px solid rgba(255, 77, 77, 0.3)', color: '#FF4D4D', borderRadius: '50px', width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                            >
-                                <Trash2 size={18} />
-                            </button>
+                        {products.map(product => (
+                            <SortableProductCard
+                                key={product.id}
+                                product={product}
+                                handleOpenModal={handleOpenModal}
+                                handleDelete={handleDelete}
+                            />
+                        ))}
+                    </SortableContext>
+                </div>
+
+                <DragOverlay>
+                    {activeId ? (
+                        <div className="glass" style={{ padding: '1.5rem', borderRadius: '15px', position: 'relative', display: 'flex', flexDirection: 'column', gap: '1rem', background: '#1a1a1a', opacity: 0.9 }}>
+                            {(() => {
+                                const product = products.find(p => p.id === activeId);
+                                if (!product) return null;
+                                return (
+                                    <>
+                                        <div style={{ height: '180px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            {product.image_url ? (
+                                                <img src={product.image_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                            ) : (
+                                                <ImageIcon size={40} opacity={0.3} />
+                                            )}
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.5rem' }} className="text-gradient">{product.name}</h3>
+                                        </div>
+                                    </>
+                                );
+                            })()}
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ) : null}
+                </DragOverlay>
+            </DndContext>
 
             {/* Modal */}
             {isModalOpen && (
