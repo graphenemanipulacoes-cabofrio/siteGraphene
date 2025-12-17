@@ -88,10 +88,11 @@ const AdminProducts = () => {
                 imageUrl = data.publicUrl;
             }
 
+            const finalPrice = price ? parseFloat(price) : 0;
             const productData = {
                 name,
                 description,
-                price: !price ? -1 : parseFloat(price),
+                price: finalPrice,
                 image_url: imageUrl
             };
 
@@ -102,14 +103,16 @@ const AdminProducts = () => {
                     .update(productData)
                     .eq('id', editingProduct.id);
                 if (error) throw error;
-                toast.success('Produto atualizado!');
+                if (error) throw error;
+                toast.success(`Produto atualizado! Preço: ${finalPrice}`);
             } else {
                 // Insert
                 const { error } = await supabase
                     .from('produtos')
                     .insert([productData]);
                 if (error) throw error;
-                toast.success('Produto criado!');
+                if (error) throw error;
+                toast.success(`Produto criado! Preço: ${finalPrice}`);
             }
 
             setIsModalOpen(false);
@@ -274,7 +277,7 @@ const AdminProducts = () => {
                                         placeholder="0.00"
                                         style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', outline: 'none' }}
                                     />
-                                    <Button type="button" variant="outline" onClick={() => setPrice('')} title="Remover preço">
+                                    <Button type="button" variant="outline" onClick={() => setPrice(0)} title="Remover preço">
                                         <Trash2 size={18} />
                                     </Button>
                                 </div>
