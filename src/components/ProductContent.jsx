@@ -42,7 +42,7 @@ const ProductContent = ({ product }) => (
             <p style={{ color: 'var(--text-gray)', fontSize: '0.9rem', minHeight: '3em' }}>
                 {product.description}
             </p>
-            {product.price > 0 && (
+            {Number(product.price) > 0 && (
                 <p className="text-gradient" style={{ fontWeight: 'bold', fontSize: '1.2rem', marginTop: '0.5rem', textAlign: 'center' }}>
                     R$ {parseFloat(product.price).toFixed(2).replace('.', ',')}
                 </p>

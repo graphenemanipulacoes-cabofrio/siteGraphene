@@ -174,13 +174,13 @@ const AdminProducts = () => {
                             <p style={{ fontSize: '0.9rem', opacity: 0.7, marginBottom: '0.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                                 {product.description}
                             </p>
-                            {product.price > 0 ? (
+                            {Number(product.price) > 0 ? (
                                 <p className="text-gradient" style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
                                     R$ {parseFloat(product.price).toFixed(2).replace('.', ',')}
                                 </p>
                             ) : (
-                                <p style={{ fontWeight: 'bold', fontSize: '1.1rem', opacity: 0.3, filter: 'grayscale(1)' }}>
-                                    R$ 0,00
+                                <p style={{ fontSize: '0.9rem', color: '#888', fontStyle: 'italic' }}>
+                                    Sem Preço
                                 </p>
                             )}
                         </div>
