@@ -48,13 +48,24 @@ const HeroSection = () => {
                         Fórmulas manipuladas sob medida, com acompanhamento profissional e qualidade farmacêutica. Não aceite o genérico.
                     </p>
                     <div className="hero-buttons" style={{ display: 'flex', gap: '1rem' }}>
-                        <Button variant="primary" className="pulse-button">Falar com especialista agora</Button>
-                        <Button variant="outline">Conhecer fórmulas</Button>
+                        <Button
+                            variant="primary"
+                            className="pulse-button"
+                            onClick={() => window.open('https://wa.me/5522999361256?text=Ol%C3%A1%2C%20vi%20pelo%20site%20e%20gostaria%20de%20falar%20com%20um%20especialista.', '_blank')}
+                        >
+                            Falar com especialista agora
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })}
+                        >
+                            Conhecer fórmulas
+                        </Button>
                     </div>
                 </div>
 
                 {/* Hero Animation */}
-                <div className="hero-image" style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="hero-image" style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
                     <HeroAnimation />
                 </div>
             </div>

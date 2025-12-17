@@ -95,7 +95,7 @@ const ProductCarousel = () => {
                         onMouseLeave={handleMouseLeave}
                         onMouseUp={handleMouseUp}
                         onMouseMove={handleMouseMove}
-                        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'pan-x', zIndex: 10, position: 'relative' }}
                     >
                         {products.map((product) => (
                             <div key={product.id} className="mobile-card-wrapper">
@@ -147,7 +147,7 @@ const ProductCarousel = () => {
                         flex: 0 0 85%; /* Shows 85% of card width */
                         scroll-snap-align: center;
                         height: auto; /* Let content dictate height */
-                        pointer-events: none; /* Let drag pass through to container if needed */
+                        /* pointer-events removed to allow touch */
                     }
                     /* Re-enable events on children so buttons work */
                     .mobile-card-wrapper * {

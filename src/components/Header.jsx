@@ -7,9 +7,9 @@ const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     return (
-        <header className="glass" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, height: 'var(--header-height)' }}>
+        <header className="glass" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, height: 'var(--header-height)', pointerEvents: 'none' }}>
             <div className="container header-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
-                <Link to="/" style={{ display: 'flex', alignItems: 'center', zIndex: 1001 }}>
+                <Link to="/" style={{ display: 'flex', alignItems: 'center', zIndex: 1001, pointerEvents: 'auto' }}>
                     <img src="/assets/logo.png" alt="Graphène" style={{
                         height: '45px',
                         width: '45px',
@@ -21,12 +21,12 @@ const Header = () => {
                 </Link>
 
                 {/* Desktop Nav */}
-                <nav style={{ display: 'flex', gap: '2rem', alignItems: 'center' }} className="desktop-only">
+                <nav style={{ display: 'flex', gap: '2rem', alignItems: 'center', pointerEvents: 'auto' }} className="desktop-only">
                     <a href="#solutions" style={{ opacity: 0.8 }} className="hover:text-primary-blue transition-colors">Soluções</a>
                     <a href="#products" style={{ opacity: 0.8 }} className="hover:text-primary-blue transition-colors">Fórmulas</a>
                     <a href="#how-it-works" style={{ opacity: 0.8 }} className="hover:text-primary-blue transition-colors">Como funciona</a>
                     <Link to="/login" className="hover:text-primary-blue transition-colors">Login</Link>
-                    <Button variant="primary">Falar com Especialista</Button>
+                    <Button variant="primary" onClick={() => window.open('https://wa.me/5522999361256?text=Ol%C3%A1%2C%20vi%20pelo%20site%20e%20gostaria%20de%20falar%20com%20um%20especialista.', '_blank')}>Falar com Especialista</Button>
                 </nav>
 
                 {/* Mobile Menu Toggle */}
@@ -40,7 +40,8 @@ const Header = () => {
                         justifyContent: 'center',
                         borderRadius: '12px',
                         color: 'white',
-                        zIndex: 1001
+                        zIndex: 1001,
+                        pointerEvents: 'auto'
                     }}
                 >
                     {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -56,15 +57,17 @@ const Header = () => {
                 bottom: 0,
                 background: 'rgba(5, 5, 16, 0.98)',
                 backdropFilter: 'blur(20px)',
-                display: 'flex',
+                background: 'rgba(5, 5, 16, 0.98)',
+                backdropFilter: 'blur(20px)',
+                display: isMenuOpen ? 'flex' : 'none',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '3rem',
                 zIndex: 1000,
                 opacity: isMenuOpen ? 1 : 0,
-                visibility: isMenuOpen ? 'visible' : 'hidden',
                 transition: 'all 0.4s ease-in-out',
+                /* Removed visibility/pointerEvents relying on display:none now */
                 pointerEvents: isMenuOpen ? 'all' : 'none',
             }}>
                 <nav style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2.5rem' }}>
@@ -74,7 +77,11 @@ const Header = () => {
                     <Link to="/login" onClick={() => setIsMenuOpen(false)} style={{ fontSize: '2rem', fontWeight: '500', letterSpacing: '-0.5px', color: 'var(--primary-blue)' }}>Login</Link>
 
                     <div style={{ marginTop: '1rem' }} onClick={() => setIsMenuOpen(false)}>
-                        <Button variant="primary" style={{ minWidth: '240px', padding: '1rem 2rem', fontSize: '1.1rem' }}>
+                        <Button
+                            variant="primary"
+                            style={{ minWidth: '240px', padding: '1rem 2rem', fontSize: '1.1rem' }}
+                            onClick={() => window.open('https://wa.me/5522999361256?text=Ol%C3%A1%2C%20vi%20pelo%20site%20e%20gostaria%20de%20falar%20com%20um%20especialista.', '_blank')}
+                        >
                             Falar com Especialista
                         </Button>
                     </div>

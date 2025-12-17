@@ -34,6 +34,7 @@ const HeroAnimation = () => {
                     width: 300px;
                     height: 400px;
                     display: flex;
+                    pointer-events: none;
                     justify-content: center;
                     align-items: center;
                     perspective: 1000px;

@@ -125,7 +125,7 @@ const Landing = () => {
             <HeroSection />
 
             {/* Pain Points Section */}
-            <section style={{ padding: '6rem 0', background: 'radial-gradient(circle at center, #0a0a20 0%, #050510 100%)' }}>
+            <section style={{ padding: '6rem 0', background: 'radial-gradient(circle at center, #0a0a20 0%, #050510 100%)', position: 'relative', zIndex: 2 }}>
                 <div className="container">
                     <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
                         <h2 className="text-gradient" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>
@@ -164,7 +164,12 @@ const Landing = () => {
                                 ))}
                             </ul>
                             <div style={{ marginTop: '3rem' }}>
-                                <Button variant="primary">Quero minha fórmula</Button>
+                                <Button
+                                    variant="primary"
+                                    onClick={() => window.open('https://wa.me/5522999361256?text=Ol%C3%A1%2C%20vi%20pelo%20site%20e%20gostaria%20de%20falar%20com%20um%20especialista.', '_blank')}
+                                >
+                                    Quero minha fórmula
+                                </Button>
                             </div>
                         </div>
 
@@ -213,7 +218,7 @@ const Landing = () => {
             {/* Final CTA / Form Section */}
             <section className="section-padding" style={{ background: 'linear-gradient(0deg, black 0%, #050510 100%)' }}>
                 <div className="container">
-                    <div className="glass-blue form-container" style={{ padding: '4rem', borderRadius: '30px', textAlign: 'center' }}>
+                    <div className="glass-blue form-container" style={{ padding: '4rem', borderRadius: '30px', textAlign: 'center', position: 'relative', zIndex: 10, pointerEvents: 'auto' }}>
                         <h2 style={{ fontSize: '3rem', marginBottom: '2rem' }}>Envie sua receita médica</h2>
                         <p style={{ fontSize: '1.2rem', marginBottom: '3rem', maxWidth: '700px', margin: '0 auto 3rem auto' }}>
                             Anexe sua receita (até 15 arquivos) e receba seu orçamento personalizado.
@@ -279,10 +284,26 @@ const Landing = () => {
                                     {files.length < 15 && (
                                         <label style={{
                                             height: '100px', borderRadius: '10px', border: '2px dashed rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.02)',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#00E5FF', transition: 'all 0.2s'
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#00E5FF', transition: 'all 0.2s',
+                                            position: 'relative', overflow: 'hidden'
                                         }} className="hover:bg-white/5">
-                                            <Plus size={24} />
-                                            <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} multiple onChange={handleFileChange} />
+                                            <span style={{ fontSize: '0.9rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' }}>Enviar</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*,.pdf"
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    opacity: 0,
+                                                    cursor: 'pointer',
+                                                    fontSize: '0'
+                                                }}
+                                                multiple
+                                                onChange={handleFileChange}
+                                            />
                                         </label>
                                     )}
                                 </div>
@@ -303,7 +324,7 @@ const Landing = () => {
                             )}
 
                             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
-                                <Button type="submit" variant="primary" style={{ padding: '18px 48px', fontSize: '1.2rem', opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer', width: 'auto', color: 'black' }} disabled={loading}>
+                                <Button type="submit" variant="primary" style={{ padding: '18px 48px', fontSize: '1.2rem', opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer', width: 'auto', color: 'black', pointerEvents: 'auto' }} disabled={loading}>
                                     {loading ? 'Enviando...' : 'Enviar'}
                                 </Button>
                             </div>
