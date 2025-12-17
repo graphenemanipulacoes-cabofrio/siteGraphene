@@ -324,7 +324,7 @@ const Landing = () => {
                             )}
 
                             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
-                                <Button type="submit" variant="primary" style={{ padding: '18px 48px', fontSize: '1.2rem', opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer', width: 'auto', color: 'black', pointerEvents: 'auto' }} disabled={loading}>
+                                <Button type="submit" variant="primary" style={{ padding: '18px 48px', fontSize: '1.2rem', opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer', width: 'auto', color: 'black', pointerEvents: 'auto' }} disabled={loading} translate="no">
                                     {loading ? 'Enviando...' : 'Enviar'}
                                 </Button>
                             </div>
