@@ -25,7 +25,7 @@ const Header = () => {
                     <a href="#solutions" style={{ opacity: 0.8 }} className="hover:text-primary-blue transition-colors">Soluções</a>
                     <a href="#products" style={{ opacity: 0.8 }} className="hover:text-primary-blue transition-colors">Fórmulas</a>
                     <a href="#how-it-works" style={{ opacity: 0.8 }} className="hover:text-primary-blue transition-colors">Como funciona</a>
-                    <Link to="/login" className="hover:text-primary-blue transition-colors">Login</Link>
+
                     <Button variant="primary" onClick={() => window.open('https://wa.me/5522999361256?text=Ol%C3%A1%2C%20vi%20pelo%20site%20e%20gostaria%20de%20falar%20com%20um%20especialista.', '_blank')}>Falar com Especialista</Button>
                 </nav>
 
@@ -74,7 +74,7 @@ const Header = () => {
                     <a href="#solutions" onClick={() => setIsMenuOpen(false)} style={{ fontSize: '2rem', fontWeight: '500', letterSpacing: '-0.5px' }}>Soluções</a>
                     <a href="#products" onClick={() => setIsMenuOpen(false)} style={{ fontSize: '2rem', fontWeight: '500', letterSpacing: '-0.5px' }}>Fórmulas</a>
                     <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} style={{ fontSize: '2rem', fontWeight: '500', letterSpacing: '-0.5px' }}>Como funciona</a>
-                    <Link to="/login" onClick={() => setIsMenuOpen(false)} style={{ fontSize: '2rem', fontWeight: '500', letterSpacing: '-0.5px', color: 'var(--primary-blue)' }}>Login</Link>
+
 
                     <div style={{ marginTop: '1rem' }} onClick={() => setIsMenuOpen(false)}>
                         <Button
