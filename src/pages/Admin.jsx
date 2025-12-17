@@ -268,7 +268,12 @@ const Admin = () => {
                             {view === 'active' ? 'Solicitações de Receita' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : 'Lixeira'}
                         </h1>
                     </div>
-                    <span>Admin</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <Button variant="outline" onClick={() => window.location.href = '/'}>
+                            🌐 Ver Site
+                        </Button>
+                        <span>Admin</span>
+                    </div>
                 </header>
 
                 {view === 'products' ? (

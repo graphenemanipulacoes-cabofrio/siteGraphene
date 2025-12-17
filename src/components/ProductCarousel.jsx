@@ -43,6 +43,7 @@ const ProductCarousel = () => {
             const { data } = await supabase
                 .from('produtos')
                 .select('*')
+                .order('display_order', { ascending: true })
                 .order('created_at', { ascending: true });
 
             if (data && data.length > 0) {
