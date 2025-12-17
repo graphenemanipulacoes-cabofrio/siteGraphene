@@ -116,7 +116,8 @@ const AdminProducts = () => {
             }
 
             setIsModalOpen(false);
-            fetchProducts();
+            // Force reload to ensure DB state is fresh
+            window.location.reload();
 
         } catch (error) {
             console.error('Error saving product:', error);
