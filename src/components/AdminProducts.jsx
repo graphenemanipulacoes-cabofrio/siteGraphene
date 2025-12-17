@@ -91,7 +91,7 @@ const AdminProducts = () => {
             const productData = {
                 name,
                 description,
-                price: !price ? 0 : parseFloat(price),
+                price: !price ? -1 : parseFloat(price),
                 image_url: imageUrl
             };
 
