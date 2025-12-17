@@ -71,7 +71,7 @@ const AdminProducts = () => {
         setActiveId(event.active.id);
     };
 
-    const handleDragEnd = async (event) => {
+    const handleDragEnd = (event) => {
         const { active, over } = event;
         setActiveId(null);
 
@@ -82,9 +82,7 @@ const AdminProducts = () => {
 
                 const newItems = arrayMove(items, oldIndex, newIndex);
 
-                // Update Database with new order
-                updateOrder(newItems);
-
+                // NÃO salva automaticamente - usuário deve clicar no botão
                 return newItems;
             });
         }
@@ -122,6 +120,11 @@ const AdminProducts = () => {
             console.error('Error updating order:', error);
             toast.error('Erro ao salvar ordem.');
         }
+    };
+
+    const handleSaveOrder = async () => {
+        await updateOrder(products);
+        toast.success('Ordem salva com sucesso!');
     };
 
     const handleOpenModal = (product = null) => {
