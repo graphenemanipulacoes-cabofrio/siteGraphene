@@ -2,12 +2,12 @@ import { Phone, MapPin, Instagram, Mail } from 'lucide-react';
 
 const Footer = () => {
     return (
-        <footer style={{ background: 'black', padding: '4rem 0', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        <footer className="site-footer" style={{ background: 'black', padding: '4rem 0', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="container footer-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '3rem' }}>
 
                 {/* Brand */}
                 <div>
-                    <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '1rem' }}>GRAPHÈNE</h2>
+                    <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '1rem' }} className="notranslate" translate="no">GRAPHÈNE</h2>
                     <p style={{ color: 'var(--text-gray)' }}>
                         Farmácia de manipulação personalizada. Sua saúde tratada de forma única.
                     </p>
@@ -44,8 +44,8 @@ const Footer = () => {
                 </div>
 
             </div>
-            <div className="container" style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center', color: '#555' }}>
-                &copy; 2024 Graphène. Todos os direitos reservados.
+            <div className="container footer-copyright" style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center', color: '#555' }}>
+                &copy; 2024 <span className="notranslate" translate="no">Graphène</span>. Todos os direitos reservados.
             </div>
         </footer>
     );
@@ -54,6 +54,13 @@ const Footer = () => {
 // Add styles
 const styles = `
     @media (max-width: 768px) {
+        .site-footer {
+            padding: 2rem 0 !important;
+        }
+        .footer-copyright {
+            margin-top: 1.5rem !important;
+            padding-top: 1.5rem !important;
+        }
         .footer-grid {
             text-align: center;
             gap: 2rem !important;

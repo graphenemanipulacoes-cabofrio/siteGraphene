@@ -18,7 +18,7 @@ const Login = () => {
     return (
         <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
             <div className="glass-card" style={{ padding: '3rem', width: '100%', maxWidth: '400px' }}>
-                <h2 className="text-gradient" style={{ textAlign: 'center', marginBottom: '2rem' }}>Graphène Admin</h2>
+                <h2 className="text-gradient" style={{ textAlign: 'center', marginBottom: '2rem' }}><span className="notranslate" translate="no">Graphène</span> Admin</h2>
                 <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <input
                         type="email"
