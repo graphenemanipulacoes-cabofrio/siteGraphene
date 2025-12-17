@@ -1,17 +1,36 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient';
 
 const Login = () => {
-    const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        if (email === 'admin@graphene.com' && password === 'admin') {
-            navigate('/admin');
-        } else {
-            alert('Credenciais inválidas! (Use admin@graphene.com / admin)');
+        setLoading(true);
+
+        try {
+            const { data, error } = await supabase
+                .from('admins')
+                .select('*')
+                .eq('username', username)
+                .eq('password', password)
+                .single();
+
+            if (error || !data) {
+                alert('Credenciais inválidas!');
+            } else {
+                localStorage.setItem('admin_session', JSON.stringify(data));
+                navigate('/admin');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            alert('Erro ao fazer login.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -21,10 +40,10 @@ const Login = () => {
                 <h2 className="text-gradient" style={{ textAlign: 'center', marginBottom: '2rem' }}><span className="notranslate" translate="no">Graphène</span> Admin</h2>
                 <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <input
-                        type="email"
-                        placeholder="E-mail"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        type="text"
+                        placeholder="Usuário"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
                         style={{ padding: '10px', borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.1)', color: 'white' }}
                     />
                     <input
@@ -34,8 +53,8 @@ const Login = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         style={{ padding: '10px', borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.1)', color: 'white' }}
                     />
-                    <button type="submit" style={{ padding: '12px', borderRadius: '8px', background: 'var(--primary-blue)', color: 'black', fontWeight: 'bold' }}>
-                        Entrar
+                    <button type="submit" disabled={loading} style={{ padding: '12px', borderRadius: '8px', background: 'var(--primary-blue)', color: 'black', fontWeight: 'bold', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}>
+                        {loading ? 'Entrando...' : 'Entrar'}
                     </button>
                 </form>
             </div>

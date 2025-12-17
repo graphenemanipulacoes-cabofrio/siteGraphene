@@ -333,8 +333,7 @@ const Landing = () => {
                         </div>
                     </div>
                 </section>
-            </section>
-        </div> {/* End Main Content Wrapper */ }
+            </div> {/* End Main Content Wrapper */}
 
             <div style={{ flexShrink: 0 }}>
                 <Footer />

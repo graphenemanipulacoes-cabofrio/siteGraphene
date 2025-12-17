@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Package, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft } from 'lucide-react';
+import { Package, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { Toaster, toast } from 'sonner';
 import AdminProducts from '../components/AdminProducts';
@@ -12,7 +12,19 @@ const Admin = () => {
     const [expandedId, setExpandedId] = useState(null);
     const [fullscreenImage, setFullscreenImage] = useState(null);
     const [zoomLevel, setZoomLevel] = useState(1);
-    const [view, setView] = useState('active'); // 'active', 'trash', 'products'
+    const [view, setView] = useState('active'); // 'active', 'trash', 'products', 'admins'
+    const [admins, setAdmins] = useState([]);
+    const [newAdminUser, setNewAdminUser] = useState('');
+    const [newAdminPass, setNewAdminPass] = useState('');
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const session = localStorage.getItem('admin_session');
+        if (!session) {
+            navigate('/login');
+            return;
+        }
+    }, []);
 
     useEffect(() => {
         if (view !== 'products') {
@@ -45,6 +57,9 @@ const Admin = () => {
     useEffect(() => {
         if (view === 'active' || view === 'trash') {
             fetchRequests();
+        }
+        if (view === 'admins') {
+            fetchAdmins();
         }
     }, [view]);
 
@@ -161,6 +176,41 @@ const Admin = () => {
         }
     };
 
+    const fetchAdmins = async () => {
+        const { data, error } = await supabase.from('admins').select('*').order('created_at', { ascending: false });
+        if (data) setAdmins(data);
+    };
+
+    const handleAddAdmin = async (e) => {
+        e.preventDefault();
+        if (!newAdminUser || !newAdminPass) return toast.error('Preencha usuário e senha');
+
+        const { error } = await supabase.from('admins').insert([{ username: newAdminUser, password: newAdminPass }]);
+        if (error) {
+            toast.error('Erro ao adicionar admin');
+        } else {
+            toast.success('Admin adicionado!');
+            setNewAdminUser('');
+            setNewAdminPass('');
+            fetchAdmins();
+        }
+    };
+
+    const handleDeleteAdmin = async (id) => {
+        if (!confirm('Remover este administrador?')) return;
+        const { error } = await supabase.from('admins').delete().eq('id', id);
+        if (error) toast.error('Erro ao remover');
+        else {
+            toast.success('Admin removido');
+            fetchAdmins();
+        }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('admin_session');
+        navigate('/login');
+    };
+
     return (
         <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', minHeight: '100vh', background: 'var(--bg-dark)' }}>
 
@@ -183,6 +233,13 @@ const Admin = () => {
                         <Package size={18} /> Produtos
                     </Button>
                     <Button
+                        variant={view === 'admins' ? 'primary' : 'glass'}
+                        style={{ justifyContent: 'flex-start', width: '100%' }}
+                        onClick={() => setView('admins')}
+                    >
+                        <Shield size={18} /> Admins
+                    </Button>
+                    <Button
                         variant={view === 'trash' ? 'primary' : 'glass'}
                         style={{ justifyContent: 'flex-start', width: '100%' }}
                         onClick={() => setView('trash')}
@@ -190,9 +247,7 @@ const Admin = () => {
                         <Trash2 size={18} /> Lixeira
                     </Button>
                 </nav>
-                <Link to="/">
-                    <Button variant="outline" style={{ justifyContent: 'flex-start', width: '100%' }}><LogOut size={18} /> Sair</Button>
-                </Link>
+                <Button variant="outline" onClick={handleLogout} style={{ justifyContent: 'flex-start', width: '100%' }}><LogOut size={18} /> Sair</Button>
             </aside>
 
             {/* Main Content */}
@@ -206,7 +261,7 @@ const Admin = () => {
                             </Button>
                         )}
                         <h1 className="text-gradient">
-                            {view === 'active' ? 'Solicitações de Receita' : view === 'products' ? 'Gerenciar Produtos' : 'Lixeira'}
+                            {view === 'active' ? 'Solicitações de Receita' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : 'Lixeira'}
                         </h1>
                     </div>
                     <span>Admin</span>
@@ -214,6 +269,36 @@ const Admin = () => {
 
                 {view === 'products' ? (
                     <AdminProducts />
+                ) : view === 'admins' ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
+                        <Card title="Adicionar Novo Administrador">
+                            <form onSubmit={handleAddAdmin} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Usuário</label>
+                                    <input type="text" value={newAdminUser} onChange={e => setNewAdminUser(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white' }} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Senha</label>
+                                    <input type="text" value={newAdminPass} onChange={e => setNewAdminPass(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white' }} />
+                                </div>
+                                <Button type="submit" variant="primary">Adicionar</Button>
+                            </form>
+                        </Card>
+
+                        <Card title="Administradores Existentes">
+                            <ul style={{ listStyle: 'none' }}>
+                                {admins.map(admin => (
+                                    <li key={admin.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <Shield size={20} color="var(--primary-blue)" />
+                                            <span>{admin.username}</span>
+                                        </div>
+                                        <Button variant="outline" onClick={() => handleDeleteAdmin(admin.id)} style={{ borderColor: '#FF4D4D', color: '#FF4D4D', padding: '5px 10px', fontSize: '0.8rem' }}>Remover</Button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </Card>
+                    </div>
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
                         {/* List */}
