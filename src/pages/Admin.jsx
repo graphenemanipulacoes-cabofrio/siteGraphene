@@ -265,7 +265,7 @@ const Admin = () => {
                             </Button>
                         )}
                         <h1 className="text-gradient">
-                            {view === 'active' ? 'Solicitações de Receita' : view === 'products' ? 'Gerenciar Produtos v2.1' : view === 'admins' ? 'Gerenciar Admins' : 'Lixeira'}
+                            {view === 'active' ? 'Solicitações de Receita' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : 'Lixeira'}
                         </h1>
                     </div>
                     <span>Admin</span>
