@@ -333,9 +333,12 @@ const Landing = () => {
                         </div>
                     </div>
                 </section>
-            </div> {/* End Main Content Wrapper */}
+            </section>
+        </div> {/* End Main Content Wrapper */ }
 
-            <Footer />
+            <div style={{ flexShrink: 0 }}>
+                <Footer />
+            </div>
             <style>{`
                 .section-padding { padding: 6rem 0; }
                 
@@ -360,7 +363,7 @@ const Landing = () => {
                     .last-section { padding-bottom: 0 !important; }
                 }
             `}</style>
-        </div>
+        </div >
     );
 };
 
