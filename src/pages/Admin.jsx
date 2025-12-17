@@ -255,7 +255,7 @@ const Admin = () => {
             </aside>
 
             {/* Main Content */}
-            <main style={{ padding: '3rem' }}>
+            <main style={{ padding: '3rem', height: '100vh', overflowY: 'auto' }}>
                 <Toaster position="top-right" richColors />
                 <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
