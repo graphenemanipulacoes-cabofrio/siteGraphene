@@ -260,9 +260,9 @@ const Admin = () => {
                 }
                 .mobile-header {
                     display: none;
-                    justify-content: space-between;
+                    justify-content: center;
                     align-items: center;
-                    padding: 1.25rem 1.5rem;
+                    padding: 1rem;
                     background: rgba(13, 17, 23, 0.85);
                     backdrop-filter: blur(25px);
                     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -270,8 +270,35 @@ const Admin = () => {
                     top: 0;
                     z-index: 100;
                 }
-                .sidebar-overlay {
+                .bottom-nav {
                     display: none;
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: 70px;
+                    background: rgba(13, 17, 23, 0.95);
+                    backdrop-filter: blur(20px);
+                    border-top: 1px solid rgba(255, 255, 255, 0.05);
+                    z-index: 1000;
+                    justify-content: space-around;
+                    align-items: center;
+                    padding: 0 0.5rem;
+                }
+                .nav-item {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 4px;
+                    color: rgba(255, 255, 255, 0.5);
+                    font-size: 0.7rem;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    flex: 1;
+                    padding: 8px 0;
+                }
+                .nav-item.active {
+                    color: var(--primary-blue);
                 }
 
                 @media (max-width: 1024px) {
@@ -279,57 +306,26 @@ const Admin = () => {
                         grid-template-columns: 1fr;
                     }
                     .admin-sidebar {
-                        position: fixed;
-                        top: 0;
-                        left: -100%;
-                        width: 100%;
-                        max-width: 300px;
-                        background: rgba(13, 17, 23, 0.98);
-                        z-index: 1000;
-                        transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-                        box-shadow: 20px 0 60px rgba(0,0,0,0.8);
-                        border-right: 1px solid rgba(255,255,255,0.05);
-                    }
-                    .admin-sidebar.open {
-                        left: 0;
-                    }
-                    .lg-hidden {
-                        display: flex;
+                        display: none;
                     }
                     .lg-visible {
                         display: none;
                     }
                     .admin-main {
-                        padding: 1.5rem 1rem;
+                        padding: 1.5rem 1rem 100px 1rem;
                         height: auto;
                         overflow-y: visible;
                     }
                     .mobile-header {
                         display: flex;
                     }
-                    .sidebar-overlay {
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        bottom: 0;
-                        background: rgba(0,0,0,0.7);
-                        backdrop-filter: blur(8px);
-                        z-index: 999;
-                        display: none;
-                        animation: fadeIn 0.3s ease;
-                    }
-                    @keyframes fadeIn {
-                        from { opacity: 0; }
-                        to { opacity: 1; }
-                    }
-                    .sidebar-overlay.open {
-                        display: block;
+                    .bottom-nav {
+                        display: flex;
                     }
                     .request-item-header {
                         flex-direction: column;
                         align-items: flex-start !important;
-                        gap: 1rem !important;
+                        gap: 0.75rem !important;
                     }
                     .request-item-actions {
                         width: 100%;
@@ -342,14 +338,32 @@ const Admin = () => {
                 }
             `}</style>
 
-            <div className={`sidebar-overlay ${expandedId === 'mobile-menu' ? 'open' : ''}`} onClick={() => setExpandedId(null)}></div>
-
             <div className="mobile-header">
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>GRAPHÈNE</h2>
-                <Button variant="glass" onClick={() => setExpandedId('mobile-menu')} style={{ padding: '8px' }}>
-                    <Maximize2 size={24} />
-                </Button>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', letterSpacing: '1px' }}>GRAPHÈNE Admin</h2>
             </div>
+
+            <nav className="bottom-nav">
+                <div className={`nav-item ${view === 'active' ? 'active' : ''}`} onClick={() => setView('active')}>
+                    <MessageCircle size={22} />
+                    <span>Orçamentos</span>
+                </div>
+                <div className={`nav-item ${view === 'products' ? 'active' : ''}`} onClick={() => setView('products')}>
+                    <Package size={22} />
+                    <span>Produtos</span>
+                </div>
+                <div className={`nav-item ${view === 'admins' ? 'active' : ''}`} onClick={() => setView('admins')}>
+                    <Users size={22} />
+                    <span>Time</span>
+                </div>
+                <div className={`nav-item ${view === 'trash' ? 'active' : ''}`} onClick={() => setView('trash')}>
+                    <Trash2 size={22} />
+                    <span>Lixeira</span>
+                </div>
+                <div className="nav-item" onClick={handleLogout}>
+                    <LogOut size={22} />
+                    <span>Sair</span>
+                </div>
+            </nav>
 
             {/* Sidebar */}
             <aside className={`glass admin-sidebar ${expandedId === 'mobile-menu' ? 'open' : ''}`}>
@@ -402,8 +416,8 @@ const Admin = () => {
                                 <ArrowLeft size={24} />
                             </Button>
                         )}
-                        <h1 className="text-gradient" style={{ fontSize: 'clamp(1.4rem, 4vw, 2.2rem)', fontWeight: '800', letterSpacing: '-0.02em' }}>
-                            {view === 'active' ? 'Solicitações de Receita' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : 'Lixeira'}
+                        <h1 className="text-gradient" style={{ fontSize: 'clamp(1.2rem, 6vw, 2.5rem)', fontWeight: '800', letterSpacing: '-0.02em', WebkitTextStroke: '0px' }}>
+                            {view === 'active' ? 'Solicitações' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : 'Lixeira'}
                         </h1>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -420,15 +434,15 @@ const Admin = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
                         <Card title="Adicionar Novo Administrador">
                             <form onSubmit={handleAddAdmin} style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
-                                <div style={{ flex: '1 1 200px' }}>
+                                <div style={{ flex: '1 1 100%' }}>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Usuário</label>
-                                    <input type="text" value={newAdminUser} onChange={e => setNewAdminUser(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white' }} />
+                                    <input type="text" value={newAdminUser} onChange={e => setNewAdminUser(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }} />
                                 </div>
-                                <div style={{ flex: '1 1 200px' }}>
+                                <div style={{ flex: '1 1 100%' }}>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Senha</label>
-                                    <input type="text" value={newAdminPass} onChange={e => setNewAdminPass(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white' }} />
+                                    <input type="text" value={newAdminPass} onChange={e => setNewAdminPass(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }} />
                                 </div>
-                                <Button type="submit" variant="primary" style={{ flex: '1 1 100%' }}>Adicionar</Button>
+                                <Button type="submit" variant="primary" style={{ flex: '1 1 100%', justifyContent: 'center', marginTop: '1rem' }}>Adicionar</Button>
                             </form>
                         </Card>
 
@@ -467,19 +481,19 @@ const Admin = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="request-item-actions" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                                <div className="request-item-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                                     {view === 'active' ? (
                                                         // Active View Actions
                                                         <>
-                                                            <a href={`https://wa.me/${req.whatsapp}`} target="_blank" rel="noopener noreferrer">
-                                                                <Button variant="outline" style={{ borderColor: '#25D366', color: '#25D366' }}>
-                                                                    <MessageCircle size={18} /> WhatsApp
+                                                            <a href={`https://wa.me/${req.whatsapp}`} target="_blank" rel="noopener noreferrer" style={{ flex: 1 }}>
+                                                                <Button variant="outline" style={{ borderColor: '#25D366', color: '#25D366', width: '100%', justifyContent: 'center', padding: '8px 12px' }}>
+                                                                    <MessageCircle size={18} /> <span className="lg-visible">WhatsApp</span>
                                                                 </Button>
                                                             </a>
 
                                                             {req.arquivo_url && (
-                                                                <Button variant="primary" onClick={() => toggleExpand(req.id)}>
-                                                                    <FileText size={18} /> Ver Arquivos
+                                                                <Button variant="primary" onClick={() => toggleExpand(req.id)} style={{ flex: 1, justifyContent: 'center', padding: '8px 12px', boxShadow: 'none' }}>
+                                                                    <FileText size={18} /> <span className="lg-visible">Ver Arquivos</span>
                                                                     {expandedId === req.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                                                 </Button>
                                                             )}
@@ -488,7 +502,7 @@ const Admin = () => {
                                                                 variant="glass"
                                                                 onClick={() => updateStatus(req.id, 'trash')}
                                                                 title="Mover para Lixeira"
-                                                                style={{ padding: '10px', color: '#FF4D4D', border: '1px solid rgba(255, 77, 77, 0.15)', background: 'rgba(255, 77, 77, 0.05)' }}
+                                                                style={{ padding: '8px', color: '#94a3b8', border: '1px solid rgba(148, 163, 184, 0.1)', background: 'transparent' }}
                                                             >
                                                                 <Trash2 size={20} />
                                                             </Button>

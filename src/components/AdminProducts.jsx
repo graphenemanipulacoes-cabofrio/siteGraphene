@@ -328,14 +328,18 @@ const AdminProducts = () => {
                     <div className="glass" style={{
                         width: '100%',
                         maxWidth: '500px',
-                        padding: 'clamp(1rem, 5vw, 2rem)',
-                        borderRadius: 'clamp(0px, 5vw, 20px)',
+                        padding: window.innerWidth <= 768 ? '2rem 1.5rem' : 'clamp(1rem, 5vw, 2rem)',
+                        borderRadius: window.innerWidth <= 768 ? '0' : '20px',
                         position: 'relative',
                         maxHeight: '100vh',
+                        minHeight: window.innerWidth <= 768 ? '100vh' : 'auto',
+                        width: '100%',
                         height: 'auto',
                         overflowY: 'auto',
-                        margin: 'auto',
-                        border: 'none'
+                        margin: '0',
+                        border: 'none',
+                        display: 'flex',
+                        flexDirection: 'column'
                     }}>
                         <button
                             onClick={() => setIsModalOpen(false)}
