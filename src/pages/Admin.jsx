@@ -216,37 +216,125 @@ const Admin = () => {
     };
 
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', minHeight: '100vh', background: 'var(--bg-dark)' }}>
+        <div className="admin-container">
+            <style>{`
+                .admin-container {
+                    display: grid;
+                    grid-template-columns: 250px 1fr;
+                    min-height: 100vh;
+                    background: var(--bg-dark);
+                }
+                .admin-sidebar {
+                    padding: 2rem;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2rem;
+                    height: 100vh;
+                    position: sticky;
+                    top: 0;
+                }
+                .admin-main {
+                    padding: 3rem;
+                    height: 100vh;
+                    overflow-y: auto;
+                }
+                .mobile-header {
+                    display: none;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 1rem 1.5rem;
+                    background: rgba(10, 15, 20, 0.8);
+                    backdrop-filter: blur(10px);
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                    position: sticky;
+                    top: 0;
+                    z-index: 100;
+                }
+
+                @media (max-width: 1024px) {
+                    .admin-container {
+                        grid-template-columns: 1fr;
+                    }
+                    .admin-sidebar {
+                        position: fixed;
+                        top: 0;
+                        left: -100%;
+                        width: 280px;
+                        background: rgba(10, 15, 20, 0.95);
+                        z-index: 1000;
+                        transition: left 0.3s ease;
+                        box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+                    }
+                    .admin-sidebar.open {
+                        left: 0;
+                    }
+                    .admin-main {
+                        padding: 1.5rem;
+                        height: auto;
+                        overflow-y: visible;
+                    }
+                    .mobile-header {
+                        display: flex;
+                    }
+                    .sidebar-overlay {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: rgba(0,0,0,0.5);
+                        z-index: 999;
+                        display: none;
+                    }
+                    .sidebar-overlay.open {
+                        display: block;
+                    }
+                }
+            `}</style>
+
+            <div className={`sidebar-overlay ${expandedId === 'mobile-menu' ? 'open' : ''}`} onClick={() => setExpandedId(null)}></div>
+
+            <div className="mobile-header">
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>GRAPHÈNE</h2>
+                <Button variant="glass" onClick={() => setExpandedId('mobile-menu')} style={{ padding: '8px' }}>
+                    <Maximize2 size={24} />
+                </Button>
+            </div>
 
             {/* Sidebar */}
-            <aside className="glass" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>GRAPHÈNE</h2>
+            <aside className={`glass admin-sidebar ${expandedId === 'mobile-menu' ? 'open' : ''}`}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>GRAPHÈNE</h2>
+                    <Button variant="glass" className="lg-hidden" onClick={() => setExpandedId(null)} style={{ padding: '5px' }}>
+                        <X size={20} />
+                    </Button>
+                </div>
                 <nav style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
                     <Button
                         variant={view === 'active' ? 'primary' : 'glass'}
                         style={{ justifyContent: 'flex-start', width: '100%' }}
-                        onClick={() => setView('active')}
+                        onClick={() => { setView('active'); setExpandedId(null); }}
                     >
                         <MessageCircle size={18} /> Solicitações
                     </Button>
                     <Button
                         variant={view === 'products' ? 'primary' : 'glass'}
                         style={{ justifyContent: 'flex-start', width: '100%' }}
-                        onClick={() => setView('products')}
+                        onClick={() => { setView('products'); setExpandedId(null); }}
                     >
                         <Package size={18} /> Produtos
                     </Button>
                     <Button
                         variant={view === 'admins' ? 'primary' : 'glass'}
                         style={{ justifyContent: 'flex-start', width: '100%' }}
-                        onClick={() => setView('admins')}
+                        onClick={() => { setView('admins'); setExpandedId(null); }}
                     >
                         <Shield size={18} /> Admins
                     </Button>
                     <Button
                         variant={view === 'trash' ? 'primary' : 'glass'}
                         style={{ justifyContent: 'flex-start', width: '100%' }}
-                        onClick={() => setView('trash')}
+                        onClick={() => { setView('trash'); setExpandedId(null); }}
                     >
                         <Trash2 size={18} /> Lixeira
                     </Button>
@@ -255,24 +343,23 @@ const Admin = () => {
             </aside>
 
             {/* Main Content */}
-            <main style={{ padding: '3rem', height: '100vh', overflowY: 'auto' }}>
+            <main className="admin-main">
                 <Toaster position="top-right" richColors />
-                <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+                <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         {view === 'trash' && (
                             <Button variant="glass" onClick={() => setView('active')} style={{ padding: '10px', borderRadius: '50%' }}>
                                 <ArrowLeft size={24} />
                             </Button>
                         )}
-                        <h1 className="text-gradient">
-                            {view === 'active' ? 'Solicitações de Receita' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : 'Lixeira'}
+                        <h1 className="text-gradient" style={{ fontSize: 'clamp(1.5rem, 5vw, 2.5rem)' }}>
+                            {view === 'active' ? 'Solicitações' : view === 'products' ? 'Produtos' : view === 'admins' ? 'Admins' : 'Lixeira'}
                         </h1>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <Button variant="outline" onClick={() => window.location.href = '/'}>
+                        <Button variant="outline" onClick={() => window.location.href = '/'} style={{ padding: '8px 15px', fontSize: '0.9rem' }}>
                             🌐 Ver Site
                         </Button>
-                        <span>Admin</span>
                     </div>
                 </header>
 
@@ -281,16 +368,16 @@ const Admin = () => {
                 ) : view === 'admins' ? (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
                         <Card title="Adicionar Novo Administrador">
-                            <form onSubmit={handleAddAdmin} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
-                                <div style={{ flex: 1 }}>
+                            <form onSubmit={handleAddAdmin} style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
+                                <div style={{ flex: '1 1 200px' }}>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Usuário</label>
                                     <input type="text" value={newAdminUser} onChange={e => setNewAdminUser(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white' }} />
                                 </div>
-                                <div style={{ flex: 1 }}>
+                                <div style={{ flex: '1 1 200px' }}>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Senha</label>
                                     <input type="text" value={newAdminPass} onChange={e => setNewAdminPass(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white' }} />
                                 </div>
-                                <Button type="submit" variant="primary">Adicionar</Button>
+                                <Button type="submit" variant="primary" style={{ flex: '1 1 100%' }}>Adicionar</Button>
                             </form>
                         </Card>
 

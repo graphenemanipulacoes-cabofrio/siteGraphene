@@ -7,7 +7,8 @@ create table public.solicitacoes (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   nome_cliente text not null,
   whatsapp text not null,
-  arquivo_url text
+  arquivo_url text,
+  status text default 'active'
 );
 
 -- Enable RLS
@@ -20,12 +21,22 @@ for insert
 to anon
 with check (true);
 
--- Policy: Allow Read for Authenticated/Anon (Since admin is client-side for now, but really should be secured. 
--- For this MVP, we might need to allow public read OR assume the admin page is behind some auth. 
--- Given the prompt implies simple setup:
+-- Policy: Allow Read for all
 create policy "Enable read for all"
 on public.solicitacoes
 for select
+using (true);
+
+-- Policy: Allow Update for all
+create policy "Enable update for all"
+on public.solicitacoes
+for update
+using (true);
+
+-- Policy: Allow Delete for all
+create policy "Enable delete for all"
+on public.solicitacoes
+for delete
 using (true);
 
 -- 3. Create Table 'produtos'

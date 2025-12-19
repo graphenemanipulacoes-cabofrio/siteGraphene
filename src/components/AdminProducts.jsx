@@ -264,7 +264,11 @@ const AdminProducts = () => {
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(min(250px, 100%), 1fr))',
+                    gap: '1.5rem'
+                }}>
                     <SortableContext
                         items={products.map(p => p.id)}
                         strategy={rectSortingStrategy}
@@ -319,7 +323,16 @@ const AdminProducts = () => {
                     background: 'rgba(0,0,0,0.8)', zIndex: 9999,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
                 }}>
-                    <div className="glass" style={{ width: '100%', maxWidth: '500px', padding: '2rem', borderRadius: '20px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+                    <div className="glass" style={{
+                        width: '100%',
+                        maxWidth: '500px',
+                        padding: 'clamp(1rem, 5vw, 2rem)',
+                        borderRadius: '20px',
+                        position: 'relative',
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        margin: 'auto'
+                    }}>
                         <button
                             onClick={() => setIsModalOpen(false)}
                             style={{ position: 'absolute', top: '20px', right: '20px', background: 'transparent', color: 'white' }}

@@ -16,7 +16,7 @@ const Login = () => {
             const { data, error } = await supabase
                 .from('admins')
                 .select('*')
-                .eq('username', username)
+                .ilike('username', username)
                 .eq('password', password)
                 .single();
 
