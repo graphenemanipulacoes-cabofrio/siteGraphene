@@ -237,6 +237,9 @@ const Admin = () => {
                 .lg-hidden {
                     display: none;
                 }
+                .lg-visible {
+                    display: block;
+                }
                 .admin-main {
                     padding: 3rem;
                     height: 100vh;
