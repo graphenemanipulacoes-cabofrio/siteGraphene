@@ -14,30 +14,8 @@ create table public.solicitacoes (
 -- Enable RLS
 alter table public.solicitacoes enable row level security;
 
--- Policy: Allow Anon Insert (Public Submission)
-create policy "Enable insert for anon users"
-on public.solicitacoes
-for insert
-to anon
-with check (true);
-
--- Policy: Allow Read for all
-create policy "Enable read for all"
-on public.solicitacoes
-for select
-using (true);
-
--- Policy: Allow Update for all
-create policy "Enable update for all"
-on public.solicitacoes
-for update
-using (true);
-
--- Policy: Allow Delete for all
-create policy "Enable delete for all"
-on public.solicitacoes
-for delete
-using (true);
+-- Policies for solicitacoes
+create policy "Enable all for solicitacoes" on public.solicitacoes for all using (true) with check (true);
 
 -- 3. Create Table 'produtos'
 create table public.produtos (
@@ -46,23 +24,15 @@ create table public.produtos (
   name text not null,
   description text,
   price numeric,
-  image_url text
+  image_url text,
+  display_order integer default 0
 );
 
 -- Enable RLS
 alter table public.produtos enable row level security;
 
--- Policy: Allow Read for All (Public Storefront)
-create policy "Enable read for all"
-on public.produtos
-for select
-using (true);
-
--- Policy: Allow Anon Insert (For Seeding/Admin temporarily)
-create policy "Enable insert for anon"
-on public.produtos
-for insert
-with check (true);
+-- Policies for produtos
+create policy "Enable all for produtos" on public.produtos for all using (true) with check (true);
 
 -- 2. Create Storage Bucket 'receitas'
 insert into storage.buckets (id, name, public) 

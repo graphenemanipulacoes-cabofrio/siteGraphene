@@ -116,25 +116,29 @@ const Admin = () => {
     };
 
     const updateStatus = async (id, newStatus) => {
+        console.log(`Attempting to update status for ID: ${id} to ${newStatus}`);
         try {
             const { error } = await supabase
                 .from('solicitacoes')
                 .update({ status: newStatus })
                 .eq('id', id);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase update error:', error);
+                throw error;
+            }
 
             setRequests(prev => prev.filter(req => req.id !== id));
             toast.success(newStatus === 'trash' ? 'Movido para lixeira' : 'Restaurado com sucesso');
 
         } catch (error) {
             console.error('Error updating status:', error);
-            // alert('Erro ao atualizar status. Verifique se a coluna "status" existe no banco de dados.');
-            toast.error('Erro ao atualizar status.');
+            toast.error('Erro ao atualizar status: ' + (error.message || 'Erro desconhecido'));
         }
     };
 
     const deleteForever = async (id) => {
+        console.log(`Attempting to delete forever ID: ${id}`);
         if (!confirm('Tem certeza? Isso apagará a solicitação e os arquivos permanentemente.')) return;
 
         try {
@@ -143,12 +147,16 @@ const Admin = () => {
                 .delete()
                 .eq('id', id);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase delete error:', error);
+                throw error;
+            }
+
             setRequests(prev => prev.filter(req => req.id !== id));
             toast.success('Excluído permanentemente.');
         } catch (error) {
             console.error('Error deleting:', error);
-            toast.error('Erro ao excluir.');
+            toast.error('Erro ao excluir: ' + (error.message || 'Erro desconhecido'));
         }
     };
 
@@ -225,14 +233,17 @@ const Admin = () => {
                     background: var(--bg-dark);
                 }
                 .admin-sidebar {
-                    padding: 2rem;
+                    padding: 2.5rem 2rem;
                     display: flex;
                     flex-direction: column;
-                    gap: 2rem;
+                    gap: 2.5rem;
                     height: 100vh;
                     position: sticky;
                     top: 0;
-                    border-right: 1px solid rgba(255, 255, 255, 0.05);
+                    border-right: 1px solid rgba(255, 255, 255, 0.03);
+                    background: rgba(13, 17, 23, 0.4);
+                    backdrop-filter: blur(20px);
+                    box-shadow: 10px 0 30px rgba(0,0,0,0.2);
                 }
                 .lg-hidden {
                     display: none;
@@ -241,17 +252,19 @@ const Admin = () => {
                     display: block;
                 }
                 .admin-main {
-                    padding: 3rem;
+                    padding: clamp(1.5rem, 5vw, 4rem);
                     height: 100vh;
                     overflow-y: auto;
+                    scrollbar-width: thin;
+                    scrollbar-color: rgba(255,255,255,0.1) transparent;
                 }
                 .mobile-header {
                     display: none;
                     justify-content: space-between;
                     align-items: center;
-                    padding: 1rem 1.5rem;
-                    background: rgba(10, 15, 20, 0.8);
-                    backdrop-filter: blur(10px);
+                    padding: 1.25rem 1.5rem;
+                    background: rgba(13, 17, 23, 0.85);
+                    backdrop-filter: blur(25px);
                     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
                     position: sticky;
                     top: 0;
@@ -269,24 +282,25 @@ const Admin = () => {
                         position: fixed;
                         top: 0;
                         left: -100%;
-                        width: 280px;
-                        background: rgba(10, 15, 20, 0.98);
+                        width: 100%;
+                        max-width: 300px;
+                        background: rgba(13, 17, 23, 0.98);
                         z-index: 1000;
-                        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                        box-shadow: 20px 0 50px rgba(0,0,0,0.5);
-                        border-right: none;
+                        transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                        box-shadow: 20px 0 60px rgba(0,0,0,0.8);
+                        border-right: 1px solid rgba(255,255,255,0.05);
                     }
                     .admin-sidebar.open {
                         left: 0;
                     }
                     .lg-hidden {
-                        display: block;
+                        display: flex;
                     }
                     .lg-visible {
                         display: none;
                     }
                     .admin-main {
-                        padding: 1.5rem;
+                        padding: 1.5rem 1rem;
                         height: auto;
                         overflow-y: visible;
                     }
@@ -299,13 +313,31 @@ const Admin = () => {
                         left: 0;
                         right: 0;
                         bottom: 0;
-                        background: rgba(0,0,0,0.6);
-                        backdrop-filter: blur(4px);
+                        background: rgba(0,0,0,0.7);
+                        backdrop-filter: blur(8px);
                         z-index: 999;
                         display: none;
+                        animation: fadeIn 0.3s ease;
+                    }
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
                     }
                     .sidebar-overlay.open {
                         display: block;
+                    }
+                    .request-item-header {
+                        flex-direction: column;
+                        align-items: flex-start !important;
+                        gap: 1rem !important;
+                    }
+                    .request-item-actions {
+                        width: 100%;
+                        justify-content: flex-start;
+                        gap: 0.5rem !important;
+                    }
+                    .request-item-actions > * {
+                        flex: 1;
                     }
                 }
             `}</style>
@@ -370,15 +402,15 @@ const Admin = () => {
                                 <ArrowLeft size={24} />
                             </Button>
                         )}
-                        <h1 className="text-gradient" style={{ fontSize: 'clamp(1.5rem, 5vw, 2.5rem)' }}>
+                        <h1 className="text-gradient" style={{ fontSize: 'clamp(1.4rem, 4vw, 2.2rem)', fontWeight: '800', letterSpacing: '-0.02em' }}>
                             {view === 'active' ? 'Solicitações de Receita' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : 'Lixeira'}
                         </h1>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <Button variant="outline" onClick={() => window.location.href = '/'} style={{ padding: '8px 15px', fontSize: '0.9rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <Button variant="outline" onClick={() => window.location.href = '/'} style={{ padding: '8px 16px', fontSize: '0.85rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             🌐 Ver Site
                         </Button>
-                        <span className="lg-visible" style={{ opacity: 0.7 }}>Admin</span>
+                        <span className="lg-visible" style={{ opacity: 0.4, fontSize: '0.85rem', fontWeight: '500' }}>ADMIN PANEL</span>
                     </div>
                 </header>
 
@@ -425,14 +457,17 @@ const Admin = () => {
                                     </p>
                                 ) : (
                                     requests.map(req => (
-                                        <li key={req.id} style={{ display: 'flex', flexDirection: 'column', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                                                <div>
-                                                    <strong style={{ fontSize: '1.1rem' }}>{req.nome_cliente}</strong>
-                                                    <div style={{ opacity: 0.7, fontSize: '0.9rem' }}>{new Date(req.created_at).toLocaleString()}</div>
+                                        <li key={req.id} style={{ display: 'flex', flexDirection: 'column', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '0.5rem 0' }}>
+                                            <div className="request-item-header" style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', alignItems: 'center', gap: '1rem' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <strong style={{ fontSize: '1.1rem', color: '#fff', display: 'block', marginBottom: '4px' }}>{req.nome_cliente}</strong>
+                                                    <div style={{ opacity: 0.5, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <FileText size={14} />
+                                                        {new Date(req.created_at).toLocaleString()}
+                                                    </div>
                                                 </div>
 
-                                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                                <div className="request-item-actions" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                                                     {view === 'active' ? (
                                                         // Active View Actions
                                                         <>
@@ -449,13 +484,14 @@ const Admin = () => {
                                                                 </Button>
                                                             )}
 
-                                                            <button
+                                                            <Button
+                                                                variant="glass"
                                                                 onClick={() => updateStatus(req.id, 'trash')}
                                                                 title="Mover para Lixeira"
-                                                                style={{ background: 'transparent', border: 'none', color: '#FF4D4D', cursor: 'pointer', padding: '8px' }}
+                                                                style={{ padding: '10px', color: '#FF4D4D', border: '1px solid rgba(255, 77, 77, 0.15)', background: 'rgba(255, 77, 77, 0.05)' }}
                                                             >
                                                                 <Trash2 size={20} />
-                                                            </button>
+                                                            </Button>
                                                         </>
                                                     ) : (
                                                         // Trash View Actions

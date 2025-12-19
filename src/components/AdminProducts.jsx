@@ -249,11 +249,11 @@ const AdminProducts = () => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Button variant="outline" onClick={handleSaveOrder}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <Button variant="outline" onClick={handleSaveOrder} style={{ flex: 1, minWidth: '160px', justifyContent: 'center' }}>
                     💾 Salvar Ordem
                 </Button>
-                <Button variant="primary" onClick={() => handleOpenModal()}>
+                <Button variant="primary" onClick={() => handleOpenModal()} style={{ flex: 1, minWidth: '160px', justifyContent: 'center' }}>
                     <Plus size={20} /> Novo Produto
                 </Button>
             </div>
@@ -320,18 +320,22 @@ const AdminProducts = () => {
             {isModalOpen && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.8)', zIndex: 9999,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+                    background: 'rgba(0,0,0,0.85)', zIndex: 9999,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: window.innerWidth <= 768 ? '0' : '1.5rem',
+                    backdropFilter: 'blur(10px)'
                 }}>
                     <div className="glass" style={{
                         width: '100%',
                         maxWidth: '500px',
                         padding: 'clamp(1rem, 5vw, 2rem)',
-                        borderRadius: '20px',
+                        borderRadius: 'clamp(0px, 5vw, 20px)',
                         position: 'relative',
-                        maxHeight: '90vh',
+                        maxHeight: '100vh',
+                        height: 'auto',
                         overflowY: 'auto',
-                        margin: 'auto'
+                        margin: 'auto',
+                        border: 'none'
                     }}>
                         <button
                             onClick={() => setIsModalOpen(false)}

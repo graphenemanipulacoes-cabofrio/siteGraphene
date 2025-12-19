@@ -50,15 +50,27 @@ const SortableProductCard = ({ product, handleOpenModal, handleDelete }) => {
                 </div>
 
                 {/* Actions - Stop propagation for buttons so they are clickable, not draggable */}
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }} onPointerDown={(e) => e.stopPropagation()}>
-                    <Button variant="outline" style={{ flex: 1, justifyContent: 'center' }} onClick={() => handleOpenModal(product)}>
-                        <Pencil size={16} /> Editar
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto' }} onPointerDown={(e) => e.stopPropagation()}>
+                    <Button variant="outline" style={{ flex: 1, justifyContent: 'center', padding: '10px' }} onClick={() => handleOpenModal(product)}>
+                        <Pencil size={18} /> Editar
                     </Button>
                     <button
                         onClick={() => handleDelete(product.id)}
-                        style={{ background: 'rgba(255, 77, 77, 0.1)', border: '1px solid rgba(255, 77, 77, 0.3)', color: '#FF4D4D', borderRadius: '50px', width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                        style={{
+                            background: 'rgba(255, 77, 77, 0.05)',
+                            border: '1px solid rgba(255, 77, 77, 0.2)',
+                            color: '#FF4D4D',
+                            borderRadius: '50px',
+                            width: '44px',
+                            height: '44px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                        }}
                     >
-                        <Trash2 size={18} />
+                        <Trash2 size={20} />
                     </button>
                 </div>
             </div>
