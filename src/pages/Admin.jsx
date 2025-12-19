@@ -257,6 +257,9 @@ const Admin = () => {
                     top: 0;
                     z-index: 100;
                 }
+                .sidebar-overlay {
+                    display: none;
+                }
 
                 @media (max-width: 1024px) {
                     .admin-container {
