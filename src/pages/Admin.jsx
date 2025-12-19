@@ -232,6 +232,10 @@ const Admin = () => {
                     height: 100vh;
                     position: sticky;
                     top: 0;
+                    border-right: 1px solid rgba(255, 255, 255, 0.05);
+                }
+                .lg-hidden {
+                    display: none;
                 }
                 .admin-main {
                     padding: 3rem;
@@ -260,13 +264,20 @@ const Admin = () => {
                         top: 0;
                         left: -100%;
                         width: 280px;
-                        background: rgba(10, 15, 20, 0.95);
+                        background: rgba(10, 15, 20, 0.98);
                         z-index: 1000;
-                        transition: left 0.3s ease;
+                        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+                        border-right: none;
                     }
                     .admin-sidebar.open {
                         left: 0;
+                    }
+                    .lg-hidden {
+                        display: block;
+                    }
+                    .lg-visible {
+                        display: none;
                     }
                     .admin-main {
                         padding: 1.5rem;
@@ -282,7 +293,8 @@ const Admin = () => {
                         left: 0;
                         right: 0;
                         bottom: 0;
-                        background: rgba(0,0,0,0.5);
+                        background: rgba(0,0,0,0.6);
+                        backdrop-filter: blur(4px);
                         z-index: 999;
                         display: none;
                     }
@@ -353,13 +365,14 @@ const Admin = () => {
                             </Button>
                         )}
                         <h1 className="text-gradient" style={{ fontSize: 'clamp(1.5rem, 5vw, 2.5rem)' }}>
-                            {view === 'active' ? 'Solicitações' : view === 'products' ? 'Produtos' : view === 'admins' ? 'Admins' : 'Lixeira'}
+                            {view === 'active' ? 'Solicitações de Receita' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : 'Lixeira'}
                         </h1>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <Button variant="outline" onClick={() => window.location.href = '/'} style={{ padding: '8px 15px', fontSize: '0.9rem' }}>
                             🌐 Ver Site
                         </Button>
+                        <span className="lg-visible" style={{ opacity: 0.7 }}>Admin</span>
                     </div>
                 </header>
 
@@ -539,7 +552,7 @@ const Admin = () => {
                     </div>
                 )}
             </main>
-        </div>
+        </div >
     );
 };
 
