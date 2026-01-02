@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield } from 'lucide-react';
+import { Package, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { Link, useNavigate } from 'react-router-dom';
@@ -16,6 +16,9 @@ const Admin = () => {
     const [admins, setAdmins] = useState([]);
     const [newAdminUser, setNewAdminUser] = useState('');
     const [newAdminPass, setNewAdminPass] = useState('');
+    const [partners, setPartners] = useState([]);
+    const [selectedPartner, setSelectedPartner] = useState(null);
+    const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -64,6 +67,9 @@ const Admin = () => {
         }
         if (view === 'admins') {
             fetchAdmins();
+        }
+        if (view === 'partners') {
+            fetchPartners();
         }
     }, [view]);
 
@@ -218,6 +224,58 @@ const Admin = () => {
         }
     };
 
+    const fetchPartners = async () => {
+        const { data, error } = await supabase
+            .from('parceiros')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching partners:', error);
+            toast.error('Erro ao carregar parceiros');
+        } else {
+            setPartners(data || []);
+        }
+    };
+
+    const updatePartner = async (partnerId, updatedData) => {
+        try {
+            const { error } = await supabase
+                .from('parceiros')
+                .update(updatedData)
+                .eq('id', partnerId);
+
+            if (error) throw error;
+
+            toast.success('Dados do parceiro atualizados!');
+            setPartners(prev => prev.map(p => p.id === partnerId ? { ...p, ...updatedData } : p));
+            setIsPartnerModalOpen(false);
+            setSelectedPartner(null);
+        } catch (error) {
+            console.error('Error updating partner:', error);
+            toast.error('Erro ao salvar alterações');
+        }
+    };
+
+    const approvePartner = async (id) => {
+        try {
+            const { error } = await supabase
+                .from('parceiros')
+                .update({ status: 'aprovado' })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            toast.success('Parceiro aprovado com sucesso!');
+            setPartners(prev => prev.map(p => p.id === id ? { ...p, status: 'aprovado' } : p));
+            setIsPartnerModalOpen(false);
+            setSelectedPartner(null);
+        } catch (error) {
+            console.error('Error approving partner:', error);
+            toast.error('Erro ao aprovar parceiro');
+        }
+    };
+
     const handleLogout = () => {
         localStorage.removeItem('admin_session');
         navigate('/login');
@@ -355,6 +413,10 @@ const Admin = () => {
                     <Users size={22} />
                     <span>Time</span>
                 </div>
+                <div className={`nav-item ${view === 'partners' ? 'active' : ''}`} onClick={() => setView('partners')}>
+                    <Users size={22} />
+                    <span>Parceiros</span>
+                </div>
                 <div className={`nav-item ${view === 'trash' ? 'active' : ''}`} onClick={() => setView('trash')}>
                     <Trash2 size={22} />
                     <span>Lixeira</span>
@@ -396,6 +458,13 @@ const Admin = () => {
                         <Shield size={18} /> Admins
                     </Button>
                     <Button
+                        variant={view === 'partners' ? 'primary' : 'glass'}
+                        style={{ justifyContent: 'flex-start', width: '100%' }}
+                        onClick={() => { setView('partners'); setExpandedId(null); }}
+                    >
+                        <Users size={18} /> Parceiros
+                    </Button>
+                    <Button
                         variant={view === 'trash' ? 'primary' : 'glass'}
                         style={{ justifyContent: 'flex-start', width: '100%' }}
                         onClick={() => { setView('trash'); setExpandedId(null); }}
@@ -430,6 +499,71 @@ const Admin = () => {
 
                 {view === 'products' ? (
                     <AdminProducts />
+                ) : view === 'partners' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button
+                                variant="outline"
+                                onClick={() => window.open('/parceiros/cadastro', '_blank')}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}
+                            >
+                                <ExternalLink size={16} /> Abrir Página de Cadastro
+                            </Button>
+                        </div>
+                        <Card title="Gestão de Parceiros (Afiliados)">
+                            <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                            <th style={{ padding: '1rem', opacity: 0.6 }}>Nome</th>
+                                            <th style={{ padding: '1rem', opacity: 0.6 }}>WhatsApp</th>
+                                            <th style={{ padding: '1rem', opacity: 0.6 }}>Status</th>
+                                            <th style={{ padding: '1rem', opacity: 0.6, textAlign: 'right' }}>Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {partners.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>Nenhum parceiro encontrado.</td>
+                                            </tr>
+                                        ) : (
+                                            partners.map(partner => (
+                                                <tr key={partner.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                    <td style={{ padding: '1rem' }}>{partner.nome_completo}</td>
+                                                    <td style={{ padding: '1rem' }}>{partner.whatsapp}</td>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        <span style={{
+                                                            padding: '4px 10px',
+                                                            borderRadius: '20px',
+                                                            fontSize: '0.8rem',
+                                                            fontWeight: '600',
+                                                            background: partner.status === 'aprovado' ? 'rgba(37, 211, 102, 0.2)' : 'rgba(255, 193, 7, 0.2)',
+                                                            color: partner.status === 'aprovado' ? '#25D366' : '#FFC107',
+                                                            border: `1px solid ${partner.status === 'aprovado' ? '#25D366' : '#FFC107'}`
+                                                        }}>
+                                                            {partner.status.toUpperCase()}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                        <Button
+                                                            variant="outline"
+                                                            style={{ padding: '5px 15px', fontSize: '0.85rem' }}
+                                                            onClick={() => {
+                                                                setSelectedPartner(partner);
+                                                                setIsPartnerModalOpen(true);
+                                                            }}
+                                                        >
+                                                            Visualizar
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </Card>
+                    </div>
                 ) : view === 'admins' ? (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
                         <Card title="Adicionar Novo Administrador">
@@ -607,9 +741,171 @@ const Admin = () => {
                         />
                     </div>
                 )}
+
+                {/* Partner Details Modal */}
+                {isPartnerModalOpen && selectedPartner && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
+                        zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+                    }}>
+                        <div className="glass-card" style={{ width: '100%', maxWidth: '600px', padding: '2.5rem', borderRadius: '25px', position: 'relative' }}>
+                            <Button
+                                variant="glass"
+                                onClick={() => {
+                                    setIsPartnerModalOpen(false);
+                                    setSelectedPartner(null);
+                                }}
+                                style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', padding: '8px' }}
+                            >
+                                <X size={20} />
+                            </Button>
+
+                            <h2 style={{ fontSize: '1.8rem', marginBottom: '2rem', fontWeight: '800' }}>Detalhes do Parceiro</h2>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2.5rem' }}>
+                                <div style={{ gridColumn: 'span 2' }}>
+                                    <label style={modalLabelStyle}>Nome Completo</label>
+                                    <input
+                                        type="text"
+                                        value={selectedPartner.nome_completo}
+                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, nome_completo: e.target.value })}
+                                        style={modalInputStyle}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={modalLabelStyle}>Documento</label>
+                                    <input
+                                        type="text"
+                                        value={selectedPartner.documento}
+                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, documento: e.target.value })}
+                                        style={modalInputStyle}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={modalLabelStyle}>E-mail</label>
+                                    <input
+                                        type="email"
+                                        value={selectedPartner.email}
+                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, email: e.target.value })}
+                                        style={modalInputStyle}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={modalLabelStyle}>WhatsApp</label>
+                                    <input
+                                        type="text"
+                                        value={selectedPartner.whatsapp}
+                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, whatsapp: e.target.value })}
+                                        style={modalInputStyle}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={modalLabelStyle}>Status</label>
+                                    <select
+                                        value={selectedPartner.status}
+                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, status: e.target.value })}
+                                        style={modalInputStyle}
+                                    >
+                                        <option value="pendente">PENDENTE</option>
+                                        <option value="aprovado">APROVADO</option>
+                                    </select>
+                                </div>
+                                <div style={{ gridColumn: 'span 2' }}>
+                                    <label style={modalLabelStyle}>Chave PIX</label>
+                                    <input
+                                        type="text"
+                                        value={selectedPartner.chave_pix}
+                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, chave_pix: e.target.value })}
+                                        style={modalInputStyle}
+                                    />
+                                </div>
+                                <div style={{ gridColumn: 'span 2' }}>
+                                    <label style={modalLabelStyle}>Banco</label>
+                                    <input
+                                        type="text"
+                                        value={selectedPartner.banco}
+                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, banco: e.target.value })}
+                                        style={modalInputStyle}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={modalLabelStyle}>Agência</label>
+                                    <input
+                                        type="text"
+                                        value={selectedPartner.agencia}
+                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, agencia: e.target.value })}
+                                        style={modalInputStyle}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={modalLabelStyle}>Conta</label>
+                                    <input
+                                        type="text"
+                                        value={selectedPartner.conta}
+                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, conta: e.target.value })}
+                                        style={modalInputStyle}
+                                    />
+                                </div>
+                                <div style={{ gridColumn: 'span 2' }}>
+                                    <label style={modalLabelStyle}>Data de Cadastro</label>
+                                    <p style={{ ...modalValueStyle, opacity: 0.5, padding: '10px 0' }}>{new Date(selectedPartner.created_at).toLocaleString()}</p>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <Button
+                                    variant="primary"
+                                    onClick={() => updatePartner(selectedPartner.id, selectedPartner)}
+                                    style={{ flex: 1, padding: '1rem', color: '#000' }}
+                                >
+                                    Salvar Alterações
+                                </Button>
+                                <Button
+                                    variant="glass"
+                                    onClick={() => {
+                                        setIsPartnerModalOpen(false);
+                                        setSelectedPartner(null);
+                                    }}
+                                    style={{ flex: 1, padding: '1rem' }}
+                                >
+                                    Cancelar
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </main>
         </div >
     );
+};
+
+const modalLabelStyle = {
+    display: 'block',
+    fontSize: '0.75rem',
+    opacity: 0.4,
+    marginBottom: '6px',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    fontWeight: '600'
+};
+
+const modalValueStyle = {
+    fontSize: '1rem',
+    fontWeight: '500',
+    color: '#fff'
+};
+
+const modalInputStyle = {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: '8px',
+    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'rgba(255,255,255,0.02)',
+    color: '#fff',
+    fontSize: '0.95rem',
+    outline: 'none',
+    transition: 'border-color 0.2s'
 };
 
 export default Admin;
