@@ -59,10 +59,8 @@ const ProductCarousel = () => {
 
     return (
         <section id="products" style={{ padding: '4rem 0' }}>
-            <div className="container">
-                <h2 className="text-gradient" style={{ textAlign: 'center', fontSize: '2.5rem', marginBottom: '3rem' }}>
-                    Nossas Fórmulas
-                </h2>
+            <div className="container" style={{ position: 'relative', zIndex: 1 }}>
+                <div className="pattern-sunburst" style={{ position: 'absolute', top: '0', right: '0', width: '200px', height: '200px', opacity: 0.03, zIndex: -1 }} />
 
                 {/* DESKTOP VIEW - SWIPER */}
                 <div className="desktop-carousel">
@@ -79,7 +77,7 @@ const ProductCarousel = () => {
                     >
                         {products.map((product) => (
                             <SwiperSlide key={product.id}>
-                                <Card title={product.name} gradient>
+                                <Card title={product.name}>
                                     <ProductContent product={product} />
                                 </Card>
                             </SwiperSlide>
@@ -100,7 +98,7 @@ const ProductCarousel = () => {
                     >
                         {products.map((product) => (
                             <div key={product.id} className="mobile-card-wrapper">
-                                <Card title={product.name} gradient>
+                                <Card title={product.name}>
                                     <ProductContent product={product} />
                                 </Card>
                             </div>
@@ -117,7 +115,7 @@ const ProductCarousel = () => {
                 /* Swiper Overrides */
                 .swiper-button-next, .swiper-button-prev { color: var(--primary-blue) !important; }
                 .swiper-pagination-bullet-active { background: var(--primary-blue) !important; }
-                .swiper-pagination-bullet { background: rgba(255,255,255,0.5); }
+                .swiper-pagination-bullet { background: rgba(15, 23, 42, 0.2); }
 
                 @media (max-width: 1024px) {
                     /* On Tablet/Mobile, switch to native scroll */

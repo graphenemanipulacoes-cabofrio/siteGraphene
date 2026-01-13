@@ -1,25 +1,29 @@
-:root {
-  /* Colors */
-  --primary-blue: #00E5FF;
-  /* Neon Cyan */
-  --primary-green: #a3e635;
-  /* Neon Green from Logo */
-  --primary-blue-glow: rgba(0, 229, 255, 0.5);
-  --primary-green-glow: rgba(163, 230, 53, 0.5);
-  --bg-dark: #050510;
-  --bg-card: rgba(255, 255, 255, 0.05);
-  --text-white: #FFFFFF;
-  --text-gray: #A0A0B0;
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
 
-  /* Gradientes */
-  --gradient-bg: radial-gradient(circle at 50% 0%, #102025 0%, #050510 100%);
-  /* Slightly greenish tint at top */
-  --gradient-text: linear-gradient(135deg, #a3e635 0%, #00E5FF 100%);
-  /* Green to Blue */
+:root {
+  /* Premium FitUp Palette */
+  --primary-blue: #0ea5e9;
+  /* Sky Blue */
+  --primary-green: #10b981;
+  /* Emerald */
+  --primary-blue-glow: rgba(14, 165, 233, 0.1);
+  --primary-green-glow: rgba(16, 185, 129, 0.1);
+  --bg-main: #F9FAFB;
+  --bg-card: #FFFFFF;
+  --text-main: #0F172A;
+  /* Slate 950 */
+  --text-muted: #64748b;
+  /* Slate 500 */
+  --border-radius: 24px;
+  --border-radius-lg: 32px;
 
   /* Spacing */
   --container-width: 1200px;
   --header-height: 80px;
+
+  /* Gradientes */
+  --gradient-text: linear-gradient(135deg, #0F172A 0%, #0ea5e9 100%);
+  --gradient-surface: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
 }
 
 * {
@@ -29,15 +33,12 @@
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: var(--bg-dark);
-  background-image: var(--gradient-bg);
-  color: var(--text-white);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   width: 100%;
-  position: relative;
-  /* Ensure body is a positioned container */
 }
 
 a {

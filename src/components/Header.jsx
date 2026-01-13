@@ -7,26 +7,31 @@ const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     return (
-        <header className="glass" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, height: 'var(--header-height)', pointerEvents: 'none' }}>
-            <div className="container header-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
-                <Link to="/" style={{ display: 'flex', alignItems: 'center', zIndex: 1001, pointerEvents: 'auto' }}>
+        <header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, height: 'var(--header-height)', pointerEvents: 'none' }}>
+            <div className="container header-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%', background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(10px)', borderRadius: '0 0 40px 40px', padding: '0 2rem', pointerEvents: 'auto', border: '1px solid rgba(0,0,0,0.05)', borderTop: 'none' }}>
+                <Link to="/" style={{ display: 'flex', alignItems: 'center', zIndex: 1001 }}>
                     <img src="/assets/logo.png" alt="Graphène" style={{
-                        height: '45px',
-                        width: '45px',
+                        height: '40px',
+                        width: '40px',
                         objectFit: 'cover',
                         borderRadius: '50%',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        boxShadow: '0 0 15px rgba(0, 229, 255, 0.2)'
                     }} />
                 </Link>
 
                 {/* Desktop Nav */}
-                <nav style={{ display: 'flex', gap: '2rem', alignItems: 'center', pointerEvents: 'auto' }} className="desktop-only">
-                    <a href="#solutions" style={{ opacity: 0.8 }} className="hover:text-primary-blue transition-colors">Soluções</a>
-                    <a href="#products" style={{ opacity: 0.8 }} className="hover:text-primary-blue transition-colors">Fórmulas</a>
-                    <a href="#how-it-works" style={{ opacity: 0.8 }} className="hover:text-primary-blue transition-colors">Como funciona</a>
+                <nav style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }} className="desktop-only">
+                    {['Soluções', 'Fórmulas', 'Como funciona'].map((item) => (
+                        <a
+                            key={item}
+                            href={`#${item.toLowerCase().replace(' ', '-')}`}
+                            style={{ color: 'var(--text-main)', fontWeight: '600', fontSize: '0.95rem', padding: '8px 16px', borderRadius: '30px', transition: 'background 0.3s' }}
+                            className="nav-link"
+                        >
+                            {item}
+                        </a>
+                    ))}
 
-                    <Button variant="primary" onClick={() => window.open('https://wa.me/5522999361256?text=Ol%C3%A1%2C%20vi%20pelo%20site%20e%20gostaria%20de%20falar%20com%20um%20especialista.', '_blank')}>Falar com Especialista</Button>
+                    <Button variant="primary" style={{ borderRadius: '30px', padding: '10px 24px' }} onClick={() => window.open('https://wa.me/5522999361256?text=Ol%C3%A1%2C%20vi%20pelo%20site%20e%20gostaria%20de%20falar%20com%20um%20especialista.', '_blank')}>CANTATO</Button>
                 </nav>
 
                 {/* Mobile Menu Toggle */}
@@ -39,7 +44,7 @@ const Header = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         borderRadius: '12px',
-                        color: 'white',
+                        color: 'var(--text-main)',
                         zIndex: 1001,
                         pointerEvents: 'auto'
                     }}
@@ -55,9 +60,7 @@ const Header = () => {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                background: 'rgba(5, 5, 16, 0.98)',
-                backdropFilter: 'blur(20px)',
-                background: 'rgba(5, 5, 16, 0.98)',
+                background: 'rgba(255, 255, 255, 0.98)',
                 backdropFilter: 'blur(20px)',
                 display: isMenuOpen ? 'flex' : 'none',
                 flexDirection: 'column',
@@ -67,7 +70,6 @@ const Header = () => {
                 zIndex: 1000,
                 opacity: isMenuOpen ? 1 : 0,
                 transition: 'all 0.4s ease-in-out',
-                /* Removed visibility/pointerEvents relying on display:none now */
                 pointerEvents: isMenuOpen ? 'all' : 'none',
             }}>
                 <nav style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2.5rem' }}>
@@ -95,38 +97,27 @@ const Header = () => {
                     transform: 'translate(-50%, -50%)',
                     width: '100%',
                     height: '100%',
-                    background: 'radial-gradient(circle at center, rgba(0, 229, 255, 0.1) 0%, transparent 70%)',
+                    background: 'radial-gradient(circle at center, var(--primary-blue-glow) 0%, transparent 70%)',
                     pointerEvents: 'none',
                     zIndex: -1
                 }} />
             </div>
 
             <style>{`
+                .nav-link:hover { background: rgba(14, 165, 233, 0.08); color: var(--primary-blue) !important; }
+                
+                .mobile-only { display: none !important; }
+                .desktop-only { display: flex !important; }
+
                 @media (max-width: 768px) {
                     .desktop-only { display: none !important; }
-                    /* Force absolute positioning for guaranteed corners */
+                    .mobile-only { display: flex !important; }
                     .header-container { 
-                        padding: 0 16px !important; 
-                        justify-content: center !important; /* Fallback */
-                        position: relative;
+                        border-radius: 0 0 25px 25px !important;
+                        padding: 0 1rem !important;
+                        background: rgba(255, 255, 255, 0.9) !important;
+                        backdrop-filter: blur(20px) !important;
                     }
-                    /* Target the Logo Link (first child) */
-                    .header-container > a:first-child {
-                        position: absolute !important;
-                        left: 16px !important;
-                        top: 5px !important;
-                        transform: none !important;
-                    }
-                    /* Target the Menu Button */
-                    .header-container > button {
-                        position: absolute !important;
-                        right: 16px !important;
-                        top: 5px !important;
-                        transform: none !important;
-                    }
-                }
-                @media (min-width: 769px) {
-                    .mobile-only { display: none !important; }
                 }
             `}</style>
         </header>

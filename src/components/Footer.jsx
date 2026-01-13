@@ -1,51 +1,73 @@
-import { Phone, MapPin, Instagram, Mail } from 'lucide-react';
+import Button from './Button';
 
 const Footer = () => {
     return (
-        <footer className="site-footer" style={{ background: 'black', padding: '4rem 0', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-            <div className="container footer-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '3rem' }}>
+        <footer className="site-footer" style={{ background: 'var(--bg-main)', padding: '100px 0 40px', borderTop: '1px solid rgba(15, 23, 42, 0.05)' }}>
+            <div className="container">
+                <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '4rem', marginBottom: '100px' }}>
 
-                {/* Brand */}
-                <div>
-                    <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '1rem' }} className="notranslate" translate="no">GRAPHÈNE</h2>
-                    <p style={{ color: 'var(--text-gray)' }}>
-                        Farmácia de manipulação personalizada. Sua saúde tratada de forma única.
-                    </p>
+                    {/* Contact */}
+                    <div>
+                        <h3 style={{ fontSize: '0.9rem', letterSpacing: '2px', fontWeight: '800', marginBottom: '2rem', color: 'var(--primary-blue)' }}>CONTATO</h3>
+                        <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-muted)', fontWeight: '600' }}>
+                            <li>(22) 99936-1256</li>
+                            <li>contato@graphene.com</li>
+                            <li>R. Itajurú, 300 – Cabo Frio, RJ</li>
+                        </ul>
+                    </div>
+
+                    {/* Navigation */}
+                    <div>
+                        <h3 style={{ fontSize: '0.9rem', letterSpacing: '2px', fontWeight: '800', marginBottom: '2rem', color: 'var(--primary-blue)' }}>MENU</h3>
+                        <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-muted)', fontWeight: '600' }}>
+                            <li><a href="#" style={{ color: 'inherit' }}>Início</a></li>
+                            <li><a href="#products" style={{ color: 'inherit' }}>Produtos</a></li>
+                            <li><a href="#solutions" style={{ color: 'inherit' }}>Soluções</a></li>
+                            <li><a href="/login" style={{ color: 'inherit' }}>Login</a></li>
+                        </ul>
+                    </div>
+
+                    {/* Social/Legal */}
+                    <div>
+                        <h3 style={{ fontSize: '0.9rem', letterSpacing: '2px', fontWeight: '800', marginBottom: '2rem', color: 'var(--primary-blue)' }}>SOCIAL</h3>
+                        <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-muted)', fontWeight: '600' }}>
+                            <li><a href="#" style={{ color: 'inherit' }}>Instagram</a></li>
+                            <li><a href="#" style={{ color: 'inherit' }}>Facebook</a></li>
+                            <li><a href="#" style={{ color: 'inherit' }}>LinkedIn</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <Button variant="outline" style={{ borderRadius: '12px' }}>TRABALHE CONOSCO</Button>
+                    </div>
                 </div>
 
-                {/* Contact */}
-                <div>
-                    <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', color: 'white' }}>Fale Conosco</h3>
-                    <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-gray)' }}>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <Phone size={20} color="var(--primary-blue)" />
-                            (22) 99936-1256
-                        </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <MapPin size={20} color="var(--primary-blue)" />
-                            R. Itajurú, 300 – Cabo Frio, RJ
-                        </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <Mail size={20} color="var(--primary-blue)" />
-                            contato@graphene.com
-                        </li>
-                    </ul>
+                {/* Massive Typography Footer */}
+                <div style={{ textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+                    <h2
+                        className="notranslate"
+                        translate="no"
+                        style={{
+                            fontSize: 'clamp(5rem, 18vw, 22rem)',
+                            fontWeight: '900',
+                            letterSpacing: '-1vw',
+                            lineHeight: '0.8',
+                            color: 'var(--text-main)',
+                            opacity: 0.05,
+                            marginBottom: '-2vw',
+                            userSelect: 'none'
+                        }}
+                    >
+                        GRAPHÈNE
+                    </h2>
+                    <div className="footer-copyright-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid rgba(15, 23, 42, 0.05)', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600' }}>
+                        <div>&copy; 2024 GRAPHÈNE. TODOS OS DIREITOS RESERVADOS.</div>
+                        <div style={{ display: 'flex', gap: '2rem' }}>
+                            <span>PRIVACIDADE</span>
+                            <span>TERMOS</span>
+                        </div>
+                    </div>
                 </div>
-
-                {/* Links */}
-                <div>
-                    <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', color: 'white' }}>Navegação</h3>
-                    <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--text-gray)' }}>
-                        <li><a href="#" className="hover-text-blue">Início</a></li>
-                        <li><a href="#products" className="hover-text-blue">Produtos</a></li>
-                        <li><a href="#about" className="hover-text-blue">Sobre</a></li>
-                        <li><a href="/login" className="hover-text-blue">Área do Cliente</a></li>
-                    </ul>
-                </div>
-
-            </div>
-            <div className="container footer-copyright" style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center', color: '#555' }}>
-                &copy; 2024 <span className="notranslate" translate="no">Graphène</span>. Todos os direitos reservados.
             </div>
         </footer>
     );
@@ -55,24 +77,23 @@ const Footer = () => {
 const styles = `
     @media (max-width: 768px) {
         .site-footer {
-            padding: 1rem 0 !important;
-            padding-bottom: 2rem !important; /* Some bottom padding for safe area */
-        }
-        .footer-copyright {
-            margin-top: 1rem !important;
-            padding-top: 1rem !important;
+            padding: 60px 0 40px !important;
         }
         .footer-grid {
+            grid-template-columns: 1fr !important;
+            gap: 3rem !important;
             text-align: center;
-            gap: 2rem !important;
+            margin-bottom: 60px !important;
         }
         .footer-grid > div {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-        .footer-grid ul {
-            align-items: center;
+        .footer-copyright-row {
+            flex-direction: column !important;
+            gap: 1.5rem !important;
+            text-align: center !important;
         }
     }
 `;

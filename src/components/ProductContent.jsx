@@ -18,14 +18,15 @@ const ProductContent = ({ product }) => (
     <>
         <div style={{
             height: '250px',
-            background: 'rgba(255, 255, 255, 0.03)',
+            background: '#f1f5f9', /* slate-100 */
             borderRadius: '12px',
             marginBottom: '1rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             overflow: 'hidden',
-            position: 'relative'
+            position: 'relative',
+            border: '1px solid rgba(15, 23, 42, 0.05)'
         }}>
             {product.image_url ? (
                 <img

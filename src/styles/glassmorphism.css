@@ -1,20 +1,22 @@
-/* Glassmorphism Utilities */
+/* Glassmorphism Utilities - Light Mode Refinement */
 
 .glass {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    /* Stronger border */
+    /* Subtle dark border */
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+    /* More defined shadow */
 }
 
 .glass-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    padding: 2rem;
+    background: var(--bg-card);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+    border-radius: var(--border-radius);
+    padding: 2.5rem;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.05);
 }
 
 @media (max-width: 768px) {
@@ -23,12 +25,20 @@
     }
 }
 
+/* Decorative Patterns */
+.pattern-sunburst {
+    background-image: repeating-conic-gradient(from 0deg,
+            transparent 0deg 10deg,
+            rgba(15, 23, 42, 0.03) 10deg 20deg);
+    border-radius: 50%;
+}
+
 .glass-blue {
-    background: linear-gradient(135deg, rgba(0, 229, 255, 0.1) 0%, rgba(0, 229, 255, 0.02) 100%);
-    border: 1px solid rgba(0, 229, 255, 0.2);
-    box-shadow: 0 0 15px rgba(0, 229, 255, 0.1);
+    background: linear-gradient(135deg, rgba(2, 132, 199, 0.05) 0%, rgba(2, 132, 199, 0.02) 100%);
+    border: 1px solid rgba(2, 132, 199, 0.1);
 }
 
 .glow-text {
-    text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+    /* Subtle shadow for light theme instead of neon glow */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }

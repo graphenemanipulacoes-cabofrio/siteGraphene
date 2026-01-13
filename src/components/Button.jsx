@@ -1,34 +1,42 @@
 const Button = ({ children, variant = 'primary', onClick, className = '', style = {}, ...props }) => {
     const baseStyle = {
-        padding: '12px 24px',
+        padding: '14px 28px',
         borderRadius: '50px',
-        fontWeight: '600',
-        fontSize: '1rem',
-        transition: 'all 0.3s ease',
+        fontWeight: '700',
+        fontSize: '0.95rem',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'inline-flex',
         alignItems: 'center',
+        justifyContent: 'center',
         gap: '8px',
         cursor: 'pointer',
         border: 'none',
         outline: 'none',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px'
     };
 
     const variants = {
         primary: {
+            background: 'var(--text-main)', /* Solid Dark Button */
+            color: '#fff',
+            boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.2)',
+        },
+        accent: {
             background: 'var(--primary-blue)',
-            color: '#000',
-            boxShadow: '0 0 15px var(--primary-blue-glow)',
+            color: '#fff',
+            boxShadow: '0 10px 25px -5px rgba(14, 165, 233, 0.3)',
         },
         outline: {
             background: 'transparent',
-            border: '1px solid var(--primary-blue)',
-            color: 'var(--primary-blue)',
+            border: '2px solid var(--text-main)',
+            color: 'var(--text-main)',
         },
         glass: {
-            background: 'rgba(255, 255, 255, 0.1)',
+            background: 'rgba(255, 255, 255, 0.8)',
             backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            color: '#fff',
+            border: '1px solid rgba(15, 23, 42, 0.08)',
+            color: 'var(--text-main)',
         }
     };
 
