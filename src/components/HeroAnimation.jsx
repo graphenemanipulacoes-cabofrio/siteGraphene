@@ -94,7 +94,7 @@ const HeroAnimation = () => {
                 /* --- BOTTLE EVOLUTION --- */
                 .glass-bottle-3d {
                     position: relative;
-                    width: 150px;
+                    width: 170px;
                     height: 240px;
                     transform-style: preserve-3d;
                     z-index: 10;
@@ -182,12 +182,13 @@ const HeroAnimation = () => {
                 .brand-name {
                     font-family: 'Poppins', sans-serif;
                     font-weight: 900;
-                    font-size: 1.5rem;
+                    font-size: 1.35rem;
                     color: white;
-                    letter-spacing: 2px;
+                    letter-spacing: 1px;
                     text-shadow: 0 2px 4px rgba(0,0,0,0.2);
                     font-style: italic;
                     z-index: 2;
+                    white-space: nowrap;
                 }
 
                 /* GLASS LIGHT EFFECTS */

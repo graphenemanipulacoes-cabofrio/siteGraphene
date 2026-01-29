@@ -8,7 +8,12 @@ const Card = ({ children, className = '', title, gradient = false }) => {
                     color: 'var(--text-main)',
                     fontWeight: '800',
                     textAlign: 'center',
-                    letterSpacing: '-0.5px'
+                    letterSpacing: '-0.5px',
+                    minHeight: '3.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    lineHeight: '1.2'
                 }}>
                     {title}
                 </h3>

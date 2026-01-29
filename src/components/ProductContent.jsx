@@ -15,10 +15,15 @@ const openWhatsApp = (product) => {
 };
 
 const ProductContent = ({ product }) => (
-    <>
+    <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%'
+    }}>
+        {/* Imagem do Produto */}
         <div style={{
-            height: '250px',
-            background: '#f1f5f9', /* slate-100 */
+            height: '200px',
+            background: '#f1f5f9',
             borderRadius: '12px',
             marginBottom: '1rem',
             display: 'flex',
@@ -53,24 +58,51 @@ const ProductContent = ({ product }) => (
                 💊
             </div>
         </div>
-        <div style={{ marginBottom: '1.5rem' }}>
-            <p style={{ color: 'var(--text-gray)', fontSize: '0.9rem', minHeight: '3em' }}>
+
+        {/* Descrição - altura fixa para alinhar todos os cards */}
+        <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            marginBottom: '1rem'
+        }}>
+            <p style={{
+                color: 'var(--text-gray)',
+                fontSize: '0.9rem',
+                height: '5.5em',
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 4,
+                WebkitBoxOrient: 'vertical',
+                textAlign: 'center',
+                margin: 0,
+                lineHeight: '1.4'
+            }}>
                 {product.description}
             </p>
             {Number(product.price) > 0 && (
-                <p className="text-gradient" style={{ fontWeight: 'bold', fontSize: '1.2rem', marginTop: '0.5rem', textAlign: 'center' }}>
+                <p className="text-gradient" style={{
+                    fontWeight: 'bold',
+                    fontSize: '1.2rem',
+                    marginTop: '0.75rem',
+                    textAlign: 'center'
+                }}>
                     R$ {parseFloat(product.price).toFixed(2).replace('.', ',')}
                 </p>
             )}
         </div>
-        <Button
-            variant="outline"
-            style={{ width: '100%', justifyContent: 'center' }}
-            onClick={() => openWhatsApp(product)}
-        >
-            Quero este!
-        </Button>
-    </>
+
+        {/* Botão sempre na parte inferior */}
+        <div style={{ marginTop: 'auto' }}>
+            <Button
+                variant="outline"
+                style={{ width: '100%', justifyContent: 'center' }}
+                onClick={() => openWhatsApp(product)}
+            >
+                Quero este!
+            </Button>
+        </div>
+    </div>
 );
 
 export default ProductContent;

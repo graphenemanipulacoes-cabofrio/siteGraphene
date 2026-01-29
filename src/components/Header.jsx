@@ -31,7 +31,7 @@ const Header = () => {
                         </a>
                     ))}
 
-                    <Button variant="primary" style={{ borderRadius: '30px', padding: '10px 24px' }} onClick={() => window.open('https://wa.me/5522999361256?text=Ol%C3%A1%2C%20vi%20pelo%20site%20e%20gostaria%20de%20falar%20com%20um%20especialista.', '_blank')}>CANTATO</Button>
+                    <Button variant="primary" style={{ borderRadius: '30px', padding: '10px 24px' }} onClick={() => window.open('https://wa.me/5522999361256?text=Ol%C3%A1%2C%20vi%20pelo%20site%20e%20gostaria%20de%20falar%20com%20um%20especialista.', '_blank')}>CONTATO</Button>
                 </nav>
 
                 {/* Mobile Menu Toggle */}

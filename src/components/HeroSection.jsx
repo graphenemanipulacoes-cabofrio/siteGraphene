@@ -88,20 +88,20 @@ const HeroSection = () => {
                     </div>
 
                     {/* Floating Stats Card */}
-                    <div className="glass" style={{ position: 'absolute', top: '15%', right: '-10%', padding: '1.5rem', borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid rgba(255,255,255,0.8)' }}>
-                        <div style={{ width: '45px', height: '45px', background: 'var(--primary-blue)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                    <div className="floating-card-precision glass" style={{ position: 'absolute', top: '15%', right: '-10%', padding: '1.5rem', borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid rgba(255,255,255,0.8)', minWidth: '250px' }}>
+                        <div style={{ width: '45px', height: '45px', minWidth: '45px', background: 'var(--primary-blue)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M2 12h20" /></svg>
                         </div>
                         <div>
-                            <div style={{ fontWeight: '800', fontSize: '1.1rem' }}>Alta Precisão</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Controle de qualidade rigoroso</div>
+                            <div style={{ fontWeight: '800', fontSize: '1.1rem', whiteSpace: 'nowrap' }}>Alta Precisão</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Controle de qualidade rigoroso</div>
                         </div>
                     </div>
 
-                    <div className="glass" style={{ position: 'absolute', bottom: '15%', left: '-15%', padding: '1.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.8)' }}>
+                    <div className="floating-card-tech glass" style={{ position: 'absolute', bottom: '15%', left: '-15%', padding: '1.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.8)', minWidth: '200px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                             <span style={{ fontSize: '1.2rem' }}>🔬</span>
-                            <span style={{ fontWeight: '800' }}>Tecnologia de ponta</span>
+                            <span style={{ fontWeight: '800', whiteSpace: 'nowrap' }}>Tecnologia de ponta</span>
                         </div>
                         <div style={{ width: '150px', height: '6px', background: '#eee', borderRadius: '10px', overflow: 'hidden' }}>
                             <div style={{ width: '85%', height: '100%', background: 'var(--primary-blue)' }} />
