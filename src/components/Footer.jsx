@@ -37,8 +37,23 @@ const Footer = () => {
                         </ul>
                     </div>
 
-                    <div>
-                        <Button variant="outline" style={{ borderRadius: '12px' }}>TRABALHE CONOSCO</Button>
+                    {/* Location */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', maxWidth: '280px' }}>
+                        <h3 style={{ fontSize: '0.9rem', letterSpacing: '2px', fontWeight: '800', marginBottom: '0.5rem', color: 'var(--primary-blue)' }}>NOSSA LOJA</h3>
+                        <div style={{ width: '100%', height: '140px', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(15,23,42,0.1)' }}>
+                            <iframe
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3674.8711311059535!2d-42.02755252467!3d-22.881232979272373!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9705599d81e2bf%3A0x868e0efdec8ab0ab!2sGraph%C3%A8ne%20Farm%C3%A1cia%20de%20Manipula%C3%A7%C3%A3o!5e0!3m2!1spt-BR!2sbr!4v1709403328514!5m2!1spt-BR!2sbr"
+                                width="100%"
+                                height="100%"
+                                style={{ border: 0 }}
+                                allowFullScreen=""
+                                loading="lazy"
+                                referrerPolicy="no-referrer-when-downgrade"
+                            ></iframe>
+                        </div>
+                        <a href="https://www.google.com/maps/dir//Graph%C3%A8ne+Farm%C3%A1cia+de+Manipula%C3%A7%C3%A3o,+R.+Itajur%C3%BA,+300+-+LOJAS+5+E+6+-+Centro,+Cabo+Frio+-+RJ,+28905-060/@-22.8812782,-42.0249886,139a,35y,5.45t/data=!3m1!1e3!4m9!4m8!1m0!1m5!1m1!1s0x9705599d81e2bf:0x868e0efdec8ab0ab!2m2!1d-42.0249374!2d-22.881238!3e9?entry=ttu&g_ep=EgoyMDI2MDIyNS4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', width: '100%' }}>
+                            <Button variant="outline" style={{ width: '100%', borderRadius: '12px', padding: '10px' }}>COMO CHEGAR</Button>
+                        </a>
                     </div>
                 </div>
 

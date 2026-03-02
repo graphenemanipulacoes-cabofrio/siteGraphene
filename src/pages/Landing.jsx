@@ -152,6 +152,13 @@ const Landing = () => {
 
                 <section id="how-it-works" className="landing-section" style={{ padding: '100px 0', position: 'relative', background: '#f8fafc' }}>
                     <div className="container">
+                        <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+                            <div style={{ color: 'var(--primary-blue)', fontWeight: '800', fontSize: '0.9rem', letterSpacing: '2px', marginBottom: '1rem' }}>PASSO A PASSO</div>
+                            <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: '800', letterSpacing: '-1.5px', marginBottom: '1rem' }}>Como funciona a <span style={{ color: 'var(--primary-blue)' }}>Manipulação</span></h2>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
+                                Um processo simples, seguro e transparente para garantir que sua fórmula chegue até você com a máxima qualidade.
+                            </p>
+                        </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
                             {[
                                 { id: '01', title: 'Envio da Receita', text: 'Mande sua prescrição via site ou WhatsApp.' },

@@ -20,14 +20,18 @@ const Header = () => {
 
                 {/* Desktop Nav */}
                 <nav style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }} className="desktop-only">
-                    {['Soluções', 'Fórmulas', 'Como funciona'].map((item) => (
+                    {[
+                        { label: 'Soluções', href: '#solutions' },
+                        { label: 'Fórmulas', href: '#products' },
+                        { label: 'Como funciona', href: '#how-it-works' }
+                    ].map((item) => (
                         <a
-                            key={item}
-                            href={`#${item.toLowerCase().replace(' ', '-')}`}
+                            key={item.label}
+                            href={item.href}
                             style={{ color: 'var(--text-main)', fontWeight: '600', fontSize: '0.95rem', padding: '8px 16px', borderRadius: '30px', transition: 'background 0.3s' }}
                             className="nav-link"
                         >
-                            {item}
+                            {item.label}
                         </a>
                     ))}
 
