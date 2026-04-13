@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import { supabase } from '../lib/supabaseClient';
 import HeroSection from '../components/HeroSection';
@@ -7,12 +7,25 @@ import Footer from '../components/Footer';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import { Battery, Shield, Brain, Moon, FileText, CheckCircle, Plus, X } from 'lucide-react';
+import { config } from '../config';
+import { toast } from 'sonner';
 
 const Landing = () => {
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState({ type: '', message: '' });
     const [files, setFiles] = useState([]);
     const [phone, setPhone] = useState('');
+
+    // Cleanup object URLs on unmount to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            files.forEach(file => {
+                if (file.url) {
+                    URL.revokeObjectURL(file.url);
+                }
+            });
+        };
+    }, [files]);
 
     const handlePhoneChange = (e) => {
         let value = e.target.value.replace(/\D/g, '');
@@ -24,11 +37,35 @@ const Landing = () => {
 
     const handleFileChange = (e) => {
         const newFiles = Array.from(e.target.files);
-        if (files.length + newFiles.length > 15) {
-            setFeedback({ type: 'error', message: 'Você pode enviar no máximo 15 arquivos.' });
+        
+        // Check file count limit
+        if (files.length + newFiles.length > config.MAX_FILES) {
+            setFeedback({ type: 'error', message: `Você pode enviar no máximo ${config.MAX_FILES} arquivos.` });
+            toast.error(`Limite de ${config.MAX_FILES} arquivos excedido`);
             return;
         }
-        const newFileObjects = newFiles.map(file => ({
+
+        // Validate each file
+        const validFiles = [];
+        for (const file of newFiles) {
+            // Check file type
+            if (!config.ALLOWED_FILE_TYPES.includes(file.type)) {
+                toast.error(`Arquivo "${file.name}" não é válido. Apenas JPG, PNG e PDF são aceitos.`);
+                continue;
+            }
+
+            // Check file size
+            if (file.size > config.MAX_FILE_SIZE) {
+                toast.error(`Arquivo "${file.name}" excede o tamanho máximo de 5MB.`);
+                continue;
+            }
+
+            validFiles.push(file);
+        }
+
+        if (validFiles.length === 0) return;
+
+        const newFileObjects = validFiles.map(file => ({
             file,
             id: Math.random().toString(36).substr(2, 9),
             url: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
@@ -40,7 +77,13 @@ const Landing = () => {
     };
 
     const removeFile = (id) => {
-        setFiles(prev => prev.filter(f => f.id !== id));
+        setFiles(prev => {
+            const fileToRemove = prev.find(f => f.id === id);
+            if (fileToRemove?.url) {
+                URL.revokeObjectURL(fileToRemove.url);
+            }
+            return prev.filter(f => f.id !== id);
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -194,8 +237,8 @@ const Landing = () => {
 
                                 <div style={{ border: '2px dashed rgba(255,255,255,0.2)', padding: '3rem', borderRadius: '12px', textAlign: 'center', cursor: 'pointer', position: 'relative' }}>
                                     <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>📄</div>
-                                    <div style={{ fontWeight: '700' }}>ANEXAR RECEITA ({files.length}/15)</div>
-                                    <input type="file" onChange={handleFileChange} multiple style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
+                                    <div style={{ fontWeight: '700' }}>ANEXAR RECEITA ({files.length}/{config.MAX_FILES})</div>
+                                    <input type="file" onChange={handleFileChange} multiple accept=".jpg,.jpeg,.png,.pdf" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
                                 </div>
 
                                 {files.length > 0 && (

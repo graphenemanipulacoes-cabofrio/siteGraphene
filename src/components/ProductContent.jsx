@@ -1,16 +1,10 @@
 import Button from './Button';
+import { config } from '../config';
 
 
 const openWhatsApp = (product) => {
-    const phone = '5522999361256';
-    let message = `Olá! Gostaria de saber mais sobre o produto: *${product.name}*`;
-
-    if (Number(product.price) > 0) {
-        const formattedPrice = parseFloat(product.price).toFixed(2).replace('.', ',');
-        message += ` (R$ ${formattedPrice})`;
-    }
-
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    const message = config.WHATSAPP_MESSAGES.product(product.name, product.price);
+    const url = `https://wa.me/${config.WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
 };
 

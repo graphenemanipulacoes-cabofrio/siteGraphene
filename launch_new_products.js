@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
 
+/* global process */
+
 // 1. Manually parse .env to get credentials
 const envPath = path.resolve('.env');
 if (!fs.existsSync(envPath)) {

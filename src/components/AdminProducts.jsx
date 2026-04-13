@@ -88,30 +88,14 @@ const AdminProducts = () => {
         }
     };
 
-    const updateOrder = async (upadtedProducts) => {
+    const updateOrder = async (updatedProducts) => {
         try {
-            const updates = upadtedProducts.map((product, index) => ({
-                id: product.id,
-                name: product.name, // RLS might require other fields or ignore them
-                display_order: index // New column
-            }));
-
-            // Supabase upsert is efficient for bulk updates if we map correctly
-            // But usually basic JS loop is safer for small lists to verify
-            // Actually, let's try upserting just ID and order if permitted, but RLS usually checks everything?
-            // Safer to just loop update for now to be explicit, or custom RPC.
-            // For < 50 items, a loop of promises is "okay". 
-            // Better: `upsert` with all fields? No, too heavy.
-            // Best: `upsert` only changed fields if table constraint allows partial.
-
-            // Let's iterate. It's robust.
-            // Actually, supabase JS client allows upserting `[{id: 1, display_order: 0}, ...]` if we are careful.
-
-            for (let i = 0; i < upadtedProducts.length; i++) {
+            // Update each product's display_order individually
+            for (let i = 0; i < updatedProducts.length; i++) {
                 await supabase
                     .from('produtos')
                     .update({ display_order: i })
-                    .eq('id', upadtedProducts[i].id);
+                    .eq('id', updatedProducts[i].id);
             }
 
             // Note: If 'display_order' doesn't exist, this will fail. We need to add the column.
@@ -148,9 +132,22 @@ const AdminProducts = () => {
         const file = e.target.files[0];
         if (file) {
             setImageFile(file);
+            // Clean up previous preview URL
+            if (imagePreview && imagePreview.startsWith('blob:')) {
+                URL.revokeObjectURL(imagePreview);
+            }
             setImagePreview(URL.createObjectURL(file));
         }
     };
+
+    // Cleanup preview URL on unmount
+    useEffect(() => {
+        return () => {
+            if (imagePreview && imagePreview.startsWith('blob:')) {
+                URL.revokeObjectURL(imagePreview);
+            }
+        };
+    }, [imagePreview]);
 
     const handleSave = async (e) => {
         e.preventDefault();
@@ -333,7 +330,6 @@ const AdminProducts = () => {
                         position: 'relative',
                         maxHeight: '100vh',
                         minHeight: window.innerWidth <= 768 ? '100vh' : 'auto',
-                        width: '100%',
                         height: 'auto',
                         overflowY: 'auto',
                         margin: '0',

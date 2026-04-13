@@ -1,5 +1,6 @@
 import Button from './Button';
 import HeroAnimation from './HeroAnimation';
+import { getWhatsAppUrl } from '../config';
 
 const HeroSection = () => {
     return (
@@ -44,7 +45,7 @@ const HeroSection = () => {
                         <Button
                             variant="primary"
                             style={{ padding: '16px 40px', fontSize: '1.1rem', borderRadius: '40px' }}
-                            onClick={() => window.open('https://wa.me/5522999361256?text=Ol%C3%A1%2C%20vi%20pelo%20site%20e%20gostaria%20de%20falar%20com%20um%20especialista.', '_blank')}
+                            onClick={() => window.open(getWhatsAppUrl(), '_blank')}
                         >
                             ENVIAR RECEITA
                         </Button>

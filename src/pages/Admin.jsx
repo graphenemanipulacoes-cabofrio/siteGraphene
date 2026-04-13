@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Package, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { Toaster, toast } from 'sonner';
 import AdminProducts from '../components/AdminProducts';
+import { getSession, destroySession } from '../utils/security';
 
 const Admin = () => {
     const [requests, setRequests] = useState([]);
@@ -26,12 +27,12 @@ const Admin = () => {
     }, [view]);
 
     useEffect(() => {
-        const session = localStorage.getItem('admin_session');
+        const session = getSession();
         if (!session) {
             navigate('/login');
             return;
         }
-    }, []);
+    }, [navigate]);
 
     useEffect(() => {
         if (view !== 'products') {
@@ -58,7 +59,7 @@ const Admin = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, []);
+    }, [fetchRequests, view]);
 
     // Also refetch when view changes to active/trash
     useEffect(() => {
@@ -71,7 +72,7 @@ const Admin = () => {
         if (view === 'partners') {
             fetchPartners();
         }
-    }, [view]);
+    }, [view, fetchRequests]);
 
     const handleNewRequest = (newRequest) => {
         // 1. Play Sound
@@ -104,7 +105,8 @@ const Admin = () => {
         }
     };
 
-    const fetchRequests = async () => {
+    // Memoize fetchRequests to avoid re-creating it on every render
+    const fetchRequests = useCallback(async () => {
         const { data, error } = await supabase
             .from('solicitacoes')
             .select('*')
@@ -119,7 +121,7 @@ const Admin = () => {
             });
             setRequests(filtered || []);
         }
-    };
+    }, [view]);
 
     const updateStatus = async (id, newStatus) => {
         console.log(`Attempting to update status for ID: ${id} to ${newStatus}`);
@@ -189,13 +191,13 @@ const Admin = () => {
                 return JSON.parse(urlOrJson);
             }
             return [urlOrJson];
-        } catch (e) {
+        } catch {
             return [urlOrJson];
         }
     };
 
     const fetchAdmins = async () => {
-        const { data, error } = await supabase.from('admins').select('*').order('created_at', { ascending: false });
+        const { data } = await supabase.from('admins').select('*').order('created_at', { ascending: false });
         if (data) setAdmins(data);
     };
 
@@ -257,27 +259,8 @@ const Admin = () => {
         }
     };
 
-    const approvePartner = async (id) => {
-        try {
-            const { error } = await supabase
-                .from('parceiros')
-                .update({ status: 'aprovado' })
-                .eq('id', id);
-
-            if (error) throw error;
-
-            toast.success('Parceiro aprovado com sucesso!');
-            setPartners(prev => prev.map(p => p.id === id ? { ...p, status: 'aprovado' } : p));
-            setIsPartnerModalOpen(false);
-            setSelectedPartner(null);
-        } catch (error) {
-            console.error('Error approving partner:', error);
-            toast.error('Erro ao aprovar parceiro');
-        }
-    };
-
     const handleLogout = () => {
-        localStorage.removeItem('admin_session');
+        destroySession();
         navigate('/login');
     };
 

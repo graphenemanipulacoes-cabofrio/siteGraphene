@@ -1,6 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 const HeroAnimation = () => {
+    // Generate random particle configurations once on mount
+    const [particleConfigs] = useState(() => 
+        [...Array(12)].map((_, i) => ({
+            width: Math.random() * 6 + 2,
+            height: Math.random() * 6 + 2,
+            left: Math.random() * 100,
+            top: Math.random() * 100,
+            duration: Math.random() * 10 + 10,
+            delay: Math.random() * 5,
+            opacity: Math.random() * 0.4 + 0.1,
+            background: i % 3 === 0 ? '#0ea5e9' : i % 3 === 1 ? '#0284c7' : 'white',
+            translateX: Math.random() * 100 - 50,
+            translateY: Math.random() * -150 - 50,
+        }))
+    );
+
     return (
         <div className="bottle-container">
             {/* Multi-layered Cinematic Background */}
@@ -230,22 +246,22 @@ const HeroAnimation = () => {
                 }
 
                 /* Individual Particle Animation Setup */
-                ${[...Array(12)].map((_, i) => `
+                ${particleConfigs.map((config, i) => `
                     .p${i + 1} {
-                        width: ${Math.random() * 6 + 2}px;
-                        height: ${Math.random() * 6 + 2}px;
-                        left: ${Math.random() * 100}%;
-                        top: ${Math.random() * 100}%;
-                        animation: particle-float-${i} ${Math.random() * 10 + 10}s linear infinite;
-                        animation-delay: ${Math.random() * 5}s;
-                        opacity: ${Math.random() * 0.4 + 0.1};
-                        background: ${i % 3 === 0 ? '#0ea5e9' : i % 3 === 1 ? '#0284c7' : 'white'};
+                        width: ${config.width}px;
+                        height: ${config.height}px;
+                        left: ${config.left}%;
+                        top: ${config.top}%;
+                        animation: particle-float-${i} ${config.duration}s linear infinite;
+                        animation-delay: ${config.delay}s;
+                        opacity: ${config.opacity};
+                        background: ${config.background};
                     }
                     @keyframes particle-float-${i} {
                         0% { transform: translate(0, 0) scale(1); opacity: 0; }
                         20% { opacity: 0.5; }
                         80% { opacity: 0.5; }
-                        100% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * -150 - 50}px) scale(0); opacity: 0; }
+                        100% { transform: translate(${config.translateX}px, ${config.translateY}px) scale(0); opacity: 0; }
                     }
                 `).join('')}
 

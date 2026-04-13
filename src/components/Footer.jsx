@@ -1,6 +1,49 @@
 import Button from './Button';
+import { useEffect } from 'react';
 
 const Footer = () => {
+    // Inject footer styles on mount
+    useEffect(() => {
+        const styleSheet = document.createElement('style');
+        styleSheet.className = 'footer-styles';
+        styleSheet.innerText = `
+            @media (max-width: 768px) {
+                .site-footer {
+                    padding: 60px 0 40px !important;
+                }
+                .footer-grid {
+                    grid-template-columns: 1fr !important;
+                    gap: 3rem !important;
+                    text-align: center;
+                    margin-bottom: 60px !important;
+                }
+                .footer-grid > div {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                }
+                .footer-copyright-row {
+                    flex-direction: column !important;
+                    gap: 1.5rem !important;
+                    text-align: center !important;
+                }
+            }
+        `;
+        
+        // Only add if not already present
+        if (!document.querySelector('.footer-styles')) {
+            document.head.appendChild(styleSheet);
+        }
+        
+        // Cleanup on unmount
+        return () => {
+            const existing = document.querySelector('.footer-styles');
+            if (existing) {
+                existing.remove();
+            }
+        };
+    }, []);
+
     return (
         <footer className="site-footer" style={{ background: 'var(--bg-main)', padding: '100px 0 40px', borderTop: '1px solid rgba(15, 23, 42, 0.05)' }}>
             <div className="container">
@@ -87,34 +130,6 @@ const Footer = () => {
         </footer>
     );
 };
-
-// Add styles
-const styles = `
-    @media (max-width: 768px) {
-        .site-footer {
-            padding: 60px 0 40px !important;
-        }
-        .footer-grid {
-            grid-template-columns: 1fr !important;
-            gap: 3rem !important;
-            text-align: center;
-            margin-bottom: 60px !important;
-        }
-        .footer-grid > div {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .footer-copyright-row {
-            flex-direction: column !important;
-            gap: 1.5rem !important;
-            text-align: center !important;
-        }
-    }
-`;
-const styleSheet = document.createElement("style");
-styleSheet.innerText = styles;
-document.head.appendChild(styleSheet);
 
 
 export default Footer;

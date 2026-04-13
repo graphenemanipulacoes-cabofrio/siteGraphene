@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { hashPassword, createSession, checkRateLimit, recordFailedAttempt, clearFailedAttempts } from '../utils/security';
+import { toast } from 'sonner';
 
 const Login = () => {
     const [username, setUsername] = useState('');
@@ -13,22 +15,40 @@ const Login = () => {
         setLoading(true);
 
         try {
+            // Check rate limiting
+            const rateLimit = checkRateLimit();
+            if (!rateLimit.allowed) {
+                toast.error(rateLimit.message);
+                return;
+            }
+
+            // Hash the password before checking
+            const hashedPassword = await hashPassword(password);
+
             const { data, error } = await supabase
                 .from('admins')
                 .select('*')
                 .ilike('username', username)
-                .eq('password', password)
+                .eq('password', hashedPassword)
                 .single();
 
             if (error || !data) {
-                alert('Credenciais inválidas!');
+                // Record failed attempt
+                recordFailedAttempt();
+                toast.error('Credenciais inválidas!');
             } else {
-                localStorage.setItem('admin_session', JSON.stringify(data));
+                // Clear failed attempts on successful login
+                clearFailedAttempts();
+                
+                // Create secure session
+                createSession(data);
+                
+                toast.success('Login realizado com sucesso!');
                 navigate('/admin');
             }
         } catch (error) {
             console.error('Login error:', error);
-            alert('Erro ao fazer login.');
+            toast.error('Erro ao fazer login.');
         } finally {
             setLoading(false);
         }

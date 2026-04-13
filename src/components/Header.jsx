@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import Button from './Button';
 import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { getWhatsAppUrl } from '../config';
 
 const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -35,7 +36,7 @@ const Header = () => {
                         </a>
                     ))}
 
-                    <Button variant="primary" style={{ borderRadius: '30px', padding: '10px 24px' }} onClick={() => window.open('https://wa.me/5522999361256?text=Ol%C3%A1%2C%20vi%20pelo%20site%20e%20gostaria%20de%20falar%20com%20um%20especialista.', '_blank')}>CONTATO</Button>
+                    <Button variant="primary" style={{ borderRadius: '30px', padding: '10px 24px' }} onClick={() => window.open(getWhatsAppUrl(), '_blank')}>CONTATO</Button>
                 </nav>
 
                 {/* Mobile Menu Toggle */}
@@ -86,7 +87,7 @@ const Header = () => {
                         <Button
                             variant="primary"
                             style={{ minWidth: '240px', padding: '1rem 2rem', fontSize: '1.1rem' }}
-                            onClick={() => window.open('https://wa.me/5522999361256?text=Ol%C3%A1%2C%20vi%20pelo%20site%20e%20gostaria%20de%20falar%20com%20um%20especialista.', '_blank')}
+                            onClick={() => window.open(getWhatsAppUrl(), '_blank')}
                         >
                             Falar com Especialista
                         </Button>

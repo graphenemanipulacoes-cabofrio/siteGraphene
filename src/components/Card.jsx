@@ -1,4 +1,4 @@
-const Card = ({ children, className = '', title, gradient = false }) => {
+const Card = ({ children, className = '', title }) => {
     return (
         <div className={`glass-card ${className}`} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {title && (
