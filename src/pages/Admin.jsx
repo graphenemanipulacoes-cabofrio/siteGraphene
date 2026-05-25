@@ -732,7 +732,7 @@ const Admin = () => {
                         background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
                         zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
                     }}>
-                        <div className="glass-card" style={{ width: '100%', maxWidth: '600px', padding: '2.5rem', borderRadius: '25px', position: 'relative' }}>
+                        <div style={{ width: '100%', maxWidth: '600px', padding: '2.5rem', background: 'var(--bg-dark-secondary)', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', position: 'relative' }}>
                             <Button
                                 variant="glass"
                                 onClick={() => {
@@ -744,7 +744,7 @@ const Admin = () => {
                                 <X size={20} />
                             </Button>
 
-                            <h2 style={{ fontSize: '1.8rem', marginBottom: '2rem', fontWeight: '800' }}>Detalhes do Parceiro</h2>
+                            <h2 style={{ fontSize: '1.5rem', marginBottom: '2rem', fontWeight: '800', color: 'var(--text-white)' }}>Detalhes do Parceiro</h2>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2.5rem' }}>
                                 <div style={{ gridColumn: 'span 2' }}>
@@ -840,7 +840,7 @@ const Admin = () => {
                                 <Button
                                     variant="primary"
                                     onClick={() => updatePartner(selectedPartner.id, selectedPartner)}
-                                    style={{ flex: 1, padding: '1rem', color: '#000' }}
+                                    style={{ flex: 1, padding: '1rem', borderRadius: 'var(--radius-sm)' }}
                                 >
                                     Salvar Alterações
                                 </Button>
@@ -850,7 +850,7 @@ const Admin = () => {
                                         setIsPartnerModalOpen(false);
                                         setSelectedPartner(null);
                                     }}
-                                    style={{ flex: 1, padding: '1rem' }}
+                                    style={{ flex: 1, padding: '1rem', borderRadius: 'var(--radius-sm)' }}
                                 >
                                     Cancelar
                                 </Button>

@@ -289,7 +289,7 @@ const AdminProducts = () => {
 
                 <DragOverlay>
                     {activeId ? (
-                        <div className="glass" style={{ padding: '1.5rem', borderRadius: '15px', position: 'relative', display: 'flex', flexDirection: 'column', gap: '1rem', background: '#1a1a1a', opacity: 0.9 }}>
+                        <div style={{ padding: '1.5rem', borderRadius: 'var(--radius-md)', position: 'relative', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-dark-secondary)', border: '1px solid var(--border-dark)', opacity: 0.9 }}>
                             {(() => {
                                 const product = products.find(p => p.id === activeId);
                                 if (!product) return null;
@@ -322,24 +322,25 @@ const AdminProducts = () => {
                     padding: window.innerWidth <= 768 ? '0' : '1.5rem',
                     backdropFilter: 'blur(10px)'
                 }}>
-                    <div className="glass" style={{
+                    <div style={{
                         width: '100%',
                         maxWidth: '500px',
                         padding: window.innerWidth <= 768 ? '2rem 1.5rem' : 'clamp(1rem, 5vw, 2rem)',
-                        borderRadius: window.innerWidth <= 768 ? '0' : '20px',
+                        background: 'var(--bg-dark-secondary)',
+                        border: '1px solid var(--border-dark)',
+                        borderRadius: window.innerWidth <= 768 ? '0' : 'var(--radius-md)',
                         position: 'relative',
                         maxHeight: '100vh',
                         minHeight: window.innerWidth <= 768 ? '100vh' : 'auto',
                         height: 'auto',
                         overflowY: 'auto',
                         margin: '0',
-                        border: 'none',
                         display: 'flex',
                         flexDirection: 'column'
                     }}>
                         <button
                             onClick={() => setIsModalOpen(false)}
-                            style={{ position: 'absolute', top: '20px', right: '20px', background: 'transparent', color: 'white' }}
+                            style={{ position: 'absolute', top: '20px', right: '20px', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}
                         >
                             <X size={24} />
                         </button>

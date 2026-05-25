@@ -90,7 +90,7 @@ const ProductContent = ({ product }) => (
         <div style={{ marginTop: 'auto' }}>
             <Button
                 variant="outline"
-                style={{ width: '100%', justifyContent: 'center' }}
+                style={{ width: '100%', justifyContent: 'center', borderRadius: 'var(--radius-sm)' }}
                 onClick={() => openWhatsApp(product)}
             >
                 Quero este!

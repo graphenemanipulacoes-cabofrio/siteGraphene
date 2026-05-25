@@ -96,50 +96,50 @@ const PartnerRegistration = () => {
 
                         {/* Benefits/Info Section */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                            <div className="glass-card" style={{ padding: '2rem', borderRadius: '24px' }}>
-                                <h3 style={{ fontSize: '1.5rem', marginBottom: '2rem', fontWeight: '700' }}>Por que ser um parceiro?</h3>
+                            <div className="bento-card" style={{ padding: '2.5rem', background: 'var(--bg-dark-secondary)', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)' }}>
+                                <h3 style={{ fontSize: '1.35rem', marginBottom: '2rem', fontWeight: '700', color: 'var(--text-white)' }}>Por que ser um parceiro?</h3>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                     <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <div style={{ background: 'rgba(0, 229, 255, 0.1)', padding: '10px', borderRadius: '12px', height: 'fit-content' }}>
-                                            <Zap size={24} color="var(--primary-blue)" />
+                                        <div style={{ background: 'rgba(14, 165, 233, 0.08)', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(14, 165, 233, 0.15)', height: 'fit-content' }}>
+                                            <Zap size={20} color="var(--primary)" />
                                         </div>
                                         <div>
-                                            <h4 style={{ fontSize: '1.1rem', marginBottom: '0.3rem' }}>Produtos de Alta Performance</h4>
-                                            <p style={{ color: 'var(--text-gray)', fontSize: '0.95rem' }}>Fórmulas exclusivas validadas por especialistas.</p>
+                                            <h4 style={{ fontSize: '1.05rem', marginBottom: '0.3rem', color: 'var(--text-white)' }}>Produtos de Alta Performance</h4>
+                                            <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', lineHeight: '1.5' }}>Fórmulas exclusivas preparadas com rigor laboratorial e matérias-primas testadas.</p>
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <div style={{ background: 'rgba(0, 229, 255, 0.1)', padding: '10px', borderRadius: '12px', height: 'fit-content' }}>
-                                            <BarChart3 size={24} color="var(--primary-blue)" />
+                                        <div style={{ background: 'rgba(14, 165, 233, 0.08)', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(14, 165, 233, 0.15)', height: 'fit-content' }}>
+                                            <BarChart3 size={20} color="var(--primary)" />
                                         </div>
                                         <div>
-                                            <h4 style={{ fontSize: '1.1rem', marginBottom: '0.3rem' }}>Comissionamento Estruturado</h4>
-                                            <p style={{ color: 'var(--text-gray)', fontSize: '0.95rem' }}>Receba por cada indicação de sucesso de forma transparente.</p>
+                                            <h4 style={{ fontSize: '1.05rem', marginBottom: '0.3rem', color: 'var(--text-white)' }}>Comissionamento Estruturado</h4>
+                                            <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', lineHeight: '1.5' }}>Retorno justo e transparente sobre prescrições e cotações convertidas.</p>
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <div style={{ background: 'rgba(0, 229, 255, 0.1)', padding: '10px', borderRadius: '12px', height: 'fit-content' }}>
-                                            <ShieldCheck size={24} color="var(--primary-blue)" />
+                                        <div style={{ background: 'rgba(14, 165, 233, 0.08)', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(14, 165, 233, 0.15)', height: 'fit-content' }}>
+                                            <ShieldCheck size={20} color="var(--primary)" />
                                         </div>
                                         <div>
-                                            <h4 style={{ fontSize: '1.1rem', marginBottom: '0.3rem' }}>Suporte Especializado</h4>
-                                            <p style={{ color: 'var(--text-gray)', fontSize: '0.95rem' }}>Acesso direto à nossa equipe para dúvidas e materiais.</p>
+                                            <h4 style={{ fontSize: '1.05rem', marginBottom: '0.3rem', color: 'var(--text-white)' }}>Suporte Especializado</h4>
+                                            <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', lineHeight: '1.5' }}>Atendimento ágil de nossa equipe farmacêutica para apoio nas suas indicações.</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', padding: '0 1rem' }}>
-                                Ao enviar este formulário, você declara estar ciente de que o cadastro passará por um processo de curadoria técnica interna.
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', padding: '0 1rem', lineHeight: '1.6' }}>
+                                Ao submeter este formulário, você declara estar ciente de que a citação de dados bancários é confidencial e protegida de acordo com nossa política de privacidade. O cadastro passará por validação interna de credenciamento.
                             </p>
                         </div>
 
                         {/* Registration Form */}
-                        <div className="glass-blue" style={{ padding: '2.5rem', borderRadius: '24px', position: 'relative' }}>
+                        <div style={{ padding: '2.5rem', background: 'var(--bg-dark-secondary)', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', position: 'relative' }}>
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <h3 style={{ fontSize: '1.3rem', fontWeight: '700' }}>Solicitar Credenciamento</h3>
-                                <p style={{ fontSize: '0.85rem', opacity: 0.6 }}>Todos os campos marcados com <span style={{ color: '#FF4D4D' }}>*</span> são obrigatórios.</p>
+                                <h3 style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-white)' }}>Solicitar Credenciamento</h3>
+                                <p style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>Preencha os dados e entraremos em contato.</p>
                             </div>
 
                             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -151,20 +151,20 @@ const PartnerRegistration = () => {
                                         onChange={handleChange}
                                         type="text"
                                         required
-                                        placeholder="Ex: João Silva Sauro"
+                                        placeholder="Seu nome completo"
                                         style={inputStyle}
                                     />
                                 </div>
 
                                 <div className="input-group">
-                                    <label style={labelStyle}><FileText size={14} /> Documento (CPF/CNPJ) <span style={requiredStar}>*</span></label>
+                                    <label style={labelStyle}><FileText size={14} /> CPF ou CNPJ <span style={requiredStar}>*</span></label>
                                     <input
                                         name="documento"
                                         value={formData.documento}
                                         onChange={handleChange}
                                         type="text"
                                         required
-                                        placeholder="000.000.000-00"
+                                        placeholder="Apenas números"
                                         style={inputStyle}
                                     />
                                 </div>
@@ -178,7 +178,7 @@ const PartnerRegistration = () => {
                                             onChange={handleChange}
                                             type="email"
                                             required
-                                            placeholder="contato@exemplo.com"
+                                            placeholder="exemplo@email.com"
                                             style={inputStyle}
                                         />
                                     </div>
@@ -190,14 +190,14 @@ const PartnerRegistration = () => {
                                             onChange={handleChange}
                                             type="tel"
                                             required
-                                            placeholder="(22) 99999-9999"
+                                            placeholder="(00) 00000-0000"
                                             style={inputStyle}
                                         />
                                     </div>
                                 </div>
 
-                                <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '1rem 0' }}></div>
-                                <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', fontWeight: '600', color: 'var(--primary-blue)' }}>Dados Bancários</h4>
+                                <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '0.5rem 0' }}></div>
+                                <h4 style={{ fontSize: '0.9rem', marginBottom: '0.2rem', fontWeight: '600', color: 'var(--primary)' }}>Dados Bancários</h4>
 
                                 <div className="input-group">
                                     <label style={labelStyle}><CreditCard size={14} /> Chave PIX <span style={requiredStar}>*</span></label>
@@ -207,20 +207,20 @@ const PartnerRegistration = () => {
                                         onChange={handleChange}
                                         type="text"
                                         required
-                                        placeholder="E-mail, CPF ou Aleatória"
+                                        placeholder="E-mail, CPF, celular ou chave aleatória"
                                         style={inputStyle}
                                     />
                                 </div>
 
                                 <div className="input-group">
-                                    <label style={labelStyle}><Landmark size={14} /> Instituição Bancária <span style={requiredStar}>*</span></label>
+                                    <label style={labelStyle}><Landmark size={14} /> Banco <span style={requiredStar}>*</span></label>
                                     <input
                                         name="banco"
                                         value={formData.banco}
                                         onChange={handleChange}
                                         type="text"
                                         required
-                                        placeholder="Ex: Banco Inter, Itaú, etc."
+                                        placeholder="Instituição financeira"
                                         style={inputStyle}
                                     />
                                 </div>
@@ -234,7 +234,7 @@ const PartnerRegistration = () => {
                                             onChange={handleChange}
                                             type="text"
                                             required
-                                            placeholder="0001"
+                                            placeholder="Ex: 0001"
                                             style={inputStyle}
                                         />
                                     </div>
@@ -246,7 +246,7 @@ const PartnerRegistration = () => {
                                             onChange={handleChange}
                                             type="text"
                                             required
-                                            placeholder="123456-7"
+                                            placeholder="Ex: 12345-6"
                                             style={inputStyle}
                                         />
                                     </div>
@@ -256,7 +256,7 @@ const PartnerRegistration = () => {
                                     <Button
                                         type="submit"
                                         variant="primary"
-                                        style={{ width: '100%', padding: '1.1rem', fontSize: '1rem', color: '#000', fontWeight: 'bold' }}
+                                        style={{ width: '100%', padding: '14px', fontSize: '0.95rem', borderRadius: 'var(--radius-sm)' }}
                                         disabled={loading}
                                     >
                                         {loading ? 'Processando...' : 'Finalizar Solicitação'}

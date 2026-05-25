@@ -1,127 +1,198 @@
-import { Link } from 'react-router-dom';
-import Button from './Button';
-import { Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getWhatsAppUrl } from '../config';
 
 const Header = () => {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const navRef = useRef(null);
+
+    useEffect(() => {
+        const onScroll = () => setScrolled(window.scrollY > 20);
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+
+    useEffect(() => {
+        const onClick = (e) => {
+            if (navRef.current && !navRef.current.contains(e.target)) setMenuOpen(false);
+        };
+        document.addEventListener('mousedown', onClick);
+        return () => document.removeEventListener('mousedown', onClick);
+    }, []);
+
+    const navItems = [
+        { label: 'Início', href: '#hero' },
+        { label: 'Produtos', href: '#products' },
+        { label: 'Como funciona', href: '#how-it-works' },
+        { label: 'Enviar receita', href: '#form' },
+    ];
 
     return (
-        <header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, height: 'var(--header-height)', pointerEvents: 'none' }}>
-            <div className="container header-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%', background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(10px)', borderRadius: '0 0 40px 40px', padding: '0 2rem', pointerEvents: 'auto', border: '1px solid rgba(0,0,0,0.05)', borderTop: 'none' }}>
-                <Link to="/" style={{ display: 'flex', alignItems: 'center', zIndex: 1001 }}>
-                    <img src="/assets/logo.png" alt="Graphène" style={{
-                        height: '40px',
-                        width: '40px',
-                        objectFit: 'cover',
-                        borderRadius: '50%',
-                    }} />
-                </Link>
+        <header className={`header ${scrolled ? 'header--scrolled' : ''}`}>
+            <div className="header-inner">
+                <a href="#" className="header-logo" style={{ display: 'flex', alignItems: 'center' }}>
+                    <img src="/assets/logo.png" alt="Graphène" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />
+                </a>
 
-                {/* Desktop Nav */}
-                <nav style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }} className="desktop-only">
-                    {[
-                        { label: 'Soluções', href: '#solutions' },
-                        { label: 'Fórmulas', href: '#products' },
-                        { label: 'Como funciona', href: '#how-it-works' }
-                    ].map((item) => (
-                        <a
-                            key={item.label}
-                            href={item.href}
-                            style={{ color: 'var(--text-main)', fontWeight: '600', fontSize: '0.95rem', padding: '8px 16px', borderRadius: '30px', transition: 'background 0.3s' }}
-                            className="nav-link"
-                        >
-                            {item.label}
-                        </a>
+                <nav className="header-nav" ref={navRef}>
+                    {navItems.map(item => (
+                        <a key={item.href} href={item.href} className="nav-link">{item.label}</a>
                     ))}
-
-                    <Button variant="primary" style={{ borderRadius: '30px', padding: '10px 24px' }} onClick={() => window.open(getWhatsAppUrl(), '_blank')}>CONTATO</Button>
                 </nav>
 
-                {/* Mobile Menu Toggle */}
-                <button
-                    className="mobile-only glass"
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    style={{
-                        padding: '10px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: '12px',
-                        color: 'var(--text-main)',
-                        zIndex: 1001,
-                        pointerEvents: 'auto'
-                    }}
-                >
-                    {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                </button>
+                <div className="header-actions">
+                    <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="header-cta">
+                        WhatsApp
+                    </a>
+                    <button className="header-toggle" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu">
+                        <span />
+                        <span />
+                        <span />
+                    </button>
+                </div>
             </div>
 
-            {/* Mobile Nav Overlay */}
-            <div className={`mobile-menu ${isMenuOpen ? 'open' : ''}`} style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'rgba(255, 255, 255, 0.98)',
-                backdropFilter: 'blur(20px)',
-                display: isMenuOpen ? 'flex' : 'none',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '3rem',
-                zIndex: 1000,
-                opacity: isMenuOpen ? 1 : 0,
-                transition: 'all 0.4s ease-in-out',
-                pointerEvents: isMenuOpen ? 'all' : 'none',
-            }}>
-                <nav style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2.5rem' }}>
-                    <a href="#solutions" onClick={() => setIsMenuOpen(false)} style={{ fontSize: '2rem', fontWeight: '500', letterSpacing: '-0.5px' }}>Soluções</a>
-                    <a href="#products" onClick={() => setIsMenuOpen(false)} style={{ fontSize: '2rem', fontWeight: '500', letterSpacing: '-0.5px' }}>Fórmulas</a>
-                    <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} style={{ fontSize: '2rem', fontWeight: '500', letterSpacing: '-0.5px' }}>Como funciona</a>
-
-
-                    <div style={{ marginTop: '1rem' }} onClick={() => setIsMenuOpen(false)}>
-                        <Button
-                            variant="primary"
-                            style={{ minWidth: '240px', padding: '1rem 2rem', fontSize: '1.1rem' }}
-                            onClick={() => window.open(getWhatsAppUrl(), '_blank')}
-                        >
-                            Falar com Especialista
-                        </Button>
-                    </div>
-                </nav>
-
-                {/* Decorative background element */}
-                <div style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    width: '100%',
-                    height: '100%',
-                    background: 'radial-gradient(circle at center, var(--primary-blue-glow) 0%, transparent 70%)',
-                    pointerEvents: 'none',
-                    zIndex: -1
-                }} />
-            </div>
+            {menuOpen && (
+                <div className="header-mobile">
+                    {navItems.map(item => (
+                        <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)}>{item.label}</a>
+                    ))}
+                </div>
+            )}
 
             <style>{`
-                .nav-link:hover { background: rgba(14, 165, 233, 0.08); color: var(--primary-blue) !important; }
-                
-                .mobile-only { display: none !important; }
-                .desktop-only { display: flex !important; }
+                .header {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    z-index: 100;
+                    transition: all 0.25s ease;
+                    background: rgba(255, 255, 255, 0.9);
+                    backdrop-filter: blur(12px);
+                    border-bottom: 1px solid var(--border-light);
+                }
+
+                .header--scrolled {
+                    background: #ffffff;
+                    box-shadow: var(--shadow-sm);
+                }
+
+                .header-inner {
+                    max-width: var(--container-width);
+                    margin: 0 auto;
+                    padding: 0 24px;
+                    height: var(--header-height);
+                    display: flex;
+                    align-items: center;
+                    gap: 40px;
+                }
+
+                .header-nav {
+                    display: flex;
+                    align-items: center;
+                    gap: 32px;
+                    flex: 1;
+                }
+
+                .nav-link {
+                    font-size: 0.9rem;
+                    font-weight: 500;
+                    color: var(--text-secondary);
+                    transition: color 0.15s ease;
+                    position: relative;
+                }
+
+                .nav-link:hover {
+                    color: var(--primary);
+                }
+
+                .nav-link::after {
+                    content: '';
+                    position: absolute;
+                    bottom: -4px;
+                    left: 0;
+                    width: 0;
+                    height: 2px;
+                    background: var(--primary);
+                    transition: width 0.25s ease;
+                }
+
+                .nav-link:hover::after {
+                    width: 100%;
+                }
+
+                .header-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+
+                .header-cta {
+                    padding: 10px 22px;
+                    font-size: 0.88rem;
+                    font-weight: 600;
+                    border-radius: var(--radius-sm);
+                    background: var(--primary);
+                    color: #fff;
+                    transition: background 0.15s ease;
+                }
+
+                .header-cta:hover {
+                    background: var(--primary-dark);
+                }
+
+                .header-toggle {
+                    display: none;
+                    flex-direction: column;
+                    gap: 5px;
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    padding: 4px;
+                }
+
+                .header-toggle span {
+                    width: 22px;
+                    height: 2px;
+                    background: var(--text-primary);
+                    border-radius: 2px;
+                    transition: all 0.3s ease;
+                }
+
+                .header-mobile {
+                    display: none;
+                }
 
                 @media (max-width: 768px) {
-                    .desktop-only { display: none !important; }
-                    .mobile-only { display: flex !important; }
-                    .header-container { 
-                        border-radius: 0 0 25px 25px !important;
-                        padding: 0 1rem !important;
-                        background: rgba(255, 255, 255, 0.9) !important;
-                        backdrop-filter: blur(20px) !important;
+                    .header-nav { display: none; }
+                    .header-cta { display: none; }
+                    .header-toggle { display: flex; }
+
+                    .header-mobile {
+                        position: absolute;
+                        top: 100%;
+                        left: 0;
+                        right: 0;
+                        background: #ffffff;
+                        border-bottom: 1px solid var(--border-light);
+                        padding: 16px 24px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 4px;
+                        box-shadow: var(--shadow-lg);
+                    }
+
+                    .header-mobile a {
+                        padding: 12px 0;
+                        font-size: 1rem;
+                        font-weight: 500;
+                        color: var(--text-secondary);
+                        border-bottom: 1px solid var(--border-light);
+                    }
+
+                    .header-mobile a:last-child {
+                        border-bottom: none;
                     }
                 }
             `}</style>
