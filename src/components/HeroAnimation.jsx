@@ -82,7 +82,7 @@ const HeroAnimation = () => {
                     position: absolute;
                     width: 300px;
                     height: 300px;
-                    background: radial-gradient(circle, var(--primary-blue) 0%, transparent 70%);
+                    background: radial-gradient(circle, #0284c7 0%, transparent 70%);
                     opacity: 0.2;
                     filter: blur(40px);
                     animation: aura-pulse 4s ease-in-out infinite alternate;
@@ -92,7 +92,7 @@ const HeroAnimation = () => {
                     position: absolute;
                     width: 400px;
                     height: 400px;
-                    background: conic-gradient(from 0deg, transparent, var(--primary-blue), transparent, #0ea5e9, transparent);
+                    background: conic-gradient(from 0deg, transparent, #0284c7, transparent, #0ea5e9, transparent);
                     opacity: 0.1;
                     filter: blur(60px);
                     animation: spin 15s linear infinite;
@@ -124,7 +124,7 @@ const HeroAnimation = () => {
                 .bottle-cap-pro {
                     width: 100px;
                     height: 38px;
-                    background: linear-gradient(135deg, #1e293b 0%, #020617 100%);
+                    background: #111827;
                     border-radius: 6px;
                     margin: 0 auto;
                     position: relative;
@@ -137,7 +137,7 @@ const HeroAnimation = () => {
                 .bottle-neck-pro {
                     width: 76px;
                     height: 28px;
-                    background: #1e293b;
+                    background: #111827;
                     margin: 0 auto;
                     position: relative;
                     top: 8px;
@@ -148,12 +148,12 @@ const HeroAnimation = () => {
                 .bottle-body-pro {
                     width: 100%;
                     height: 190px;
-                    background: linear-gradient(165deg, #1e293b 0%, #020617 100%);
+                    background: #0f172a;
                     border-radius: 24px;
                     position: relative;
                     overflow: hidden;
                     border: 1px solid rgba(255,255,255,0.08);
-                    box-shadow: inset 0 0 30px rgba(0,0,0,0.6);
+                    box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
                 }
 
                 /* INNER GLOW / LIQUID */
@@ -163,9 +163,9 @@ const HeroAnimation = () => {
                     left: 20%;
                     right: 20%;
                     height: 120px;
-                    background: var(--primary-blue);
+                    background: #0ea5e9;
                     filter: blur(45px);
-                    opacity: 0.15;
+                    opacity: 0.2;
                     animation: liquid-pulse 5s ease-in-out infinite alternate;
                 }
 
@@ -196,13 +196,12 @@ const HeroAnimation = () => {
                 }
 
                 .brand-name {
-                    font-family: 'Poppins', sans-serif;
-                    font-weight: 900;
+                    font-family: 'Inter', sans-serif;
+                    font-weight: 800;
                     font-size: 1.35rem;
                     color: white;
                     letter-spacing: 1px;
                     text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                    font-style: italic;
                     z-index: 2;
                     white-space: nowrap;
                 }
@@ -239,7 +238,7 @@ const HeroAnimation = () => {
 
                 .element {
                     position: absolute;
-                    background: var(--primary-blue);
+                    background: #0ea5e9;
                     border-radius: 50%;
                     opacity: 0;
                     filter: blur(1px);
@@ -266,7 +265,7 @@ const HeroAnimation = () => {
                 `).join('')}
 
                 /* --- KEYFRAMES --- */
-                @keyframes float-refined {
+                @keyframes float-pro {
                     0%, 100% { transform: translateY(0) rotate(-1deg); }
                     50% { transform: translateY(-20px) rotate(1deg); }
                 }
