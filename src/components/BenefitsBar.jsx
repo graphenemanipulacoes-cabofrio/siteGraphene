@@ -6,25 +6,25 @@ const BenefitsBar = () => {
         {
             icon: Truck,
             title: 'Despacho Nacional',
-            desc: 'Entrega rápida e segura para todo o Brasil',
+            desc: 'Entrega rápida para todo o Brasil',
             color: 'var(--brand-blue)'
         },
         {
             icon: Scale,
             title: 'Pesagem Computadorizada',
-            desc: 'Balanças analíticas com precisão digital',
+            desc: 'Balanças com leitor de código óptico',
             color: 'var(--brand-green)'
         },
         {
             icon: ShieldCheck,
             title: 'Insumos com Laudo',
-            desc: '100% testados por cromatografia analítica',
+            desc: 'Cromatografia analítica lote a lote',
             color: 'var(--brand-blue)'
         },
         {
             icon: HeartPulse,
             title: 'Atenção Farmacêutica',
-            desc: 'Suporte técnico direto em Cabo Frio - RJ',
+            desc: 'Suporte direto em Cabo Frio - RJ',
             color: 'var(--brand-green)'
         }
     ];
@@ -38,7 +38,7 @@ const BenefitsBar = () => {
                         return (
                             <div key={idx} className="benefit-item">
                                 <div className="benefit-icon-wrap" style={{ color: p.color, borderColor: p.color }}>
-                                    <Icon size={22} />
+                                    <Icon size={20} />
                                 </div>
                                 <div className="benefit-text">
                                     <strong>{p.title}</strong>
@@ -52,28 +52,28 @@ const BenefitsBar = () => {
 
             <style>{`
                 .benefits-bar-section {
-                    padding: 10px 0 40px;
+                    padding: 10px 0 36px;
                 }
 
                 .benefits-grid {
                     display: grid;
                     grid-template-columns: repeat(4, 1fr);
-                    gap: 20px;
+                    gap: 16px;
                     background: var(--bg-card);
                     border: 1px solid var(--border-card);
                     border-radius: var(--radius-md);
-                    padding: 24px 28px;
+                    padding: 22px 24px;
                 }
 
                 .benefit-item {
                     display: flex;
                     align-items: center;
-                    gap: 14px;
+                    gap: 12px;
                 }
 
                 .benefit-icon-wrap {
-                    width: 44px;
-                    height: 44px;
+                    width: 42px;
+                    height: 42px;
                     border-radius: var(--radius-xs);
                     background: rgba(255, 255, 255, 0.03);
                     border: 1px solid;
@@ -90,27 +90,43 @@ const BenefitsBar = () => {
                 }
 
                 .benefit-text strong {
-                    font-size: 0.92rem;
+                    font-size: 0.88rem;
                     font-weight: 700;
                     color: var(--text-main);
+                    line-height: 1.25;
                 }
 
                 .benefit-text span {
-                    font-size: 0.78rem;
+                    font-size: 0.75rem;
                     color: var(--text-dim);
+                    line-height: 1.35;
                 }
 
                 @media (max-width: 1024px) {
                     .benefits-grid {
                         grid-template-columns: repeat(2, 1fr);
-                        gap: 24px;
+                        gap: 18px;
                     }
                 }
 
                 @media (max-width: 600px) {
                     .benefits-grid {
-                        grid-template-columns: 1fr;
-                        padding: 20px;
+                        grid-template-columns: repeat(2, 1fr);
+                        padding: 16px 14px;
+                        gap: 14px 10px;
+                    }
+                    .benefit-item {
+                        gap: 9px;
+                    }
+                    .benefit-icon-wrap {
+                        width: 36px;
+                        height: 36px;
+                    }
+                    .benefit-text strong {
+                        font-size: 0.78rem;
+                    }
+                    .benefit-text span {
+                        font-size: 0.68rem;
                     }
                 }
             `}</style>

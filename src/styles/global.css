@@ -50,6 +50,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
@@ -66,6 +67,7 @@ body {
   color: var(--text-main);
   line-height: 1.6;
   overflow-x: hidden;
+  width: 100%;
 }
 
 /* Tipografia */
@@ -92,6 +94,11 @@ button {
   font-family: var(--font-sans);
 }
 
+/* Form inputs font size 16px to prevent auto-zoom on iOS */
+input, textarea, select {
+  font-size: 16px !important;
+}
+
 /* Containers */
 .container {
   max-width: var(--container-max);
@@ -107,20 +114,20 @@ button {
 
 /* Seções */
 .store-section {
-  padding: 72px 0;
+  padding: 64px 0;
 }
 
 .store-section-header {
   text-align: center;
   max-width: 700px;
-  margin: 0 auto 44px;
+  margin: 0 auto 36px;
 }
 
 .store-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 14px;
+  padding: 5px 14px;
   border-radius: var(--radius-full);
   font-size: 0.76rem;
   font-weight: 700;
@@ -133,14 +140,14 @@ button {
 }
 
 .store-section-header h2 {
-  font-size: clamp(1.85rem, 3.2vw, 2.5rem);
+  font-size: clamp(1.75rem, 3.2vw, 2.5rem);
   font-weight: 800;
   letter-spacing: -0.02em;
   margin-bottom: 10px;
 }
 
 .store-section-header p {
-  font-size: 1.02rem;
+  font-size: 1rem;
 }
 
 /* Botões */
@@ -159,6 +166,7 @@ button {
   cursor: pointer;
   box-shadow: var(--shadow-btn-green);
   transition: var(--transition);
+  min-height: 44px;
 }
 
 .btn-buy-wa:hover {
@@ -184,6 +192,7 @@ button {
   cursor: pointer;
   box-shadow: var(--shadow-btn);
   transition: var(--transition);
+  min-height: 44px;
 }
 
 .btn-cta-blue:hover {
@@ -206,6 +215,7 @@ button {
   border: 1px solid var(--border-card);
   cursor: pointer;
   transition: var(--transition);
+  min-height: 44px;
 }
 
 .btn-cta-outline:hover {
@@ -233,7 +243,26 @@ button {
 .highlight-blue { color: var(--brand-blue); }
 .highlight-green { color: var(--brand-green); }
 
+/* Scrollbar customizada */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #07090e;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-blue);
+}
+
 @media (max-width: 768px) {
-  .store-section { padding: 48px 0; }
-  .store-section-header h2 { font-size: 1.75rem; }
+  .store-section { padding: 40px 0; }
+  .store-section-header { margin-bottom: 28px; }
+  .store-section-header h2 { font-size: 1.6rem; }
+  .container { padding: 0 16px; }
+  .container-narrow { padding: 0 16px; }
 }

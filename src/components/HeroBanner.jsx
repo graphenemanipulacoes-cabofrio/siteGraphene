@@ -7,20 +7,20 @@ const HeroBanner = () => {
     return (
         <section className="hero-fullwidth">
             <div className="hero-fullwidth-inner">
-                {/* Imagem do usuário como fundo full-width */}
+                {/* Imagem full-width panorâmica */}
                 <img
                     src="/assets/graphene_banner_top.png"
                     alt="Linha de Produtos Graphène Manipulações"
                     className="hero-bg-img"
                 />
 
-                {/* Overlay gradiente da esquerda pro texto */}
+                {/* Overlay gradiente dinâmico */}
                 <div className="hero-overlay" />
 
-                {/* Texto posicionado à esquerda */}
+                {/* Conteúdo textual */}
                 <div className="hero-content-positioned">
                     <div className="hero-text-block">
-                        <div className="store-badge">
+                        <div className="store-badge hero-store-badge">
                             <Sparkles size={14} />
                             <span>Linha Oficial Graphène</span>
                         </div>
@@ -45,7 +45,7 @@ const HeroBanner = () => {
                             </a>
                             <Link to="/receita" className="btn-cta-blue hero-btn">
                                 <FileUp size={18} />
-                                <span>Manipular Minha Receita</span>
+                                <span>Manipular Receita</span>
                             </Link>
                         </div>
                     </div>
@@ -57,14 +57,14 @@ const HeroBanner = () => {
                     width: 100%;
                     position: relative;
                     overflow: hidden;
-                    background: #000;
+                    background: #040508;
                 }
 
                 .hero-fullwidth-inner {
                     position: relative;
                     width: 100%;
                     min-height: 520px;
-                    max-height: 620px;
+                    max-height: 600px;
                     display: flex;
                     align-items: center;
                 }
@@ -76,7 +76,7 @@ const HeroBanner = () => {
                     width: 100%;
                     height: 100%;
                     object-fit: cover;
-                    object-position: right center;
+                    object-position: 80% center;
                     display: block;
                 }
 
@@ -101,7 +101,7 @@ const HeroBanner = () => {
                     width: 100%;
                     max-width: var(--container-max);
                     margin: 0 auto;
-                    padding: 60px 40px;
+                    padding: 60px 20px;
                 }
 
                 .hero-text-block {
@@ -112,14 +112,14 @@ const HeroBanner = () => {
                 }
 
                 .hero-text-block h1 {
-                    font-size: clamp(2rem, 3.8vw, 3.2rem);
+                    font-size: clamp(1.85rem, 3.8vw, 3rem);
                     font-weight: 800;
-                    line-height: 1.1;
+                    line-height: 1.15;
                     letter-spacing: -0.03em;
                 }
 
                 .hero-text-block p {
-                    font-size: 1.05rem;
+                    font-size: 1rem;
                     color: var(--text-dim);
                     line-height: 1.6;
                 }
@@ -128,36 +128,59 @@ const HeroBanner = () => {
                     display: flex;
                     flex-wrap: wrap;
                     gap: 12px;
-                    margin-top: 8px;
+                    margin-top: 6px;
                 }
 
                 .hero-btn {
-                    padding: 15px 28px;
-                    font-size: 0.92rem;
+                    padding: 14px 26px;
+                    font-size: 0.9rem;
                 }
 
-                @media (max-width: 768px) {
-                    .hero-fullwidth-inner {
-                        min-height: 440px;
+                @media (max-width: 960px) {
+                    .hero-bg-img {
+                        object-position: 75% top;
                     }
                     .hero-overlay {
                         width: 100%;
                         background: linear-gradient(180deg,
-                            rgba(7,9,14,0.5) 0%,
-                            rgba(7,9,14,0.85) 50%,
-                            rgba(7,9,14,0.96) 100%
+                            rgba(7,9,14,0.3) 0%,
+                            rgba(7,9,14,0.75) 40%,
+                            rgba(7,9,14,0.96) 80%,
+                            rgba(7,9,14,0.98) 100%
                         );
                     }
+                    .hero-fullwidth-inner {
+                        min-height: 480px;
+                        max-height: none;
+                    }
                     .hero-content-positioned {
-                        padding: 40px 20px;
+                        padding: 120px 16px 40px;
                         display: flex;
                         align-items: flex-end;
-                        min-height: 440px;
                     }
                     .hero-text-block {
                         max-width: 100%;
                     }
-                    .hero-btn { width: 100%; }
+                }
+
+                @media (max-width: 600px) {
+                    .hero-content-positioned {
+                        padding: 140px 16px 36px;
+                    }
+                    .hero-text-block h1 {
+                        font-size: clamp(1.65rem, 6.5vw, 2.2rem);
+                    }
+                    .hero-text-block p {
+                        font-size: 0.92rem;
+                    }
+                    .hero-cta-row {
+                        flex-direction: column;
+                        width: 100%;
+                    }
+                    .hero-btn {
+                        width: 100%;
+                        justify-content: center;
+                    }
                 }
             `}</style>
         </section>

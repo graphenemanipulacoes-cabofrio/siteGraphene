@@ -174,11 +174,11 @@ const AtivosPage = () => {
                 </section>
 
                 {/* Banner de Garantia de Selo */}
-                <section className="store-section" style={{ paddingTop: 0, paddingBottom: '32px' }}>
+                <section className="store-section" style={{ paddingTop: 0, paddingBottom: '28px' }}>
                     <div className="container">
                         <div className="store-card authenticity-guarantee-card">
                             <div className="guarantee-icon">
-                                <ShieldCheck size={36} color="var(--brand-green)" />
+                                <ShieldCheck size={32} color="var(--brand-green)" />
                             </div>
                             <div className="guarantee-text">
                                 <h3>Seu pote sai do nosso laboratório com o Selo Oficial de Procedência</h3>
@@ -190,19 +190,21 @@ const AtivosPage = () => {
                     </div>
                 </section>
 
-                {/* Filtro por Categoria */}
+                {/* Filtro por Categoria com rolagem suave no mobile */}
                 <section className="store-section" style={{ paddingTop: 0 }}>
                     <div className="container">
-                        <div className="filter-bar">
-                            {categories.map((cat) => (
-                                <button
-                                    key={cat}
-                                    className={`filter-pill ${selectedCategory === cat ? 'filter-pill--active' : ''}`}
-                                    onClick={() => setSelectedCategory(cat)}
-                                >
-                                    {cat}
-                                </button>
-                            ))}
+                        <div className="filter-bar-wrapper">
+                            <div className="filter-bar">
+                                {categories.map((cat) => (
+                                    <button
+                                        key={cat}
+                                        className={`filter-pill ${selectedCategory === cat ? 'filter-pill--active' : ''}`}
+                                        onClick={() => setSelectedCategory(cat)}
+                                    >
+                                        {cat}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
                         {/* Grid de Ativos */}
@@ -224,7 +226,7 @@ const AtivosPage = () => {
                                         </div>
                                     </div>
 
-                                    {/* Imagem do Ativo com proporção ajustada sem cortar nada */}
+                                    {/* Imagem do Ativo */}
                                     {active.banner_img && (
                                         <div className="active-banner-preview">
                                             <img src={active.banner_img} alt={active.name} />
@@ -261,7 +263,7 @@ const AtivosPage = () => {
                         {/* CTA para Prescritores */}
                         <div className="store-card active-cta-box">
                             <div className="cta-box-left">
-                                <Sparkles size={28} color="var(--brand-blue)" />
+                                <Sparkles size={26} color="var(--brand-blue)" />
                                 <div>
                                     <h3>É médico, nutricionista ou profissional de saúde?</h3>
                                     <p>Consulte nosso compêndio técnico com literatura científica completa e veículos farmacêuticos exclusivos para prescrição.</p>
@@ -269,12 +271,12 @@ const AtivosPage = () => {
                             </div>
                             <div className="cta-box-btns">
                                 <Link to="/prescritores" className="btn-cta-blue">
-                                    <span>Portal de Prescritores VIP</span>
+                                    <span>Portal Prescritores</span>
                                     <ArrowRight size={16} />
                                 </Link>
                                 <Link to="/receita" className="btn-cta-outline">
                                     <FileUp size={16} />
-                                    <span>Manipular Receita</span>
+                                    <span>Enviar Receita</span>
                                 </Link>
                             </div>
                         </div>
@@ -285,22 +287,22 @@ const AtivosPage = () => {
             <FloatingWhatsApp />
 
             <style>{`
-                .page-hero { padding: 60px 0 36px; text-align: center; }
-                .page-hero h1 { font-size: clamp(2rem, 3.5vw, 2.8rem); font-weight: 800; margin: 10px 0; }
-                .page-hero p { font-size: 1.05rem; color: var(--text-dim); max-width: 720px; margin: 0 auto; }
+                .page-hero { padding: 48px 0 28px; text-align: center; }
+                .page-hero h1 { font-size: clamp(1.85rem, 3.5vw, 2.6rem); font-weight: 800; margin: 10px 0; }
+                .page-hero p { font-size: 1rem; color: var(--text-dim); max-width: 720px; margin: 0 auto; }
 
                 .authenticity-guarantee-card {
                     display: flex;
                     align-items: center;
-                    gap: 24px;
-                    padding: 28px 36px;
+                    gap: 20px;
+                    padding: 24px 28px;
                     background: linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(0,180,216,0.05) 100%);
                     border: 1px solid rgba(16,185,129,0.25);
                 }
 
                 .guarantee-icon {
-                    width: 64px;
-                    height: 64px;
+                    width: 56px;
+                    height: 56px;
                     border-radius: var(--radius-sm);
                     background: rgba(16,185,129,0.12);
                     border: 1px solid rgba(16,185,129,0.3);
@@ -311,24 +313,61 @@ const AtivosPage = () => {
                 }
 
                 .guarantee-text h3 {
-                    font-size: 1.15rem;
+                    font-size: 1.1rem;
                     font-weight: 800;
-                    margin-bottom: 6px;
+                    margin-bottom: 4px;
                     color: #fff;
                 }
 
                 .guarantee-text p {
-                    font-size: 0.88rem;
+                    font-size: 0.86rem;
                     color: var(--text-dim);
                     margin: 0;
                     line-height: 1.55;
                 }
 
+                .filter-bar-wrapper {
+                    width: 100%;
+                    overflow-x: auto;
+                    -webkit-overflow-scrolling: touch;
+                    scrollbar-width: none;
+                    margin-bottom: 32px;
+                }
+                .filter-bar-wrapper::-webkit-scrollbar { display: none; }
+
+                .filter-bar {
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    gap: 8px;
+                    min-width: min-content;
+                }
+
+                .filter-pill {
+                    background: rgba(255,255,255,0.04);
+                    border: 1px solid var(--border-subtle);
+                    color: var(--text-dim);
+                    padding: 8px 18px;
+                    border-radius: var(--radius-full);
+                    font-size: 0.84rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: var(--transition);
+                    white-space: nowrap;
+                }
+                .filter-pill:hover { border-color: var(--brand-blue); color: #fff; }
+                .filter-pill--active {
+                    background: var(--brand-blue);
+                    border-color: var(--brand-blue);
+                    color: #07090e !important;
+                    font-weight: 700;
+                }
+
                 .actives-grid {
                     display: grid;
                     grid-template-columns: repeat(2, 1fr);
-                    gap: 28px;
-                    margin-bottom: 48px;
+                    gap: 24px;
+                    margin-bottom: 40px;
                 }
 
                 .active-card {
@@ -346,8 +385,8 @@ const AtivosPage = () => {
                 }
 
                 .active-seal-box {
-                    width: 64px;
-                    height: 64px;
+                    width: 60px;
+                    height: 60px;
                     border-radius: var(--radius-sm);
                     background: rgba(255,255,255,0.03);
                     border: 1px solid var(--border-subtle);
@@ -371,7 +410,7 @@ const AtivosPage = () => {
                 }
 
                 .active-lab-tag {
-                    font-size: 0.72rem;
+                    font-size: 0.7rem;
                     font-weight: 700;
                     text-transform: uppercase;
                     color: var(--brand-blue);
@@ -379,7 +418,7 @@ const AtivosPage = () => {
                 }
 
                 .active-title {
-                    font-size: 1.35rem;
+                    font-size: 1.3rem;
                     font-weight: 800;
                     margin: 0;
                 }
@@ -389,19 +428,18 @@ const AtivosPage = () => {
                     color: var(--text-muted);
                 }
 
-                /* Enquadramento proporcional perfeito para as imagens sem corte */
                 .active-banner-preview {
                     width: 100%;
-                    height: 200px;
+                    height: 180px;
                     border-radius: var(--radius-sm);
                     overflow: hidden;
-                    margin-bottom: 16px;
+                    margin-bottom: 14px;
                     border: 1px solid var(--border-subtle);
                     background: rgba(0, 0, 0, 0.4);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    padding: 8px;
+                    padding: 6px;
                 }
 
                 .active-banner-preview img {
@@ -417,19 +455,19 @@ const AtivosPage = () => {
                     flex: 1;
                     display: flex;
                     flex-direction: column;
-                    gap: 10px;
-                    margin-bottom: 20px;
+                    gap: 8px;
+                    margin-bottom: 18px;
                 }
 
                 .active-card-body h4 {
-                    font-size: 0.95rem;
+                    font-size: 0.92rem;
                     font-weight: 700;
                     color: #fff;
                     line-height: 1.4;
                 }
 
                 .active-card-body p {
-                    font-size: 0.85rem;
+                    font-size: 0.84rem;
                     color: var(--text-dim);
                     line-height: 1.55;
                     margin: 0;
@@ -439,14 +477,14 @@ const AtivosPage = () => {
                     display: flex;
                     flex-wrap: wrap;
                     gap: 6px;
-                    margin-top: 6px;
+                    margin-top: 4px;
                 }
 
                 .active-mini-tag {
                     display: inline-flex;
                     align-items: center;
                     gap: 4px;
-                    font-size: 0.72rem;
+                    font-size: 0.7rem;
                     font-weight: 600;
                     padding: 3px 8px;
                     border-radius: var(--radius-xs);
@@ -457,7 +495,7 @@ const AtivosPage = () => {
 
                 .active-card-actions {
                     margin-top: auto;
-                    padding-top: 16px;
+                    padding-top: 14px;
                     border-top: 1px solid var(--border-subtle);
                 }
 
@@ -465,39 +503,46 @@ const AtivosPage = () => {
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    gap: 28px;
-                    padding: 36px;
+                    gap: 24px;
+                    padding: 30px;
                 }
 
                 .cta-box-left {
                     display: flex;
                     align-items: flex-start;
-                    gap: 18px;
-                    max-width: 600px;
+                    gap: 16px;
+                    max-width: 580px;
                 }
 
                 .cta-box-left h3 {
-                    font-size: 1.2rem;
+                    font-size: 1.1rem;
                     margin-bottom: 4px;
                 }
 
                 .cta-box-left p {
-                    font-size: 0.88rem;
+                    font-size: 0.86rem;
                     margin: 0;
                 }
 
                 .cta-box-btns {
                     display: flex;
-                    gap: 12px;
+                    gap: 10px;
                     flex-shrink: 0;
                 }
 
                 @media (max-width: 960px) {
                     .actives-grid { grid-template-columns: 1fr; }
+                    .filter-bar { flex-wrap: nowrap; justify-content: flex-start; padding: 0 4px; }
                     .authenticity-guarantee-card { flex-direction: column; text-align: center; }
-                    .active-cta-box { flex-direction: column; text-align: center; }
+                    .active-cta-box { flex-direction: column; text-align: center; padding: 22px 18px; }
                     .cta-box-left { flex-direction: column; align-items: center; }
                     .cta-box-btns { width: 100%; flex-direction: column; }
+                    .cta-box-btns a { width: 100%; justify-content: center; }
+                }
+
+                @media (max-width: 600px) {
+                    .active-card { padding: 18px 14px; }
+                    .active-banner-preview { height: 160px; }
                 }
             `}</style>
         </div>

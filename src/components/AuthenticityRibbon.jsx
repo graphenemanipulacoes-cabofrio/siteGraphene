@@ -26,13 +26,13 @@ const AuthenticityRibbon = () => {
                                 <ShieldCheck size={24} color="var(--brand-green)" />
                             </div>
                             <div>
-                                <h3>Garantia de Matéria-Prima Original & Selos de Autenticidade</h3>
+                                <h3>Garantia de Matéria-Prima Original & Selos</h3>
                                 <p>Manipulamos exclusivamente os ativos legítimos dos fornecedores de referência mundial.</p>
                             </div>
                         </div>
 
                         <Link to="/ativos" className="btn-header-receita ribbon-link-btn">
-                            <span>Ver Todos os 15 Ativos</span>
+                            <span>Ver Todos os Ativos</span>
                             <ArrowRight size={15} />
                         </Link>
                     </div>
@@ -53,11 +53,11 @@ const AuthenticityRibbon = () => {
 
             <style>{`
                 .authenticity-ribbon-section {
-                    padding: 20px 0 60px;
+                    padding: 10px 0 50px;
                 }
 
                 .ribbon-card {
-                    padding: 32px 36px;
+                    padding: 30px 32px;
                     background: linear-gradient(135deg, rgba(17,22,34,0.95) 0%, rgba(12,16,24,0.95) 100%);
                     border: 1px solid var(--border-card);
                 }
@@ -67,19 +67,19 @@ const AuthenticityRibbon = () => {
                     align-items: center;
                     justify-content: space-between;
                     gap: 20px;
-                    margin-bottom: 24px;
+                    margin-bottom: 22px;
                     flex-wrap: wrap;
                 }
 
                 .ribbon-title-wrap {
                     display: flex;
                     align-items: center;
-                    gap: 16px;
+                    gap: 14px;
                 }
 
                 .ribbon-icon {
-                    width: 48px;
-                    height: 48px;
+                    width: 44px;
+                    height: 44px;
                     border-radius: var(--radius-xs);
                     background: rgba(16,185,129,0.1);
                     border: 1px solid rgba(16,185,129,0.25);
@@ -90,24 +90,25 @@ const AuthenticityRibbon = () => {
                 }
 
                 .ribbon-title-wrap h3 {
-                    font-size: 1.15rem;
+                    font-size: 1.1rem;
                     font-weight: 800;
-                    margin-bottom: 3px;
+                    margin-bottom: 2px;
                 }
 
                 .ribbon-title-wrap p {
-                    font-size: 0.85rem;
+                    font-size: 0.84rem;
                     margin: 0;
                 }
 
                 .ribbon-link-btn {
                     padding: 10px 18px;
+                    font-size: 0.82rem;
                 }
 
                 .seals-scroll-row {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-                    gap: 14px;
+                    grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+                    gap: 12px;
                 }
 
                 .seal-badge-item {
@@ -115,7 +116,7 @@ const AuthenticityRibbon = () => {
                     flex-direction: column;
                     align-items: center;
                     text-align: center;
-                    padding: 12px 8px;
+                    padding: 12px 6px;
                     background: rgba(255,255,255,0.02);
                     border: 1px solid var(--border-subtle);
                     border-radius: var(--radius-sm);
@@ -129,12 +130,12 @@ const AuthenticityRibbon = () => {
                 }
 
                 .seal-badge-img-box {
-                    width: 52px;
-                    height: 52px;
+                    width: 48px;
+                    height: 48px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    margin-bottom: 8px;
+                    margin-bottom: 6px;
                 }
 
                 .seal-badge-img-box img {
@@ -144,25 +145,27 @@ const AuthenticityRibbon = () => {
                 }
 
                 .seal-badge-item strong {
-                    font-size: 0.78rem;
+                    font-size: 0.76rem;
                     color: #fff;
                     white-space: nowrap;
                 }
 
                 .seal-badge-item small {
-                    font-size: 0.68rem;
+                    font-size: 0.65rem;
                     color: var(--text-muted);
                     white-space: nowrap;
                 }
 
                 @media (max-width: 768px) {
-                    .ribbon-header { flex-direction: column; align-items: flex-start; }
+                    .ribbon-card { padding: 20px 16px; }
+                    .ribbon-header { flex-direction: column; align-items: flex-start; gap: 14px; }
                     .ribbon-link-btn { width: 100%; justify-content: center; }
-                    .seals-scroll-row { grid-template-columns: repeat(3, 1fr); }
+                    .seals-scroll-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
                 }
 
                 @media (max-width: 480px) {
                     .seals-scroll-row { grid-template-columns: repeat(2, 1fr); }
+                    .seal-badge-img-box { width: 42px; height: 42px; }
                 }
             `}</style>
         </section>

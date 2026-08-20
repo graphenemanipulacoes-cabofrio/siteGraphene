@@ -5,7 +5,6 @@ import { MessageCircle, ShoppingBag } from 'lucide-react';
 
 const categories = ['Todos', 'Metabolismo & Queima', 'Longevidade & Saúde', 'Performance & Força', 'Sono & Bem-Estar'];
 
-// Helper to auto-categorize products if not specified in database
 const getProductCategory = (name = '') => {
     const n = name.toLowerCase();
     if (n.includes('termogênico') || n.includes('morosil') || n.includes('mitburn')) return 'Metabolismo & Queima';
@@ -195,20 +194,22 @@ const ProductGrid = ({ searchTerm = '' }) => {
                         <span>Fórmulas e Produtos em Linha</span>
                     </div>
                     <h2>Nossos Produtos em <span className="highlight-blue">Destaque</span></h2>
-                    <p>Sugestões consagradas e fórmulas em destaque. Manipulamos qualquer composição sob medida sob prescrição médica ou nutricional.</p>
+                    <p>Fórmulas consagradas em estoque. Manipulamos qualquer composição personalizada sob prescrição médica.</p>
                 </div>
 
-                {/* Filter Pills */}
-                <div className="filter-bar">
-                    {categories.map((cat) => (
-                        <button
-                            key={cat}
-                            className={`filter-pill ${activeTab === cat ? 'filter-pill--active' : ''}`}
-                            onClick={() => setActiveTab(cat)}
-                        >
-                            {cat}
-                        </button>
-                    ))}
+                {/* Filter Pills com scroll horizontal suave no mobile */}
+                <div className="filter-bar-wrapper">
+                    <div className="filter-bar">
+                        {categories.map((cat) => (
+                            <button
+                                key={cat}
+                                className={`filter-pill ${activeTab === cat ? 'filter-pill--active' : ''}`}
+                                onClick={() => setActiveTab(cat)}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Grid */}
@@ -259,14 +260,55 @@ const ProductGrid = ({ searchTerm = '' }) => {
             </div>
 
             <style>{`
-                .filter-bar { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 40px; }
-                .filter-pill { background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); color: var(--text-dim); padding: 8px 20px; border-radius: var(--radius-full); font-size: 0.84rem; font-weight: 600; cursor: pointer; transition: var(--transition); }
+                .filter-bar-wrapper {
+                    width: 100%;
+                    overflow-x: auto;
+                    -webkit-overflow-scrolling: touch;
+                    scrollbar-width: none;
+                    margin-bottom: 36px;
+                }
+                .filter-bar-wrapper::-webkit-scrollbar { display: none; }
+
+                .filter-bar {
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    gap: 8px;
+                    min-width: min-content;
+                }
+
+                .filter-pill {
+                    background: rgba(255,255,255,0.04);
+                    border: 1px solid var(--border-subtle);
+                    color: var(--text-dim);
+                    padding: 8px 18px;
+                    border-radius: var(--radius-full);
+                    font-size: 0.84rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: var(--transition);
+                    white-space: nowrap;
+                }
                 .filter-pill:hover { border-color: var(--brand-blue); color: #fff; }
-                .filter-pill--active { background: var(--brand-blue); border-color: var(--brand-blue); color: #07090e !important; font-weight: 700; }
+                .filter-pill--active {
+                    background: var(--brand-blue);
+                    border-color: var(--brand-blue);
+                    color: #07090e !important;
+                    font-weight: 700;
+                }
 
-                .products-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+                .products-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 22px;
+                }
 
-                .product-card { display: flex; flex-direction: column; overflow: hidden; position: relative; }
+                .product-card {
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                    position: relative;
+                }
                 
                 .product-img-box {
                     position: relative;
@@ -296,20 +338,64 @@ const ProductGrid = ({ searchTerm = '' }) => {
                     display: block;
                 }
 
-                .product-info { flex: 1; padding: 18px 20px 12px; display: flex; flex-direction: column; gap: 6px; }
-                .product-info h3 { font-size: 1.08rem; font-weight: 700; }
+                .product-info {
+                    flex: 1;
+                    padding: 18px 20px 12px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+                .product-info h3 { font-size: 1.05rem; font-weight: 700; }
                 .product-info p { font-size: 0.84rem; color: var(--text-dim); line-height: 1.5; margin: 0; }
 
-                .product-footer { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--border-subtle); }
+                .product-footer {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 14px 20px;
+                    border-top: 1px solid var(--border-subtle);
+                    gap: 10px;
+                }
                 .product-price { display: flex; flex-direction: column; }
                 .price-small { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
-                .product-price strong { font-size: 1.2rem; font-family: var(--font-heading); }
-                .price-consulta { font-size: 0.95rem; color: var(--brand-blue); font-weight: 700; }
+                .product-price strong { font-size: 1.15rem; font-family: var(--font-heading); }
+                .price-consulta { font-size: 0.92rem; color: var(--brand-blue); font-weight: 700; white-space: nowrap; }
 
-                .btn-buy-sm { padding: 9px 16px; font-size: 0.82rem; }
+                .btn-buy-sm {
+                    padding: 10px 16px;
+                    font-size: 0.82rem;
+                    white-space: nowrap;
+                }
 
-                @media (max-width: 960px) { .products-grid { grid-template-columns: repeat(2, 1fr); } }
-                @media (max-width: 600px) { .products-grid { grid-template-columns: 1fr; } }
+                @media (max-width: 960px) {
+                    .products-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+                }
+
+                @media (max-width: 640px) {
+                    .filter-bar {
+                        flex-wrap: nowrap;
+                        justify-content: flex-start;
+                        padding: 0 4px;
+                    }
+                    .products-grid {
+                        grid-template-columns: 1fr;
+                        gap: 16px;
+                    }
+                    .product-img-box {
+                        height: 200px;
+                        padding: 12px;
+                    }
+                    .product-info {
+                        padding: 14px 16px 10px;
+                    }
+                    .product-footer {
+                        padding: 12px 16px;
+                    }
+                    .btn-buy-sm {
+                        flex: 1;
+                        padding: 12px;
+                    }
+                }
             `}</style>
         </section>
     );

@@ -67,7 +67,7 @@ const LaboratorioPage = () => {
                 <section className="store-section" style={{ paddingTop: 0 }}>
                     <div className="container">
                         <div className="store-card comparison-card">
-                            <h2 style={{ marginBottom: '24px' }}>Por que escolher a <span className="highlight-blue">Graphène</span></h2>
+                            <h2 style={{ marginBottom: '20px' }}>Por que escolher a <span className="highlight-blue">Graphène</span></h2>
                             <div className="comp-table">
                                 <div className="comp-row comp-header">
                                     <div>Critério</div>
@@ -143,7 +143,7 @@ const LaboratorioPage = () => {
                                     src={GOOGLE_MAPS_EMBED}
                                     width="100%"
                                     height="100%"
-                                    style={{ border: 0, borderRadius: 'var(--radius-sm)', minHeight: '380px' }}
+                                    style={{ border: 0, borderRadius: 'var(--radius-sm)', minHeight: '340px' }}
                                     allowFullScreen=""
                                     loading="lazy"
                                     referrerPolicy="no-referrer-when-downgrade"
@@ -158,42 +158,45 @@ const LaboratorioPage = () => {
             <FloatingWhatsApp />
 
             <style>{`
-                .page-hero { padding: 60px 0 40px; text-align: center; }
-                .page-hero h1 { font-size: clamp(2rem, 3.5vw, 2.8rem); font-weight: 800; margin: 10px 0; }
-                .page-hero p { font-size: 1.05rem; color: var(--text-dim); max-width: 640px; margin: 0 auto; }
+                .page-hero { padding: 48px 0 28px; text-align: center; }
+                .page-hero h1 { font-size: clamp(1.85rem, 3.5vw, 2.6rem); font-weight: 800; margin: 10px 0; }
+                .page-hero p { font-size: 1rem; color: var(--text-dim); max-width: 640px; margin: 0 auto; }
 
-                .lab-layout { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 32px; align-items: start; }
+                .lab-layout { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 28px; align-items: start; }
                 .lab-photo-frame { border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-card); }
-                .lab-photo { width: 100%; height: 420px; object-fit: cover; display: block; }
-                .lab-pillars { display: flex; flex-direction: column; gap: 16px; }
-                .pillar-card { display: flex; align-items: flex-start; gap: 16px; padding: 22px; }
-                .pillar-icon { width: 46px; height: 46px; border-radius: var(--radius-xs); background: rgba(255,255,255,0.03); border: 1px solid; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-                .pillar-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
-                .pillar-card p { font-size: 0.86rem; color: var(--text-dim); line-height: 1.5; margin: 0; }
+                .lab-photo { width: 100%; height: 400px; object-fit: cover; display: block; }
+                .lab-pillars { display: flex; flex-direction: column; gap: 14px; }
+                .pillar-card { display: flex; align-items: flex-start; gap: 14px; padding: 20px; }
+                .pillar-icon { width: 44px; height: 44px; border-radius: var(--radius-xs); background: rgba(255,255,255,0.03); border: 1px solid; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+                .pillar-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+                .pillar-card p { font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; margin: 0; }
 
-                .comparison-card { padding: 36px; }
+                .comparison-card { padding: 32px; }
                 .comp-table { display: flex; flex-direction: column; gap: 1px; background: var(--border-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); overflow: hidden; }
                 .comp-row { display: grid; grid-template-columns: 1fr 1.2fr 1.2fr; gap: 16px; padding: 14px 20px; background: var(--bg-card); align-items: center; }
                 .comp-header { background: rgba(255,255,255,0.03); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
-                .comp-crit { font-weight: 600; font-size: 0.9rem; }
-                .comp-yes { display: flex; align-items: center; gap: 8px; font-size: 0.86rem; font-weight: 600; color: var(--brand-green); }
-                .comp-no { display: flex; align-items: center; gap: 8px; font-size: 0.84rem; color: var(--text-muted); }
+                .comp-crit { font-weight: 600; font-size: 0.88rem; }
+                .comp-yes { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: var(--brand-green); }
+                .comp-no { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-muted); }
 
                 /* Localização */
-                .location-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 28px; align-items: stretch; }
-                .location-info-card { padding: 36px; display: flex; flex-direction: column; gap: 20px; }
-                .location-info-card h3 { font-size: 1.3rem; font-weight: 800; }
+                .location-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 24px; align-items: stretch; }
+                .location-info-card { padding: 32px; display: flex; flex-direction: column; gap: 18px; }
+                .location-info-card h3 { font-size: 1.25rem; font-weight: 800; }
                 .location-detail { display: flex; align-items: flex-start; gap: 12px; }
-                .location-detail strong { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 2px; }
-                .location-detail span { font-size: 0.88rem; color: var(--text-dim); line-height: 1.5; }
+                .location-detail strong { display: block; font-size: 0.84rem; font-weight: 700; margin-bottom: 2px; }
+                .location-detail span { font-size: 0.86rem; color: var(--text-dim); line-height: 1.5; }
                 .location-map-card { padding: 8px; overflow: hidden; }
                 .location-btn { width: 100%; margin-top: auto; }
 
                 @media (max-width: 960px) {
                     .lab-layout { grid-template-columns: 1fr; }
-                    .comp-row { grid-template-columns: 1fr; gap: 6px; }
+                    .comp-row { grid-template-columns: 1fr; gap: 6px; padding: 12px 14px; }
                     .comp-header { display: none; }
                     .location-grid { grid-template-columns: 1fr; }
+                    .lab-photo { height: 240px; }
+                    .comparison-card { padding: 20px 14px; }
+                    .location-info-card { padding: 22px 16px; }
                 }
             `}</style>
         </div>
