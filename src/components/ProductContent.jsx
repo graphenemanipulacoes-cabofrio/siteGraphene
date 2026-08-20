@@ -1,6 +1,5 @@
-import Button from './Button';
+import React from 'react';
 import { config } from '../config';
-
 
 const openWhatsApp = (product) => {
     const message = config.WHATSAPP_MESSAGES.product(product.name, product.price);
@@ -8,95 +7,153 @@ const openWhatsApp = (product) => {
     window.open(url, '_blank');
 };
 
-const ProductContent = ({ product }) => (
-    <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%'
-    }}>
-        {/* Imagem do Produto */}
-        <div style={{
-            height: '200px',
-            background: '#f1f5f9',
-            borderRadius: '12px',
-            marginBottom: '1rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-            position: 'relative',
-            border: '1px solid rgba(15, 23, 42, 0.05)'
-        }}>
-            {product.image_url ? (
-                <img
-                    src={product.image_url}
-                    alt={product.name}
-                    draggable="false"
-                    style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '1rem', userSelect: 'none' }}
-                    onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'block';
-                    }}
-                />
-            ) : null}
+const ProductContent = ({ product }) => {
+    const formattedPrice = product.price && Number(product.price) > 0
+        ? `R$ ${parseFloat(product.price).toFixed(2).replace('.', ',')}`
+        : null;
 
-            <div className="img-fallback" style={{
-                display: product.image_url ? 'none' : 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '100%',
-                height: '100%',
-                opacity: 0.3,
-                fontSize: '3rem'
-            }}>
-                💊
+    return (
+        <div className="lux-item-root">
+            <div className="lux-item-image-box">
+                {product.image_url ? (
+                    <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="lux-item-img"
+                        onError={(e) => {
+                            e.target.style.display = 'none';
+                            const fallback = e.target.parentElement.querySelector('.lux-fallback');
+                            if (fallback) fallback.style.display = 'flex';
+                        }}
+                    />
+                ) : null}
+                <div className="lux-fallback" style={{ display: product.image_url ? 'none' : 'flex' }}>
+                    <span>Fórmula Magistral</span>
+                </div>
             </div>
-        </div>
 
-        {/* Descrição - altura fixa para alinhar todos os cards */}
-        <div style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            marginBottom: '1rem'
-        }}>
-            <p style={{
-                color: 'var(--text-gray)',
-                fontSize: '0.9rem',
-                height: '5.5em',
-                overflow: 'hidden',
-                display: '-webkit-box',
-                WebkitLineClamp: 4,
-                WebkitBoxOrient: 'vertical',
-                textAlign: 'center',
-                margin: 0,
-                lineHeight: '1.4'
-            }}>
-                {product.description}
-            </p>
-            {Number(product.price) > 0 && (
-                <p className="text-gradient" style={{
-                    fontWeight: 'bold',
-                    fontSize: '1.2rem',
-                    marginTop: '0.75rem',
-                    textAlign: 'center'
-                }}>
-                    R$ {parseFloat(product.price).toFixed(2).replace('.', ',')}
-                </p>
-            )}
-        </div>
+            <div className="lux-item-details">
+                <h3 className="lux-item-title">{product.name}</h3>
+                <p className="lux-item-desc">{product.description}</p>
+            </div>
 
-        {/* Botão sempre na parte inferior */}
-        <div style={{ marginTop: 'auto' }}>
-            <Button
-                variant="outline"
-                style={{ width: '100%', justifyContent: 'center', borderRadius: 'var(--radius-sm)' }}
-                onClick={() => openWhatsApp(product)}
-            >
-                Quero este!
-            </Button>
+            <div className="lux-item-footer">
+                {formattedPrice ? (
+                    <div className="lux-item-price">{formattedPrice}</div>
+                ) : (
+                    <div className="lux-item-price" style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Sob Consulta</div>
+                )}
+                
+                <button
+                    onClick={() => openWhatsApp(product)}
+                    className="btn-lux-order"
+                >
+                    Solicitar via WhatsApp
+                </button>
+            </div>
+
+            <style>{`
+                .lux-item-root {
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
+                    gap: 16px;
+                }
+
+                .lux-item-image-box {
+                    height: 200px;
+                    background: var(--bg-surface-subtle);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 16px;
+                    overflow: hidden;
+                }
+
+                .lux-item-img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: contain;
+                    transition: transform 0.4s ease;
+                }
+
+                .lux-product-card:hover .lux-item-img {
+                    transform: scale(1.04);
+                }
+
+                .lux-fallback {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 0.82rem;
+                    color: var(--text-subtle);
+                    letter-spacing: 0.05em;
+                    text-transform: uppercase;
+                }
+
+                .lux-item-details {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+
+                .lux-item-title {
+                    font-family: var(--font-serif);
+                    font-size: 1.18rem;
+                    font-weight: 600;
+                    color: var(--text-main);
+                }
+
+                .lux-item-desc {
+                    font-size: 0.88rem;
+                    color: var(--text-muted);
+                    line-height: 1.5;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 3;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                    margin: 0;
+                }
+
+                .lux-item-footer {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    margin-top: auto;
+                    padding-top: 16px;
+                    border-top: 1px solid var(--border-hairline);
+                }
+
+                .lux-item-price {
+                    font-family: var(--font-sans);
+                    font-size: 1.05rem;
+                    font-weight: 600;
+                    color: var(--text-main);
+                }
+
+                .btn-lux-order {
+                    width: 100%;
+                    padding: 12px;
+                    background: transparent;
+                    border: 1px solid var(--border-hairline);
+                    color: var(--text-main);
+                    font-size: 0.78rem;
+                    font-weight: 600;
+                    letter-spacing: 0.06em;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                    transition: var(--transition);
+                }
+
+                .btn-lux-order:hover {
+                    background: var(--accent-dark);
+                    border-color: var(--accent-dark);
+                    color: #ffffff;
+                }
+            `}</style>
         </div>
-    </div>
-);
+    );
+};
 
 export default ProductContent;

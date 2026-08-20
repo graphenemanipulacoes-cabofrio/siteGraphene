@@ -1,160 +1,107 @@
-import { useState, useEffect, useRef } from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination, Navigation, Autoplay } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/pagination';
-import 'swiper/css/navigation';
+import { useState, useEffect } from 'react';
 import Card from './Card';
 import ProductContent from './ProductContent';
 import { supabase } from '../lib/supabaseClient';
 
+const fallbackProducts = [
+    {
+        id: '1',
+        name: 'Morosil® 500mg Autêntico',
+        description: 'Extrato patenteado da Laranja Moro da Sicília. Auxilia no gerenciamento de medidas e suporte metabólico.',
+        price: 159.90,
+        image_url: '/assets/morosil_new.png'
+    },
+    {
+        id: '2',
+        name: 'Melatonina 5mg Sublingual',
+        description: 'Indução suave e natural ao sono reparador. Regulação do ritmo circadiano e combate à insônia.',
+        price: 49.90,
+        image_url: '/assets/melatonina_caps.png'
+    },
+    {
+        id: '3',
+        name: 'Ashwagandha KSM-66 300mg',
+        description: 'Extrato nobre adaptógeno para controle do cortisol, redução do estresse e clareza mental.',
+        price: 65.00,
+        image_url: '/assets/ashwagandha.png'
+    },
+    {
+        id: '4',
+        name: 'Composto Termogênico',
+        description: 'Associação de ativos naturais para estímulo metabólico, gasto energético e disposição.',
+        price: 89.90,
+        image_url: '/assets/termogenico.png'
+    },
+    {
+        id: '5',
+        name: 'Maca Peruana Negra 500mg',
+        description: 'Superalimento andino para vigor físico, equilíbrio hormonal e disposição cotidiana.',
+        price: 39.90,
+        image_url: '/assets/maca_peruana.png'
+    },
+    {
+        id: '6',
+        name: 'Creatina Monohidratada 100% Pura',
+        description: 'Grau farmacêutico testado para força, resistência muscular e hidratação celular.',
+        price: 119.90,
+        image_url: '/assets/creatina.jpg'
+    }
+];
+
 const ProductCarousel = () => {
     const [products, setProducts] = useState([]);
-    const scrollContainerRef = useRef(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const [startX, setStartX] = useState(0);
-    const [scrollLeft, setScrollLeft] = useState(0);
-
-    // Mouse Drag Logic
-    const handleMouseDown = (e) => {
-        setIsDragging(true);
-        setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
-        setScrollLeft(scrollContainerRef.current.scrollLeft);
-    };
-
-    const handleMouseLeave = () => {
-        setIsDragging(false);
-    };
-
-    const handleMouseUp = () => {
-        setIsDragging(false);
-    };
-
-    const handleMouseMove = (e) => {
-        if (!isDragging) return;
-        e.preventDefault();
-        const x = e.pageX - scrollContainerRef.current.offsetLeft;
-        const walk = (x - startX) * 2; // Scroll-fast
-        scrollContainerRef.current.scrollLeft = scrollLeft - walk;
-    };
 
     useEffect(() => {
         const fetchProducts = async () => {
-            const { data } = await supabase
-                .from('produtos')
-                .select('*')
-                .order('display_order', { ascending: true })
-                .order('created_at', { ascending: true });
+            try {
+                const { data, error } = await supabase
+                    .from('produtos')
+                    .select('*')
+                    .order('display_order', { ascending: true, nullsFirst: false })
+                    .order('created_at', { ascending: true });
 
-            if (data && data.length > 0) {
-                setProducts(data);
-            } else {
-                setProducts([]);
+                if (!error && data && data.length > 0) {
+                    setProducts(data);
+                } else {
+                    setProducts(fallbackProducts);
+                }
+            } catch {
+                setProducts(fallbackProducts);
             }
         };
         fetchProducts();
     }, []);
 
-    if (products.length === 0) return null;
+    const displayList = products.length > 0 ? products : fallbackProducts;
 
     return (
-        <section id="products" style={{ padding: '4rem 0' }}>
-            <div className="container" style={{ position: 'relative', zIndex: 1 }}>
-                <div className="pattern-sunburst" style={{ position: 'absolute', top: '0', right: '0', width: '200px', height: '200px', opacity: 0.03, zIndex: -1 }} />
-
-                {/* DESKTOP VIEW - SWIPER */}
-                <div className="desktop-carousel">
-                    <Swiper
-                        modules={[Pagination, Navigation, Autoplay]}
-                        spaceBetween={30}
-                        navigation
-                        pagination={{ clickable: true }}
-                        autoplay={{ delay: 3000, disableOnInteraction: false }}
-                        loop={true}
-                        centeredSlides={false}
-                        slidesPerView={3}
-                        style={{ paddingBottom: '3rem' }}
-                    >
-                        {products.map((product) => (
-                            <SwiperSlide key={product.id}>
-                                <Card title={product.name}>
-                                    <ProductContent product={product} />
-                                </Card>
-                            </SwiperSlide>
-                        ))}
-                    </Swiper>
-                </div>
-
-                {/* MOBILE VIEW - NATIVE SCROLL WITH MOUSE SUPPORT */}
-                <div className="mobile-carousel">
-                    <div
-                        className="native-scroll-container"
-                        ref={scrollContainerRef}
-                        onMouseDown={handleMouseDown}
-                        onMouseLeave={handleMouseLeave}
-                        onMouseUp={handleMouseUp}
-                        onMouseMove={handleMouseMove}
-                        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'pan-x', zIndex: 10, position: 'relative' }}
-                    >
-                        {products.map((product) => (
-                            <div key={product.id} className="mobile-card-wrapper">
-                                <Card title={product.name}>
-                                    <ProductContent product={product} />
-                                </Card>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
+        <div className="lux-products-grid">
+            {displayList.map((product) => (
+                <Card key={product.id}>
+                    <ProductContent product={product} />
+                </Card>
+            ))}
 
             <style>{`
-                /* Desktop defaults */
-                .desktop-carousel { display: block; }
-                .mobile-carousel { display: none; }
-
-                /* Swiper Overrides */
-                .swiper-button-next, .swiper-button-prev { color: var(--primary-blue) !important; }
-                .swiper-pagination-bullet-active { background: var(--primary-blue) !important; }
-                .swiper-pagination-bullet { background: rgba(15, 23, 42, 0.2); }
+                .lux-products-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 24px;
+                }
 
                 @media (max-width: 1024px) {
-                    /* On Tablet/Mobile, switch to native scroll */
-                    .desktop-carousel { display: none; }
-                    .mobile-carousel { display: block; }
+                    .lux-products-grid {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+                }
 
-                    .native-scroll-container {
-                        display: flex;
-                        flex-wrap: nowrap;
-                        overflow-x: auto; /* standard */
-                        overflow-x: scroll; /* force scrollbars behavior */
-                        width: 100%;
-                        gap: 1rem;
-                        padding-bottom: 2rem;
-                        padding-right: 20px; /* End padding */
-                        scroll-snap-type: x mandatory;
-                        -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
-                        scrollbar-width: none; /* Firefox */
-                        user-select: none; /* Prevent text selection while dragging */
-                        cursor: grab; /* UI Hint */
-                        active { cursor: grabbing; }
-                    }
-                    .native-scroll-container::-webkit-scrollbar {
-                        display: none; /* Chrome/Safari */
-                    }
-
-                    .mobile-card-wrapper {
-                        flex: 0 0 85%; /* Shows 85% of card width */
-                        scroll-snap-align: center;
-                        height: auto; /* Let content dictate height */
-                        /* pointer-events removed to allow touch */
-                    }
-                    /* Re-enable events on children so buttons work */
-                    .mobile-card-wrapper * {
-                        pointer-events: auto;
+                @media (max-width: 640px) {
+                    .lux-products-grid {
+                        grid-template-columns: 1fr;
                     }
                 }
             `}</style>
-        </section>
+        </div>
     );
 };
 

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="60" height="104" viewBox="0 0 60 104">
+  <!-- Graphene Carbon Molecular Lattice (Hexagonal Honeycomb) -->
+  <path d="M30 0 L60 17.32 L60 51.96 L30 69.28 L0 51.96 L0 17.32 Z" fill="none" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1.2"/>
+  <path d="M30 104 L60 86.68 L60 51.96 L30 34.64 L0 51.96 L0 86.68 Z" fill="none" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1.2"/>
+  <!-- Carbon Atomic Nodes -->
+  <circle cx="30" cy="0" r="2" fill="rgba(255, 255, 255, 0.35)"/>
+  <circle cx="60" cy="17.32" r="2" fill="rgba(0, 180, 216, 0.4)"/>
+  <circle cx="60" cy="51.96" r="2" fill="rgba(255, 255, 255, 0.35)"/>
+  <circle cx="30" cy="69.28" r="2" fill="rgba(16, 185, 129, 0.4)"/>
+  <circle cx="0" cy="51.96" r="2" fill="rgba(255, 255, 255, 0.35)"/>
+  <circle cx="0" cy="17.32" r="2" fill="rgba(0, 180, 216, 0.4)"/>
+  <circle cx="30" cy="104" r="2" fill="rgba(255, 255, 255, 0.35)"/>
+</svg>
