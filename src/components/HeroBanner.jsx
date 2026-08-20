@@ -7,14 +7,16 @@ const HeroBanner = () => {
     return (
         <section className="hero-fullwidth">
             <div className="hero-fullwidth-inner">
-                {/* Imagem full-width panorâmica */}
-                <img
-                    src="/assets/graphene_banner_top.png"
-                    alt="Linha de Produtos Graphène Manipulações"
-                    className="hero-bg-img"
-                />
+                {/* Imagem do banner (full-width no desktop, imagem inteira empilhada no mobile) */}
+                <div className="hero-banner-image-box">
+                    <img
+                        src="/assets/graphene_banner_top.png"
+                        alt="Linha de Produtos Graphène Manipulações"
+                        className="hero-bg-img"
+                    />
+                </div>
 
-                {/* Overlay gradiente dinâmico */}
+                {/* Overlay gradiente exclusivo para o desktop */}
                 <div className="hero-overlay" />
 
                 {/* Conteúdo textual */}
@@ -30,7 +32,7 @@ const HeroBanner = () => {
                         </h1>
 
                         <p>
-                            Whey Protein Isolado, Creatina Pura, Termogênicos e fórmulas manipuladas sob medida com laudos de cromatografia — direto do nosso laboratório em Cabo Frio.
+                            Fórmulas manipuladas sob medida com laudos de pureza lote a lote e pesagem computadorizada — direto do nosso laboratório em Cabo Frio.
                         </p>
 
                         <div className="hero-cta-row">
@@ -69,10 +71,15 @@ const HeroBanner = () => {
                     align-items: center;
                 }
 
-                .hero-bg-img {
+                .hero-banner-image-box {
                     position: absolute;
                     top: 0;
                     left: 0;
+                    width: 100%;
+                    height: 100%;
+                }
+
+                .hero-bg-img {
                     width: 100%;
                     height: 100%;
                     object-fit: cover;
@@ -136,50 +143,69 @@ const HeroBanner = () => {
                     font-size: 0.9rem;
                 }
 
+                /* Mobile: Imagem 100% inteira no topo, texto ajustado abaixo */
                 @media (max-width: 960px) {
-                    .hero-bg-img {
-                        object-position: 75% top;
-                    }
-                    .hero-overlay {
-                        width: 100%;
-                        background: linear-gradient(180deg,
-                            rgba(7,9,14,0.3) 0%,
-                            rgba(7,9,14,0.75) 40%,
-                            rgba(7,9,14,0.96) 80%,
-                            rgba(7,9,14,0.98) 100%
-                        );
-                    }
                     .hero-fullwidth-inner {
-                        min-height: 480px;
+                        display: flex;
+                        flex-direction: column;
+                        min-height: auto;
                         max-height: none;
                     }
-                    .hero-content-positioned {
-                        padding: 120px 16px 40px;
-                        display: flex;
-                        align-items: flex-end;
+
+                    .hero-banner-image-box {
+                        position: relative;
+                        width: 100%;
+                        height: auto;
+                        background: #040508;
+                        border-bottom: 1px solid var(--border-subtle);
                     }
+
+                    .hero-bg-img {
+                        position: relative;
+                        width: 100%;
+                        height: auto;
+                        object-fit: contain;
+                        display: block;
+                    }
+
+                    .hero-overlay {
+                        display: none;
+                    }
+
+                    .hero-content-positioned {
+                        position: relative;
+                        width: 100%;
+                        padding: 24px 16px 28px;
+                        background: #07090e;
+                    }
+
                     .hero-text-block {
                         max-width: 100%;
+                        gap: 12px;
                     }
-                }
 
-                @media (max-width: 600px) {
-                    .hero-content-positioned {
-                        padding: 140px 16px 36px;
-                    }
                     .hero-text-block h1 {
-                        font-size: clamp(1.65rem, 6.5vw, 2.2rem);
+                        font-size: clamp(1.45rem, 5.5vw, 1.95rem);
+                        line-height: 1.22;
                     }
+
                     .hero-text-block p {
-                        font-size: 0.92rem;
+                        font-size: 0.9rem;
+                        line-height: 1.55;
                     }
+
                     .hero-cta-row {
                         flex-direction: column;
                         width: 100%;
+                        gap: 10px;
+                        margin-top: 4px;
                     }
+
                     .hero-btn {
                         width: 100%;
                         justify-content: center;
+                        padding: 12px 20px;
+                        font-size: 0.88rem;
                     }
                 }
             `}</style>
