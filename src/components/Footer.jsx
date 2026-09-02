@@ -59,7 +59,7 @@ const Footer = () => {
                 .footer-links a { font-size: 0.86rem; color: var(--text-dim); }
                 .footer-links a:hover { color: var(--brand-blue); }
                 .footer-reg { font-size: 0.82rem; color: var(--text-dim); line-height: 1.5; margin-bottom: 12px; }
-                .footer-badge { display: flex; align-items: center; gap: 6px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); padding: 6px 10px; border-radius: var(--radius-xs); font-size: 0.74rem; font-weight: 600; color: var(--brand-green); }
+                .footer-badge { display: flex; align-items: center; gap: 6px; background: rgba(36,211,154,0.08); border: 1px solid var(--border-green); padding: 6px 10px; border-radius: var(--radius-xs); font-size: 0.74rem; font-weight: 700; color: var(--brand-green); }
                 .footer-copyright-row { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; font-size: 0.78rem; color: var(--text-muted); }
                 .admin-link { color: var(--text-muted); }
                 .admin-link:hover { color: var(--brand-blue); }

@@ -1,6 +1,5 @@
 import React from 'react';
-import { getWhatsAppUrl } from '../config';
-import { MessageCircle, FileUp, Sparkles } from 'lucide-react';
+import { FileUp, ShoppingBag, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const HeroBanner = () => {
@@ -36,16 +35,11 @@ const HeroBanner = () => {
                         </p>
 
                         <div className="hero-cta-row">
-                            <a
-                                href={getWhatsAppUrl('Olá, vi os produtos no site da Graphène e gostaria de fazer um pedido.')}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-buy-wa hero-btn"
-                            >
-                                <MessageCircle size={18} />
-                                <span>Comprar no WhatsApp</span>
+                            <a href="#produtos" className="btn-commerce hero-btn">
+                                <ShoppingBag size={18} />
+                                <span>Comprar produtos</span>
                             </a>
-                            <Link to="/receita" className="btn-cta-blue hero-btn">
+                            <Link to="/receita" className="btn-cta-outline hero-btn">
                                 <FileUp size={18} />
                                 <span>Manipular Receita</span>
                             </Link>
@@ -95,8 +89,8 @@ const HeroBanner = () => {
                     height: 100%;
                     background: linear-gradient(90deg,
                         rgba(7, 9, 14, 0.96) 0%,
-                        rgba(7, 9, 14, 0.88) 40%,
-                        rgba(7, 9, 14, 0.5) 70%,
+                        rgba(7, 10, 16, 0.92) 40%,
+                        rgba(7, 10, 16, 0.62) 70%,
                         rgba(7, 9, 14, 0) 100%
                     );
                     z-index: 1;

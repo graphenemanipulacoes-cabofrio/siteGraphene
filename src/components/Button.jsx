@@ -28,7 +28,7 @@ const Button = ({ children, variant = 'primary', size = 'md', onClick, className
     const variants = {
         primary: {
             background: 'var(--gradient-primary)',
-            color: '#fff',
+            color: 'var(--action-ink)',
             boxShadow: '0 4px 14px rgba(14, 165, 233, 0.2), inset 0 1px 0 rgba(255,255,255,0.15)',
         },
         secondary: {
@@ -42,9 +42,9 @@ const Button = ({ children, variant = 'primary', size = 'md', onClick, className
             boxShadow: '0 4px 14px rgba(15, 23, 42, 0.15), inset 0 1px 0 rgba(255,255,255,0.1)',
         },
         outline: {
-            background: 'transparent',
-            border: '1.5px solid var(--primary-600)',
-            color: 'var(--primary-600)',
+            background: 'rgba(34, 199, 232, 0.06)',
+            border: '1.5px solid var(--border-blue)',
+            color: 'var(--brand-blue)',
             boxShadow: 'none',
         },
         ghost: {
@@ -53,9 +53,9 @@ const Button = ({ children, variant = 'primary', size = 'md', onClick, className
             boxShadow: 'none',
         },
         glass: {
-            background: 'rgba(255, 255, 255, 0.8)',
+            background: 'rgba(255, 255, 255, 0.06)',
             backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(0, 0, 0, 0.08)',
+            border: '1px solid var(--border-card)',
             color: 'var(--text-main)',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)',
         },
@@ -73,7 +73,7 @@ const Button = ({ children, variant = 'primary', size = 'md', onClick, className
             if (variant === 'primary') {
                 e.currentTarget.style.boxShadow = '0 6px 20px rgba(14, 165, 233, 0.35), inset 0 1px 0 rgba(255,255,255,0.25)';
             } else if (variant === 'outline') {
-                e.currentTarget.style.background = 'var(--primary-50)';
+                e.currentTarget.style.background = 'rgba(34, 199, 232, 0.13)';
             } else if (variant === 'ghost') {
                 e.currentTarget.style.background = 'var(--neutral-100)';
                 e.currentTarget.style.color = 'var(--text-main)';
@@ -87,7 +87,7 @@ const Button = ({ children, variant = 'primary', size = 'md', onClick, className
             if (variant === 'primary') {
                 e.currentTarget.style.boxShadow = '0 4px 14px rgba(14, 165, 233, 0.2), inset 0 1px 0 rgba(255,255,255,0.15)';
             } else if (variant === 'outline') {
-                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.background = 'rgba(34, 199, 232, 0.06)';
             } else if (variant === 'ghost') {
                 e.currentTarget.style.background = 'transparent';
                 e.currentTarget.style.color = 'var(--text-secondary)';

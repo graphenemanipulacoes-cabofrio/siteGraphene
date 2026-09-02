@@ -6,7 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { Toaster, toast } from 'sonner';
 import AdminProducts from '../components/AdminProducts';
-import { getSession, destroySession } from '../utils/security';
+import { getSession, destroySession, hashPassword } from '../utils/security';
 
 const Admin = () => {
     const [requests, setRequests] = useState([]);
@@ -21,6 +21,23 @@ const Admin = () => {
     const [selectedPartner, setSelectedPartner] = useState(null);
     const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
     const navigate = useNavigate();
+
+    const fetchRequests = useCallback(async () => {
+        const { data, error } = await supabase
+            .from('solicitacoes')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching requests:', error);
+        } else {
+            const filtered = data.filter(req => {
+                const status = req.status || 'active';
+                return view === 'active' ? status !== 'trash' : status === 'trash';
+            });
+            setRequests(filtered || []);
+        }
+    }, [view]);
 
     useEffect(() => {
         localStorage.setItem('admin_view', view);
@@ -105,24 +122,6 @@ const Admin = () => {
         }
     };
 
-    // Memoize fetchRequests to avoid re-creating it on every render
-    const fetchRequests = useCallback(async () => {
-        const { data, error } = await supabase
-            .from('solicitacoes')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('Error fetching requests:', error);
-        } else {
-            const filtered = data.filter(req => {
-                const status = req.status || 'active';
-                return view === 'active' ? status !== 'trash' : status === 'trash';
-            });
-            setRequests(filtered || []);
-        }
-    }, [view]);
-
     const updateStatus = async (id, newStatus) => {
         console.log(`Attempting to update status for ID: ${id} to ${newStatus}`);
         try {
@@ -205,7 +204,8 @@ const Admin = () => {
         e.preventDefault();
         if (!newAdminUser || !newAdminPass) return toast.error('Preencha usuário e senha');
 
-        const { error } = await supabase.from('admins').insert([{ username: newAdminUser, password: newAdminPass }]);
+        const hashedPassword = await hashPassword(newAdminPass);
+        const { error } = await supabase.from('admins').insert([{ username: newAdminUser, password: hashedPassword }]);
         if (error) {
             toast.error('Erro ao adicionar admin');
         } else {

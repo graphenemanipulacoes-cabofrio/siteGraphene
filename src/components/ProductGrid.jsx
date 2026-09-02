@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient.ts';
-import { config } from '../config';
-import { MessageCircle, ShoppingBag } from 'lucide-react';
+import { ShoppingBag, Zap } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useStore } from '../context/StoreContext';
+import { toast } from 'sonner';
 
 const categories = ['Todos', 'Metabolismo & Queima', 'Longevidade & Saúde', 'Performance & Força', 'Sono & Bem-Estar'];
 
@@ -139,6 +141,8 @@ const defaultProducts = [
 const ProductGrid = ({ searchTerm = '' }) => {
     const [activeTab, setActiveTab] = useState('Todos');
     const [productsList, setProductsList] = useState(defaultProducts);
+    const { addItem, customer } = useStore();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -180,9 +184,14 @@ const ProductGrid = ({ searchTerm = '' }) => {
         );
     }
 
-    const handleOrder = (product) => {
-        const msg = config.WHATSAPP_MESSAGES.product(product.name, product.price ? product.price.replace(',', '.') : null);
-        window.open(`https://wa.me/${config.WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+    const startPurchase = (product, destination, intent) => {
+        if (!customer) {
+            navigate('/entrar', { state: { returnTo: destination, intent, pendingProduct: product } });
+            return;
+        }
+        addItem(product);
+        toast.success(`${product.name} foi adicionado à sacola.`);
+        navigate(destination);
     };
 
     return (
@@ -228,25 +237,25 @@ const ProductGrid = ({ searchTerm = '' }) => {
                             </div>
 
                             <div className="product-info">
-                                <h3>{item.name}</h3>
+                                <Link to={`/produto/${item.id}`} state={{ product: item }} className="product-name-link"><h3>{item.name}</h3></Link>
                                 <p>{item.description}</p>
                             </div>
 
                             <div className="product-footer">
-                                <div className="product-price">
-                                    {item.price ? (
-                                        <>
-                                            <span className="price-small">a partir de</span>
-                                            <strong>R$ {item.price}</strong>
-                                        </>
-                                    ) : (
-                                        <strong className="price-consulta">Sob Consulta</strong>
-                                    )}
+                                <div className="product-price-row">
+                                    <div className="product-price">
+                                        {item.price ? (
+                                            <>
+                                                <span className="price-small">a partir de</span>
+                                                <strong>R$ {item.price}</strong>
+                                            </>
+                                        ) : null}
+                                    </div>
                                 </div>
-                                <button onClick={() => handleOrder(item)} className="btn-buy-wa btn-buy-sm">
-                                    <MessageCircle size={15} />
-                                    <span>Pedir no WhatsApp</span>
-                                </button>
+                                <div className="product-card-actions">
+                                    <button onClick={() => startPurchase(item, '/carrinho', 'cart')} className="btn-add-cart"><ShoppingBag size={16} /><span>Adicionar ao carrinho</span></button>
+                                    <button onClick={() => startPurchase(item, '/checkout', 'checkout')} className="btn-buy-now"><Zap size={16} /><span>Comprar agora</span></button>
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -346,26 +355,27 @@ const ProductGrid = ({ searchTerm = '' }) => {
                     gap: 6px;
                 }
                 .product-info h3 { font-size: 1.05rem; font-weight: 700; }
+                .product-name-link:hover h3 { color: var(--brand-blue); }
                 .product-info p { font-size: 0.84rem; color: var(--text-dim); line-height: 1.5; margin: 0; }
 
                 .product-footer {
                     display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 14px 20px;
+                    flex-direction: column;
+                    padding: 16px 20px 18px;
                     border-top: 1px solid var(--border-subtle);
-                    gap: 10px;
+                    gap: 14px;
                 }
+                .product-price-row { display:flex; align-items:flex-end; min-height:27px; }
                 .product-price { display: flex; flex-direction: column; }
                 .price-small { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
                 .product-price strong { font-size: 1.15rem; font-family: var(--font-heading); }
-                .price-consulta { font-size: 0.92rem; color: var(--brand-blue); font-weight: 700; white-space: nowrap; }
 
-                .btn-buy-sm {
-                    padding: 10px 16px;
-                    font-size: 0.82rem;
-                    white-space: nowrap;
-                }
+                .product-card-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+                .btn-add-cart, .btn-buy-now { min-height:44px; display:flex; align-items:center; justify-content:center; gap:7px; border-radius:9px; font-size:.78rem; font-weight:800; transition:var(--transition); cursor:pointer; }
+                .btn-add-cart { background:rgba(34,199,232,.07); color:var(--brand-blue); border:1px solid var(--border-blue); }
+                .btn-add-cart:hover { color:var(--brand-blue-light); border-color:var(--brand-blue); background:rgba(34,199,232,.14); transform:translateY(-1px); }
+                .btn-buy-now { background:var(--brand-green); color:var(--action-ink); border:1px solid var(--brand-green); box-shadow:var(--shadow-btn-green); }
+                .btn-buy-now:hover { background:var(--brand-green-hover); border-color:var(--brand-green-hover); transform:translateY(-1px); }
 
                 @media (max-width: 960px) {
                     .products-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
@@ -391,10 +401,7 @@ const ProductGrid = ({ searchTerm = '' }) => {
                     .product-footer {
                         padding: 12px 16px;
                     }
-                    .btn-buy-sm {
-                        flex: 1;
-                        padding: 12px;
-                    }
+                    .product-footer { padding:14px 16px 16px; }
                 }
             `}</style>
         </section>

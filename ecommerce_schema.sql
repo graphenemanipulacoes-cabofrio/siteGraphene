@@ -1,0 +1,6 @@
+-- A migration segura e versionada está em:
+-- supabase/migrations/202609020001_secure_ecommerce.sql
+--
+-- Aplique com o Supabase CLI depois de vincular este diretório ao projeto:
+--   npx supabase link --project-ref SEU_PROJECT_REF
+--   npx supabase db push

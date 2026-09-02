@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { getWhatsAppUrl } from '../config';
-import { Menu, X, MessageCircle, FileUp, Search, ShieldCheck, MapPin, Truck, Phone, Award, ChevronRight } from 'lucide-react';
+import { Menu, X, MessageCircle, FileUp, Search, ShieldCheck, MapPin, Truck, Phone, Award, ChevronRight, ShoppingBag, UserRound } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useStore } from '../context/StoreContext';
 
 const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
     const [scrolled, setScrolled] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const location = useLocation();
+    const { itemCount, customer } = useStore();
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -23,10 +25,15 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
     useEffect(() => {
         if (menuOpen) {
             document.body.style.overflow = 'hidden';
+            document.body.classList.add('mobile-menu-open');
         } else {
             document.body.style.overflow = 'unset';
+            document.body.classList.remove('mobile-menu-open');
         }
-        return () => { document.body.style.overflow = 'unset'; };
+        return () => {
+            document.body.style.overflow = 'unset';
+            document.body.classList.remove('mobile-menu-open');
+        };
     }, [menuOpen]);
 
     const navItems = [
@@ -81,6 +88,15 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                     )}
 
                     <div className="store-header-actions">
+                        <Link to={customer ? '/minha-conta' : '/entrar'} className="btn-header-icon" aria-label="Minha conta" title="Minha conta">
+                            <UserRound size={18} />
+                            <span className="header-icon-label">{customer ? 'Minha conta' : 'Entrar'}</span>
+                        </Link>
+                        <Link to="/carrinho" className="btn-header-icon cart-header-link" aria-label={`Sacola com ${itemCount} itens`} title="Sacola">
+                            <ShoppingBag size={18} />
+                            {itemCount > 0 && <span className="cart-count">{itemCount > 9 ? '9+' : itemCount}</span>}
+                            <span className="header-icon-label">Sacola</span>
+                        </Link>
                         <Link to="/receita" className="btn-header-receita">
                             <FileUp size={15} />
                             <span>Enviar Receita</span>
@@ -145,6 +161,8 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                         </div>
 
                         <div className="mobile-drawer-links">
+                            <Link to={customer ? '/minha-conta' : '/entrar'} className="mobile-drawer-link" onClick={() => setMenuOpen(false)}><div className="drawer-link-content"><UserRound size={15}/><span>{customer ? 'Minha conta' : 'Entrar / Criar conta'}</span></div><ChevronRight size={16} opacity={0.4} /></Link>
+                            <Link to="/carrinho" className="mobile-drawer-link" onClick={() => setMenuOpen(false)}><div className="drawer-link-content"><ShoppingBag size={15}/><span>Sacola {itemCount ? `(${itemCount})` : ''}</span></div><ChevronRight size={16} opacity={0.4} /></Link>
                             {navItems.map((item, idx) => (
                                 <Link
                                     key={idx}
@@ -191,7 +209,7 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                 .top-bar-left, .top-bar-right { display: flex; align-items: center; gap: 10px; }
                 .top-bar-left span, .top-bar-right span { display: inline-flex; align-items: center; gap: 4px; }
                 .divider-dot { color: var(--text-muted); opacity: 0.5; }
-                .top-wa-link { display: inline-flex; align-items: center; gap: 4px; color: var(--brand-green); font-weight: 600; }
+                .top-wa-link { display: inline-flex; align-items: center; gap: 4px; color: var(--brand-green); font-weight: 700; }
                 .anvisa-tag { color: var(--brand-blue); font-weight: 600; }
 
                 .store-main-header {
@@ -223,13 +241,16 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                 .store-search-bar input:focus { border-color: var(--brand-blue); background: rgba(255,255,255,0.08); }
 
                 .store-header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+                .btn-header-icon { position: relative; display: inline-flex; align-items: center; gap: 6px; color: var(--text-dim); font-size: .78rem; font-weight: 700; padding: 8px 7px; border-radius: var(--radius-sm); transition: var(--transition); }
+                .btn-header-icon:hover { color: var(--brand-blue); background: rgba(0,180,216,.08); }
+                .cart-count { position: absolute; top: 1px; right: 0; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; display: grid; place-items: center; background: var(--brand-green); color: var(--action-ink); font-size: .62rem; font-weight:900; border: 2px solid #070a10; }
                 .btn-header-receita {
                     display: inline-flex;
                     align-items: center;
                     gap: 6px;
                     padding: 8px 14px;
                     border-radius: var(--radius-sm);
-                    background: rgba(0,180,216,0.12);
+                    background: rgba(34,199,232,0.10);
                     border: 1px solid var(--border-blue);
                     color: var(--brand-blue);
                     font-size: 0.8rem;
@@ -243,13 +264,14 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                     gap: 6px;
                     padding: 8px 14px;
                     border-radius: var(--radius-sm);
-                    background: var(--brand-green);
-                    color: #fff !important;
+                    background: rgba(36,211,154,.08);
+                    border: 1px solid var(--border-green);
+                    color: var(--brand-green) !important;
                     font-size: 0.8rem;
                     font-weight: 700;
                     transition: var(--transition);
                 }
-                .btn-header-wa:hover { background: var(--brand-green-hover); }
+                .btn-header-wa:hover { background: rgba(36,211,154,.16); border-color:var(--brand-green); }
                 
                 .store-menu-toggle {
                     display: none;
@@ -402,8 +424,13 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                     .store-mobile-search-strip { display: block; }
                 }
 
+                @media (max-width: 820px) {
+                    .btn-header-receita, .btn-header-wa { display: none; }
+                    .header-icon-label { display: none; }
+                    .btn-header-icon { padding: 8px 5px; }
+                }
+
                 @media (max-width: 600px) {
-                    .btn-header-receita { display: none; }
                     .header-content-grid { height: 56px; }
                     .top-bar-right { width: 100%; justify-content: space-between; }
                 }

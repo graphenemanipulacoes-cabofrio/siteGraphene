@@ -10,8 +10,16 @@ export const hashPassword = async (password) => {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
+export const isPasswordHash = (value) => /^[a-f0-9]{64}$/i.test(value || '');
+
 // Verify password against stored hash
 export const verifyPassword = async (password, storedHash) => {
+  // Keeps existing administrators able to sign in while their legacy passwords
+  // are upgraded after a successful login.
+  if (!isPasswordHash(storedHash)) {
+    return password === storedHash;
+  }
+
   const inputHash = await hashPassword(password);
   return inputHash === storedHash;
 };

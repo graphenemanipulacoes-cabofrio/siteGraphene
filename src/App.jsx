@@ -8,6 +8,13 @@ import AvaliacoesPage from './pages/AvaliacoesPage';
 import Login from './pages/Login';
 import Admin from './pages/Admin';
 import PartnerRegistration from './pages/PartnerRegistration';
+import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
+import CustomerAccessPage from './pages/CustomerAccessPage';
+import AccountPage from './pages/AccountPage';
+import ProductPage from './pages/ProductPage';
+import PaymentReturnPage from './pages/PaymentReturnPage';
+import PasswordResetPage from './pages/PasswordResetPage';
 
 function App() {
   return (
@@ -22,6 +29,13 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/parceiros/cadastro" element={<PartnerRegistration />} />
+        <Route path="/produto/:id" element={<ProductPage />} />
+        <Route path="/carrinho" element={<CartPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/entrar" element={<CustomerAccessPage />} />
+        <Route path="/minha-conta" element={<AccountPage />} />
+        <Route path="/pedido/retorno" element={<PaymentReturnPage />} />
+        <Route path="/redefinir-senha" element={<PasswordResetPage />} />
       </Routes>
     </BrowserRouter>
   );

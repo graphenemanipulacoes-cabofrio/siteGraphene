@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { hashPassword, createSession, checkRateLimit, recordFailedAttempt, clearFailedAttempts } from '../utils/security';
+import { hashPassword, isPasswordHash, verifyPassword, createSession, checkRateLimit, recordFailedAttempt, clearFailedAttempts } from '../utils/security';
 import { Toaster, toast } from 'sonner';
 import { Lock, User, ArrowLeft, ShieldCheck } from 'lucide-react';
 
@@ -22,20 +22,34 @@ const Login = () => {
                 return;
             }
 
-            const hashedPassword = await hashPassword(password);
-
             const { data, error } = await supabase
                 .from('admins')
-                .select('*')
+                .select('id, username, password')
                 .ilike('username', username)
-                .eq('password', hashedPassword)
-                .single();
+                .maybeSingle();
 
-            if (error || !data) {
+            const credentialsAreValid = data && await verifyPassword(password, data.password);
+
+            if (error || !credentialsAreValid) {
                 recordFailedAttempt();
                 toast.error('Credenciais inválidas!');
             } else {
                 clearFailedAttempts();
+
+                // Existing records used plain-text passwords. Upgrade a legacy
+                // record only after its owner has authenticated successfully.
+                if (!isPasswordHash(data.password)) {
+                    const hashedPassword = await hashPassword(password);
+                    const { error: migrationError } = await supabase
+                        .from('admins')
+                        .update({ password: hashedPassword })
+                        .eq('id', data.id);
+
+                    if (migrationError) {
+                        console.error('Password migration error:', migrationError);
+                    }
+                }
+
                 createSession(data);
                 toast.success('Login realizado com sucesso!');
                 navigate('/admin');
@@ -116,11 +130,11 @@ const Login = () => {
                 .login-card-box {
                     width: 100%;
                     max-width: 440px;
-                    background: rgba(255, 255, 255, 0.98);
-                    border: 1px solid var(--border-light);
-                    border-radius: var(--radius-xl);
+                    background: #ffffff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 24px;
                     padding: 44px 36px;
-                    box-shadow: var(--shadow-xl);
+                    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
                 }
 
                 .back-home-link {
@@ -129,13 +143,13 @@ const Login = () => {
                     gap: 6px;
                     font-size: 0.85rem;
                     font-weight: 600;
-                    color: var(--text-light);
+                    color: #64748b;
                     margin-bottom: 24px;
-                    transition: color var(--transition-fast);
+                    transition: color 0.2s ease;
                 }
 
                 .back-home-link:hover {
-                    color: var(--primary);
+                    color: #0284c7;
                 }
 
                 .login-brand-header {
@@ -153,13 +167,13 @@ const Login = () => {
                 .login-brand-header h2 {
                     font-size: 1.45rem;
                     font-weight: 800;
-                    color: var(--text-primary);
+                    color: #0f172a;
                     margin-bottom: 4px;
                 }
 
                 .login-brand-header p {
                     font-size: 0.86rem;
-                    color: var(--text-secondary);
+                    color: #475569;
                 }
 
                 .login-form {
@@ -180,30 +194,49 @@ const Login = () => {
                     gap: 6px;
                     font-size: 0.84rem;
                     font-weight: 600;
-                    color: var(--text-primary);
+                    color: #1e293b;
                 }
 
                 .login-input-group input {
                     width: 100%;
                     padding: 13px 16px;
-                    border-radius: var(--radius-sm);
-                    border: 1.5px solid var(--border-light);
+                    border-radius: 10px;
+                    border: 1.5px solid #cbd5e1;
                     background: #f8fafc;
-                    color: var(--text-primary);
+                    color: #0f172a;
                     font-size: 0.95rem;
                     outline: none;
-                    transition: border-color var(--transition-fast);
+                    transition: border-color 0.2s ease, box-shadow 0.2s ease;
                 }
 
                 .login-input-group input:focus {
-                    border-color: var(--primary);
+                    border-color: #0284c7;
                     background: #ffffff;
+                    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
                 }
 
                 .login-submit-btn {
                     width: 100%;
                     padding: 14px;
                     margin-top: 8px;
+                    border: 0;
+                    border-radius: 10px;
+                    background: #0284c7;
+                    color: #ffffff;
+                    font-size: 0.95rem;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: background 0.2s ease, transform 0.2s ease;
+                }
+
+                .login-submit-btn:hover:not(:disabled) {
+                    background: #0369a1;
+                    transform: translateY(-1px);
+                }
+
+                .login-submit-btn:disabled {
+                    cursor: wait;
+                    opacity: 0.7;
                 }
 
                 .login-security-footer {
@@ -213,7 +246,7 @@ const Login = () => {
                     gap: 6px;
                     margin-top: 24px;
                     font-size: 0.76rem;
-                    color: var(--text-light);
+                    color: #64748b;
                 }
             `}</style>
         </div>
