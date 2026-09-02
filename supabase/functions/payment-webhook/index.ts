@@ -31,8 +31,14 @@ Deno.serve(async (req: Request) => {
   await admin.from('orders').update({
     payment_status: paid ? 'paid' : payment.status === 'rejected' ? 'failed' : 'pending',
     status: paid ? 'paid' : order.payment_status === 'paid' ? 'paid' : 'awaiting_payment',
+    payment_method: payment.payment_type_id || payment.payment_method_id || null,
+    payment_details: {
+      provider: 'mercado_pago',
+      payment_id: String(payment.id || dataId),
+      installments: Number(payment.installments || 1),
+      status_detail: String(payment.status_detail || ''),
+    },
     paid_at: paid ? new Date().toISOString() : null, updated_at: new Date().toISOString(),
   }).eq('id', order.id);
   return new Response('ok', { status: 200 });
 });
-

@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Package, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink } from 'lucide-react';
+import { Package, PackageCheck, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { Toaster, toast } from 'sonner';
 import AdminProducts from '../components/AdminProducts';
-import { getSession, destroySession, hashPassword } from '../utils/security';
+import AdminOrders from '../components/AdminOrders';
+import { getSession, destroySession } from '../utils/security';
 
 const Admin = () => {
     const [requests, setRequests] = useState([]);
@@ -52,7 +53,7 @@ const Admin = () => {
     }, [navigate]);
 
     useEffect(() => {
-        if (view !== 'products') {
+        if (view === 'active' || view === 'trash') {
             fetchRequests();
         }
 
@@ -196,18 +197,26 @@ const Admin = () => {
     };
 
     const fetchAdmins = async () => {
-        const { data } = await supabase.from('admins').select('*').order('created_at', { ascending: false });
-        if (data) setAdmins(data);
+        const session = getSession();
+        const { data, error } = await supabase.functions.invoke('admin-orders', {
+            body: { action: 'list_admins' }, headers: { 'x-admin-token': session?.token || '' }
+        });
+        if (error || data?.error) toast.error('Erro ao carregar administradores');
+        else setAdmins(data.admins || []);
     };
 
     const handleAddAdmin = async (e) => {
         e.preventDefault();
         if (!newAdminUser || !newAdminPass) return toast.error('Preencha usuário e senha');
 
-        const hashedPassword = await hashPassword(newAdminPass);
-        const { error } = await supabase.from('admins').insert([{ username: newAdminUser, password: hashedPassword }]);
-        if (error) {
-            toast.error('Erro ao adicionar admin');
+        if (newAdminPass.length < 10) return toast.error('Use uma senha com pelo menos 10 caracteres');
+        const session = getSession();
+        const { data, error } = await supabase.functions.invoke('admin-orders', {
+            body: { action: 'add_admin', username: newAdminUser, password: newAdminPass },
+            headers: { 'x-admin-token': session?.token || '' }
+        });
+        if (error || data?.error) {
+            toast.error(data?.error === 'admin_exists' ? 'Esse usuário já existe' : 'Erro ao adicionar admin');
         } else {
             toast.success('Admin adicionado!');
             setNewAdminUser('');
@@ -218,8 +227,11 @@ const Admin = () => {
 
     const handleDeleteAdmin = async (id) => {
         if (!confirm('Remover este administrador?')) return;
-        const { error } = await supabase.from('admins').delete().eq('id', id);
-        if (error) toast.error('Erro ao remover');
+        const session = getSession();
+        const { data, error } = await supabase.functions.invoke('admin-orders', {
+            body: { action: 'delete_admin', adminId: id }, headers: { 'x-admin-token': session?.token || '' }
+        });
+        if (error || data?.error) toast.error(data?.error === 'protected_admin' ? 'Não é possível remover o próprio acesso ou o último administrador' : 'Erro ao remover');
         else {
             toast.success('Admin removido');
             fetchAdmins();
@@ -259,10 +271,17 @@ const Admin = () => {
         }
     };
 
-    const handleLogout = () => {
+    const handleLogout = useCallback(() => {
+        const session = getSession();
+        if (session?.token) {
+            supabase.functions.invoke('admin-orders', {
+                body: { action: 'logout' },
+                headers: { 'x-admin-token': session.token }
+            }).catch(() => {});
+        }
         destroySession();
         navigate('/login');
-    };
+    }, [navigate]);
 
     return (
         <div className="admin-container">
@@ -388,6 +407,10 @@ const Admin = () => {
                     <MessageCircle size={22} />
                     <span>Orçamentos</span>
                 </div>
+                <div className={`nav-item ${view === 'orders' ? 'active' : ''}`} onClick={() => setView('orders')}>
+                    <PackageCheck size={22} />
+                    <span>Pedidos</span>
+                </div>
                 <div className={`nav-item ${view === 'products' ? 'active' : ''}`} onClick={() => setView('products')}>
                     <Package size={22} />
                     <span>Produtos</span>
@@ -425,6 +448,13 @@ const Admin = () => {
                         onClick={() => { setView('active'); setExpandedId(null); }}
                     >
                         <MessageCircle size={18} /> Solicitações
+                    </Button>
+                    <Button
+                        variant={view === 'orders' ? 'primary' : 'glass'}
+                        style={{ justifyContent: 'flex-start', width: '100%' }}
+                        onClick={() => { setView('orders'); setExpandedId(null); }}
+                    >
+                        <PackageCheck size={18} /> Pedidos e Entregas
                     </Button>
                     <Button
                         variant={view === 'products' ? 'primary' : 'glass'}
@@ -469,7 +499,7 @@ const Admin = () => {
                             </Button>
                         )}
                         <h1 className="text-gradient" style={{ fontSize: 'clamp(1.2rem, 6vw, 2.5rem)', fontWeight: '800', letterSpacing: '-0.02em', WebkitTextStroke: '0px' }}>
-                            {view === 'active' ? 'Solicitações' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : 'Lixeira'}
+                            {view === 'active' ? 'Solicitações' : view === 'orders' ? 'Pedidos e Entregas' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : view === 'partners' ? 'Parceiros' : 'Lixeira'}
                         </h1>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -480,7 +510,9 @@ const Admin = () => {
                     </div>
                 </header>
 
-                {view === 'products' ? (
+                {view === 'orders' ? (
+                    <AdminOrders onUnauthorized={handleLogout} />
+                ) : view === 'products' ? (
                     <AdminProducts />
                 ) : view === 'partners' ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -557,7 +589,7 @@ const Admin = () => {
                                 </div>
                                 <div style={{ flex: '1 1 100%' }}>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Senha</label>
-                                    <input type="text" value={newAdminPass} onChange={e => setNewAdminPass(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }} />
+                                    <input type="password" autoComplete="new-password" value={newAdminPass} onChange={e => setNewAdminPass(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }} />
                                 </div>
                                 <Button type="submit" variant="primary" style={{ flex: '1 1 100%', justifyContent: 'center', marginTop: '1rem' }}>Adicionar</Button>
                             </form>

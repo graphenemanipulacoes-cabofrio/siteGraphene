@@ -27,9 +27,10 @@ export const verifyPassword = async (password, storedHash) => {
 // Session management utilities
 export const createSession = (userData) => {
   const session = {
-    user: userData.username,
+    user: userData.user || userData.username,
+    token: userData.token,
     created_at: Date.now(),
-    expires_at: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+    expires_at: userData.expiresAt ? new Date(userData.expiresAt).getTime() : Date.now() + (8 * 60 * 60 * 1000)
   };
   localStorage.setItem('admin_session', JSON.stringify(session));
   return session;
@@ -42,7 +43,7 @@ export const getSession = () => {
   try {
     const session = JSON.parse(sessionStr);
     // Check if session is expired
-    if (Date.now() > session.expires_at) {
+    if (!session.token || Date.now() > session.expires_at) {
       localStorage.removeItem('admin_session');
       return null;
     }

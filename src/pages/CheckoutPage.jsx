@@ -30,6 +30,7 @@ const CheckoutPage = () => {
         if (invokeError || !data?.paymentUrl) {
             const messages = {
                 payment_provider_not_configured: 'O pagamento ainda não foi ativado pela loja.',
+                invalid_document: 'Digite um CPF válido com 11 números.',
                 invalid_or_unpriced_product: 'Um dos produtos precisa ter o preço atualizado antes da compra.',
                 unable_to_create_order: 'Não foi possível validar os produtos deste pedido.',
             };

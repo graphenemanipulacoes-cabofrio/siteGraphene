@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { hashPassword, isPasswordHash, verifyPassword, createSession, checkRateLimit, recordFailedAttempt, clearFailedAttempts } from '../utils/security';
+import { createSession, clearFailedAttempts } from '../utils/security';
 import { Toaster, toast } from 'sonner';
 import { Lock, User, ArrowLeft, ShieldCheck } from 'lucide-react';
 
@@ -11,45 +11,25 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
+    useEffect(() => {
+        // Remove locks created by the former browser-only rate limiter. The
+        // server is now responsible for validating administrator credentials.
+        clearFailedAttempts();
+    }, []);
+
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
 
         try {
-            const rateLimit = checkRateLimit();
-            if (!rateLimit.allowed) {
-                toast.error(rateLimit.message);
-                return;
-            }
+            const { data, error } = await supabase.functions.invoke('admin-login', {
+                body: { username, password }
+            });
 
-            const { data, error } = await supabase
-                .from('admins')
-                .select('id, username, password')
-                .ilike('username', username)
-                .maybeSingle();
-
-            const credentialsAreValid = data && await verifyPassword(password, data.password);
-
-            if (error || !credentialsAreValid) {
-                recordFailedAttempt();
+            if (error || !data?.token) {
                 toast.error('Credenciais inválidas!');
             } else {
                 clearFailedAttempts();
-
-                // Existing records used plain-text passwords. Upgrade a legacy
-                // record only after its owner has authenticated successfully.
-                if (!isPasswordHash(data.password)) {
-                    const hashedPassword = await hashPassword(password);
-                    const { error: migrationError } = await supabase
-                        .from('admins')
-                        .update({ password: hashedPassword })
-                        .eq('id', data.id);
-
-                    if (migrationError) {
-                        console.error('Password migration error:', migrationError);
-                    }
-                }
-
                 createSession(data);
                 toast.success('Login realizado com sucesso!');
                 navigate('/admin');

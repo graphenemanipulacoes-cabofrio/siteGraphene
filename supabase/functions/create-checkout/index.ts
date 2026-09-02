@@ -25,12 +25,15 @@ Deno.serve(async (req: Request) => {
       address: clean(body.shipping?.address, 180), number: clean(body.shipping?.number, 20), complement: clean(body.shipping?.complement, 80),
     };
     if (!shipping.name || !shipping.phone || !shipping.zip || !shipping.address || !shipping.number) return json({ error: 'invalid_shipping' }, 400, origin);
+    const customerDocument = clean(body.payerDocument, 14).replace(/\D/g, '');
+    if (customerDocument.length !== 11) return json({ error: 'invalid_document' }, 400, origin);
 
     const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false, autoRefreshToken: false } });
     const { data: order, error: orderError } = await admin.rpc('create_checkout_order', {
       p_customer_id: user.id, p_customer_email: user.email, p_checkout_key: checkoutKey, p_items: items, p_shipping_address: shipping,
     });
     if (orderError || !order) return json({ error: 'unable_to_create_order' }, 422, origin);
+    await admin.from('orders').update({ customer_document: customerDocument }).eq('id', order.order_id);
 
     const accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
     if (!accessToken) return json({ error: 'payment_provider_not_configured', orderId: order.order_id }, 503, origin);
@@ -57,4 +60,3 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'internal_error' }, 500, origin || undefined);
   }
 });
-
