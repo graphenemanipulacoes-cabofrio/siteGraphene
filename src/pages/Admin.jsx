@@ -288,118 +288,94 @@ const Admin = () => {
             <style>{`
                 .admin-container {
                     display: grid;
-                    grid-template-columns: 250px 1fr;
+                    grid-template-columns: 272px minmax(0, 1fr);
                     min-height: 100vh;
-                    background: var(--bg-dark);
+                    background: radial-gradient(circle at 78% -12%, rgba(34, 199, 232, .11), transparent 28rem), #071018;
                 }
                 .admin-sidebar {
-                    padding: 2.5rem 2rem;
+                    padding: 24px 16px 18px;
                     display: flex;
                     flex-direction: column;
-                    gap: 2.5rem;
                     height: 100vh;
                     position: sticky;
                     top: 0;
-                    border-right: 1px solid rgba(255, 255, 255, 0.03);
-                    background: rgba(13, 17, 23, 0.4);
-                    backdrop-filter: blur(20px);
-                    box-shadow: 10px 0 30px rgba(0,0,0,0.2);
+                    border-right: 1px solid rgba(203, 213, 225, .10);
+                    background: linear-gradient(180deg, rgba(12, 22, 35, .98), rgba(7, 16, 27, .98));
+                    box-shadow: 16px 0 44px rgba(0, 0, 0, .18);
+                    z-index: 2;
                 }
-                .lg-hidden {
-                    display: none;
+                .admin-brand { display:flex; align-items:center; gap:11px; padding:4px 10px 26px; }
+                .admin-brand-mark { display:grid; place-items:center; width:35px; height:35px; border-radius:11px; background:linear-gradient(135deg, #22c7e8, #24d39a); color:#031319; font-weight:900; font-size:.78rem; letter-spacing:-1px; box-shadow:0 8px 24px rgba(34,199,232,.22); }
+                .admin-brand-copy { display:grid; gap:1px; }
+                .admin-brand-copy strong { font-family:var(--font-heading); font-size:1rem; letter-spacing:.05em; }
+                .admin-brand-copy span { color:var(--text-subtle); font-size:.67rem; font-weight:700; letter-spacing:.1em; }
+                .admin-nav { display:grid; gap:5px; flex:1; align-content:start; }
+                .admin-nav-label { color:#60728a; font-size:.63rem; font-weight:800; letter-spacing:.14em; margin:12px 10px 6px; }
+                .admin-nav-link { justify-content:flex-start!important; width:100%; min-height:44px; padding:10px 12px!important; border-radius:10px!important; background:transparent!important; border:1px solid transparent!important; color:#9fafc1!important; box-shadow:none!important; font-size:.86rem!important; }
+                .admin-nav-link:hover { background:rgba(255,255,255,.055)!important; color:#fff!important; transform:none!important; }
+                .admin-nav-link.active { background:linear-gradient(90deg, rgba(34,199,232,.17), rgba(34,199,232,.04))!important; border-color:rgba(34,199,232,.18)!important; color:#8ce8f8!important; box-shadow:inset 3px 0 0 #22c7e8!important; }
+                .admin-nav-link.active svg { color:#22c7e8; }
+                .admin-sidebar-footer { border-top:1px solid rgba(203,213,225,.09); padding:15px 4px 0; }
+                .admin-logout { width:100%; justify-content:flex-start!important; padding:10px 12px!important; border-radius:10px!important; color:#9fafc1!important; background:transparent!important; border:1px solid transparent!important; box-shadow:none!important; }
+                .admin-logout:hover { color:#fda4af!important; background:rgba(251,113,133,.08)!important; transform:none!important; }
+                .lg-hidden { display:none; }
+                .lg-visible { display:block; }
+                .admin-main { min-width:0; height:100vh; overflow-y:auto; padding:clamp(28px, 4vw, 58px); scrollbar-width:thin; scrollbar-color:rgba(148,163,184,.28) transparent; }
+                .admin-content { width:min(100%, 1370px); margin:0 auto; }
+                .admin-page-header { display:flex; justify-content:space-between; align-items:flex-end; gap:22px; padding:0 0 28px; margin-bottom:26px; border-bottom:1px solid rgba(203,213,225,.09); }
+                .admin-page-heading { display:grid; gap:8px; }
+                .admin-eyebrow { color:#67dcf3; font-size:.68rem; font-weight:800; letter-spacing:.14em; }
+                .admin-page-title { font-size:clamp(1.7rem, 3vw, 2.45rem)!important; font-weight:800; letter-spacing:-.045em; color:#f8fafc; }
+                .admin-page-copy { color:#8fa0b6; font-size:.86rem; }
+                .admin-header-actions { display:flex; align-items:center; gap:10px; }
+                .admin-site-link { min-height:40px!important; padding:9px 14px!important; border-radius:9px!important; font-size:.78rem!important; }
+                .admin-role { color:#73849a; border:1px solid rgba(203,213,225,.12); padding:7px 9px; border-radius:7px; font-size:.63rem; font-weight:800; letter-spacing:.1em; }
+                .admin-main .lux-product-card { padding:22px; border:1px solid rgba(203,213,225,.11); border-radius:15px; background:linear-gradient(145deg,rgba(18,31,47,.92),rgba(10,20,33,.92)); box-shadow:0 10px 26px rgba(0,0,0,.15); overflow:hidden; }
+                .admin-main .lux-product-card:hover { border-color:rgba(103,220,243,.28); transform:none; box-shadow:0 12px 30px rgba(0,0,0,.2); }
+                .admin-section-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-bottom:16px; margin-bottom:3px; border-bottom:1px solid rgba(203,213,225,.09); }
+                .admin-section-heading strong { font-family:var(--font-heading); font-size:1rem; }
+                .admin-section-heading span { color:#7f91a7; font-size:.75rem; }
+                .admin-request-list { display:grid; gap:2px; }
+                .admin-request-row { border-bottom:1px solid rgba(203,213,225,.08)!important; padding:0!important; transition:background .18s ease; }
+                .admin-request-row:last-child { border-bottom:0!important; }
+                .admin-request-row:hover { background:rgba(255,255,255,.024); }
+                .mobile-header,.bottom-nav { display:none; }
+                @media (max-width:1024px) {
+                    .admin-container { display:block; }
+                    .admin-sidebar { display:none; }
+                    .mobile-header { display:flex; align-items:center; justify-content:space-between; gap:12px; position:sticky; top:0; z-index:20; padding:13px 16px; background:rgba(7,16,27,.94); backdrop-filter:blur(18px); border-bottom:1px solid rgba(203,213,225,.1); }
+                    .mobile-header .admin-brand { padding:0; }
+                    .mobile-header .admin-brand-mark { width:30px; height:30px; border-radius:9px; font-size:.65rem; }
+                    .mobile-header .admin-brand-copy strong { font-size:.9rem; }
+                    .bottom-nav { display:flex; position:sticky; top:60px; z-index:19; overflow-x:auto; gap:7px; padding:9px 16px 10px; background:rgba(7,16,27,.94); backdrop-filter:blur(18px); border-bottom:1px solid rgba(203,213,225,.09); scrollbar-width:none; }
+                    .bottom-nav::-webkit-scrollbar { display:none; }
+                    .nav-item { flex:0 0 auto; display:flex; align-items:center; gap:6px; padding:8px 10px; border:1px solid transparent; border-radius:9px; color:#8fa0b6; font-size:.72rem; font-weight:700; white-space:nowrap; cursor:pointer; }
+                    .nav-item.active { color:#8ce8f8; background:rgba(34,199,232,.12); border-color:rgba(34,199,232,.19); }
+                    .nav-item:last-child { color:#fda4af; margin-left:auto; }
+                    .nav-item svg { width:16px; height:16px; }
+                    .admin-main { height:auto; min-height:calc(100vh - 108px); overflow:visible; padding:24px 16px 40px; }
+                    .admin-page-header { align-items:flex-start; margin-bottom:20px; padding-bottom:20px; }
+                    .admin-role { display:none; }
+                    .request-item-header { flex-direction:column; align-items:flex-start!important; gap:.75rem!important; }
+                    .request-item-actions { width:100%; justify-content:flex-start; gap:.5rem!important; }
+                    .request-item-actions > * { flex:1; }
+                    .admin-main .lux-product-card { padding:16px; border-radius:13px; }
                 }
-                .lg-visible {
-                    display: block;
-                }
-                .admin-main {
-                    padding: clamp(1.5rem, 5vw, 4rem);
-                    height: 100vh;
-                    overflow-y: auto;
-                    scrollbar-width: thin;
-                    scrollbar-color: rgba(255,255,255,0.1) transparent;
-                }
-                .mobile-header {
-                    display: none;
-                    justify-content: center;
-                    align-items: center;
-                    padding: 1rem;
-                    background: rgba(13, 17, 23, 0.85);
-                    backdrop-filter: blur(25px);
-                    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-                    position: sticky;
-                    top: 0;
-                    z-index: 100;
-                }
-                .bottom-nav {
-                    display: none;
-                    position: fixed;
-                    bottom: 0;
-                    left: 0;
-                    right: 0;
-                    height: 70px;
-                    background: rgba(13, 17, 23, 0.95);
-                    backdrop-filter: blur(20px);
-                    border-top: 1px solid rgba(255, 255, 255, 0.05);
-                    z-index: 1000;
-                    justify-content: space-around;
-                    align-items: center;
-                    padding: 0 0.5rem;
-                }
-                .nav-item {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 4px;
-                    color: rgba(255, 255, 255, 0.5);
-                    font-size: 0.7rem;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                    flex: 1;
-                    padding: 8px 0;
-                }
-                .nav-item.active {
-                    color: var(--primary-blue);
-                }
-
-                @media (max-width: 1024px) {
-                    .admin-container {
-                        grid-template-columns: 1fr;
-                    }
-                    .admin-sidebar {
-                        display: none;
-                    }
-                    .lg-visible {
-                        display: none;
-                    }
-                    .admin-main {
-                        padding: 1.5rem 1rem 100px 1rem;
-                        height: auto;
-                        overflow-y: visible;
-                    }
-                    .mobile-header {
-                        display: flex;
-                    }
-                    .bottom-nav {
-                        display: flex;
-                    }
-                    .request-item-header {
-                        flex-direction: column;
-                        align-items: flex-start !important;
-                        gap: 0.75rem !important;
-                    }
-                    .request-item-actions {
-                        width: 100%;
-                        justify-content: flex-start;
-                        gap: 0.5rem !important;
-                    }
-                    .request-item-actions > * {
-                        flex: 1;
-                    }
+                @media (max-width:560px) {
+                    .admin-page-header { flex-direction:column; gap:15px; }
+                    .admin-header-actions { width:100%; justify-content:space-between; }
+                    .admin-page-title { font-size:1.65rem!important; }
+                    .admin-site-link { flex:1; justify-content:center!important; }
+                    .lg-visible { display:none; }
                 }
             `}</style>
 
             <div className="mobile-header">
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', letterSpacing: '1px' }}>GRAPHÈNE Admin</h2>
+                <div className="admin-brand">
+                    <span className="admin-brand-mark">G</span>
+                    <div className="admin-brand-copy"><strong>GRAPHÈNE</strong><span>PAINEL OPERACIONAL</span></div>
+                </div>
+                <Button variant="ghost" onClick={handleLogout} style={{ padding: '7px', color: '#fda4af' }} title="Sair"><LogOut size={19} /></Button>
             </div>
 
             <nav className="bottom-nav">
@@ -427,86 +403,89 @@ const Admin = () => {
                     <Trash2 size={22} />
                     <span>Lixeira</span>
                 </div>
-                <div className="nav-item" onClick={handleLogout}>
-                    <LogOut size={22} />
-                    <span>Sair</span>
-                </div>
             </nav>
 
             {/* Sidebar */}
-            <aside className={`glass admin-sidebar ${expandedId === 'mobile-menu' ? 'open' : ''}`}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>GRAPHÈNE</h2>
+            <aside className={`admin-sidebar ${expandedId === 'mobile-menu' ? 'open' : ''}`}>
+                <div className="admin-brand">
+                    <span className="admin-brand-mark">G</span>
+                    <div className="admin-brand-copy"><strong>GRAPHÈNE</strong><span>PAINEL OPERACIONAL</span></div>
                     <Button variant="glass" className="lg-hidden" onClick={() => setExpandedId(null)} style={{ padding: '5px' }}>
                         <X size={20} />
                     </Button>
                 </div>
-                <nav style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
+                <nav className="admin-nav">
+                    <span className="admin-nav-label">ATENDIMENTO</span>
                     <Button
-                        variant={view === 'active' ? 'primary' : 'glass'}
-                        style={{ justifyContent: 'flex-start', width: '100%' }}
+                        variant="ghost"
+                        className={`admin-nav-link ${view === 'active' ? 'active' : ''}`}
                         onClick={() => { setView('active'); setExpandedId(null); }}
                     >
                         <MessageCircle size={18} /> Solicitações
                     </Button>
                     <Button
-                        variant={view === 'orders' ? 'primary' : 'glass'}
-                        style={{ justifyContent: 'flex-start', width: '100%' }}
+                        variant="ghost"
+                        className={`admin-nav-link ${view === 'orders' ? 'active' : ''}`}
                         onClick={() => { setView('orders'); setExpandedId(null); }}
                     >
                         <PackageCheck size={18} /> Pedidos e Entregas
                     </Button>
+                    <span className="admin-nav-label">GESTÃO</span>
                     <Button
-                        variant={view === 'products' ? 'primary' : 'glass'}
-                        style={{ justifyContent: 'flex-start', width: '100%' }}
+                        variant="ghost"
+                        className={`admin-nav-link ${view === 'products' ? 'active' : ''}`}
                         onClick={() => { setView('products'); setExpandedId(null); }}
                     >
                         <Package size={18} /> Produtos
                     </Button>
                     <Button
-                        variant={view === 'admins' ? 'primary' : 'glass'}
-                        style={{ justifyContent: 'flex-start', width: '100%' }}
+                        variant="ghost"
+                        className={`admin-nav-link ${view === 'admins' ? 'active' : ''}`}
                         onClick={() => { setView('admins'); setExpandedId(null); }}
                     >
                         <Shield size={18} /> Admins
                     </Button>
                     <Button
-                        variant={view === 'partners' ? 'primary' : 'glass'}
-                        style={{ justifyContent: 'flex-start', width: '100%' }}
+                        variant="ghost"
+                        className={`admin-nav-link ${view === 'partners' ? 'active' : ''}`}
                         onClick={() => { setView('partners'); setExpandedId(null); }}
                     >
                         <Users size={18} /> Parceiros
                     </Button>
+                    <span className="admin-nav-label">SISTEMA</span>
                     <Button
-                        variant={view === 'trash' ? 'primary' : 'glass'}
-                        style={{ justifyContent: 'flex-start', width: '100%' }}
+                        variant="ghost"
+                        className={`admin-nav-link ${view === 'trash' ? 'active' : ''}`}
                         onClick={() => { setView('trash'); setExpandedId(null); }}
                     >
                         <Trash2 size={18} /> Lixeira
                     </Button>
                 </nav>
-                <Button variant="outline" onClick={handleLogout} style={{ justifyContent: 'flex-start', width: '100%' }}><LogOut size={18} /> Sair</Button>
+                <div className="admin-sidebar-footer"><Button variant="ghost" className="admin-logout" onClick={handleLogout}><LogOut size={18} /> Encerrar sessão</Button></div>
             </aside>
 
             {/* Main Content */}
             <main className="admin-main">
+                <div className="admin-content">
                 <Toaster position="top-right" richColors />
-                <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <header className="admin-page-header">
+                    <div className="admin-page-heading">
                         {view === 'trash' && (
                             <Button variant="glass" onClick={() => setView('active')} style={{ padding: '10px', borderRadius: '50%' }}>
                                 <ArrowLeft size={24} />
                             </Button>
                         )}
-                        <h1 className="text-gradient" style={{ fontSize: 'clamp(1.2rem, 6vw, 2.5rem)', fontWeight: '800', letterSpacing: '-0.02em', WebkitTextStroke: '0px' }}>
+                        <span className="admin-eyebrow">CENTRAL DE OPERAÇÕES</span>
+                        <h1 className="admin-page-title">
                             {view === 'active' ? 'Solicitações' : view === 'orders' ? 'Pedidos e Entregas' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : view === 'partners' ? 'Parceiros' : 'Lixeira'}
                         </h1>
+                        <p className="admin-page-copy">{view === 'orders' ? 'Acompanhe pagamentos, separação e envios em um só lugar.' : view === 'active' ? 'Receitas e solicitações recebidas pelos canais da Graphène.' : 'Gerencie os dados operacionais da Graphène com segurança.'}</p>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <Button variant="outline" onClick={() => window.location.href = '/'} style={{ padding: '8px 16px', fontSize: '0.85rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div className="admin-header-actions">
+                        <span className="admin-role">ACESSO ADMINISTRATIVO</span>
+                        <Button variant="outline" className="admin-site-link" onClick={() => window.location.href = '/'}>
                             🌐 Ver Site
                         </Button>
-                        <span className="lg-visible" style={{ opacity: 0.4, fontSize: '0.85rem', fontWeight: '500' }}>ADMIN PANEL</span>
                     </div>
                 </header>
 
@@ -525,7 +504,8 @@ const Admin = () => {
                                 <ExternalLink size={16} /> Abrir Página de Cadastro
                             </Button>
                         </div>
-                        <Card title="Gestão de Parceiros (Afiliados)">
+                        <Card>
+                            <div className="admin-section-heading"><strong>Gestão de parceiros</strong><span>{partners.length} cadastrados</span></div>
                             <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                                     <thead>
@@ -581,7 +561,8 @@ const Admin = () => {
                     </div>
                 ) : view === 'admins' ? (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
-                        <Card title="Adicionar Novo Administrador">
+                        <Card>
+                            <div className="admin-section-heading"><strong>Novo administrador</strong><span>Acesso seguro ao painel</span></div>
                             <form onSubmit={handleAddAdmin} style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
                                 <div style={{ flex: '1 1 100%' }}>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Usuário</label>
@@ -595,7 +576,8 @@ const Admin = () => {
                             </form>
                         </Card>
 
-                        <Card title="Administradores Existentes">
+                        <Card>
+                            <div className="admin-section-heading"><strong>Administradores ativos</strong><span>{admins.length} com acesso</span></div>
                             <ul style={{ listStyle: 'none' }}>
                                 {admins.map(admin => (
                                     <li key={admin.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'center' }}>
@@ -612,15 +594,16 @@ const Admin = () => {
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
                         {/* List */}
-                        <Card title={view === 'active' ? 'Novas Solicitações' : 'Itens Excluídos'}>
-                            <ul style={{ listStyle: 'none' }}>
+                        <Card>
+                            <div className="admin-section-heading"><strong>{view === 'active' ? 'Solicitações recebidas' : 'Itens na lixeira'}</strong><span>{requests.length} {requests.length === 1 ? 'registro' : 'registros'}</span></div>
+                            <ul className="admin-request-list" style={{ listStyle: 'none' }}>
                                 {requests.length === 0 ? (
                                     <p style={{ padding: '1rem', opacity: 0.7 }}>
                                         {view === 'active' ? 'Nenhuma solicitação encontrada.' : 'Lixeira vazia.'}
                                     </p>
                                 ) : (
                                     requests.map(req => (
-                                        <li key={req.id} style={{ display: 'flex', flexDirection: 'column', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '0.5rem 0' }}>
+                                    <li key={req.id} className="admin-request-row" style={{ display: 'flex', flexDirection: 'column' }}>
                                             <div className="request-item-header" style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', alignItems: 'center', gap: '1rem' }}>
                                                 <div style={{ flex: 1 }}>
                                                     <strong style={{ fontSize: '1.1rem', color: '#fff', display: 'block', marginBottom: '4px' }}>{req.nome_cliente}</strong>
@@ -890,6 +873,7 @@ const Admin = () => {
                         </div>
                     </div>
                 )}
+                </div>
             </main>
         </div >
     );
