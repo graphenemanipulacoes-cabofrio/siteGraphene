@@ -2,7 +2,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Button from './Button';
-import { Pencil, Trash2, Image as ImageIcon } from 'lucide-react';
+import { GripVertical, Pencil, Trash2, Image as ImageIcon } from 'lucide-react';
 
 const SortableProductCard = ({ product, handleOpenModal, handleDelete }) => {
     const {
@@ -16,12 +16,22 @@ const SortableProductCard = ({ product, handleOpenModal, handleDelete }) => {
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
-        touchAction: 'none', // Important for mobile drag
+        touchAction: 'auto',
     };
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="product-card-sortable">
+        <div ref={setNodeRef} style={style} className="product-card-sortable">
             <div style={{ padding: '1.5rem', background: 'var(--bg-dark-secondary)', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', position: 'relative', display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+                <button
+                    type="button"
+                    aria-label={`Reordenar ${product.name}`}
+                    {...attributes}
+                    {...listeners}
+                    style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 2, width: '32px', height: '32px', display: 'grid', placeItems: 'center', cursor: 'grab', touchAction: 'none', color: 'rgba(255,255,255,0.56)', background: 'rgba(7,16,24,0.76)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px' }}
+                    title="Arraste para reordenar"
+                >
+                    <GripVertical size={17} />
+                </button>
 
                 {/* Image */}
                 <div style={{ height: '180px', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
@@ -50,12 +60,12 @@ const SortableProductCard = ({ product, handleOpenModal, handleDelete }) => {
                 </div>
 
                 {/* Actions - Stop propagation for buttons so they are clickable, not draggable */}
-                <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto' }} onPointerDown={(e) => e.stopPropagation()}>
-                    <Button variant="outline" style={{ flex: 1, justifyContent: 'center', padding: '10px', borderRadius: 'var(--radius-sm)' }} onClick={() => handleOpenModal(product)}>
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto' }}>
+                    <Button variant="outline" style={{ flex: 1, justifyContent: 'center', padding: '10px', borderRadius: 'var(--radius-sm)' }} onClick={(event) => { event.stopPropagation(); handleOpenModal(product); }}>
                         <Pencil size={18} /> Editar
                     </Button>
                     <button
-                        onClick={() => handleDelete(product.id)}
+                        onClick={(event) => { event.stopPropagation(); handleDelete(product.id); }}
                         style={{
                             background: 'rgba(239, 68, 68, 0.08)',
                             border: '1px solid rgba(239, 68, 68, 0.25)',

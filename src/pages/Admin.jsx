@@ -339,6 +339,11 @@ const Admin = () => {
                 .admin-request-row { border-bottom:1px solid rgba(203,213,225,.08)!important; padding:0!important; transition:background .18s ease; }
                 .admin-request-row:last-child { border-bottom:0!important; }
                 .admin-request-row:hover { background:rgba(255,255,255,.024); }
+                .admin-settings-stack { display:grid!important; max-width:900px; gap:18px!important; }
+                .admin-admin-form { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px!important; align-items:end!important; }
+                .admin-admin-field { min-width:0; }
+                .admin-admin-field input { min-height:46px; }
+                .admin-admin-submit { grid-column:span 2; width:max-content; min-width:190px; margin-top:2px!important; }
                 .mobile-header,.bottom-nav { display:none; }
                 @media (max-width:1024px) {
                     .admin-container { display:block; }
@@ -360,6 +365,9 @@ const Admin = () => {
                     .request-item-actions { width:100%; justify-content:flex-start; gap:.5rem!important; }
                     .request-item-actions > * { flex:1; }
                     .admin-main .lux-product-card { padding:16px; border-radius:13px; }
+                    .admin-settings-stack { max-width:none; }
+                    .admin-admin-form { grid-template-columns:1fr; }
+                    .admin-admin-submit { grid-column:auto; width:100%; }
                 }
                 @media (max-width:560px) {
                     .admin-page-header { flex-direction:column; gap:15px; }
@@ -560,19 +568,19 @@ const Admin = () => {
                         </Card>
                     </div>
                 ) : view === 'admins' ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
+                    <div className="admin-settings-stack">
                         <Card>
                             <div className="admin-section-heading"><strong>Novo administrador</strong><span>Acesso seguro ao painel</span></div>
-                            <form onSubmit={handleAddAdmin} style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
-                                <div style={{ flex: '1 1 100%' }}>
+                            <form className="admin-admin-form" onSubmit={handleAddAdmin}>
+                                <div className="admin-admin-field">
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Usuário</label>
                                     <input type="text" value={newAdminUser} onChange={e => setNewAdminUser(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }} />
                                 </div>
-                                <div style={{ flex: '1 1 100%' }}>
+                                <div className="admin-admin-field">
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Senha</label>
                                     <input type="password" autoComplete="new-password" value={newAdminPass} onChange={e => setNewAdminPass(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }} />
                                 </div>
-                                <Button type="submit" variant="primary" style={{ flex: '1 1 100%', justifyContent: 'center', marginTop: '1rem' }}>Adicionar</Button>
+                                <Button type="submit" variant="primary" className="admin-admin-submit" style={{ justifyContent: 'center' }}>Adicionar administrador</Button>
                             </form>
                         </Card>
 

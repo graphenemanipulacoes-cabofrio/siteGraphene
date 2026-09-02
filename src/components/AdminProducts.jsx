@@ -260,6 +260,7 @@ const AdminProducts = () => {
                 collisionDetection={closestCenter}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
+                onDragCancel={() => setActiveId(null)}
             >
                 <div style={{
                     display: 'grid',
@@ -319,19 +320,19 @@ const AdminProducts = () => {
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0,0,0,0.85)', zIndex: 9999,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: window.innerWidth <= 768 ? '0' : '1.5rem',
+                    padding: '16px',
                     backdropFilter: 'blur(10px)'
                 }}>
                     <div style={{
                         width: '100%',
-                        maxWidth: '500px',
-                        padding: window.innerWidth <= 768 ? '2rem 1.5rem' : 'clamp(1rem, 5vw, 2rem)',
+                        maxWidth: '560px',
+                        padding: 'clamp(1.25rem, 4vw, 2rem)',
                         background: 'var(--bg-dark-secondary)',
                         border: '1px solid var(--border-dark)',
-                        borderRadius: window.innerWidth <= 768 ? '0' : 'var(--radius-md)',
+                        borderRadius: '16px',
                         position: 'relative',
-                        maxHeight: '100vh',
-                        minHeight: window.innerWidth <= 768 ? '100vh' : 'auto',
+                        maxHeight: 'calc(100vh - 32px)',
+                        minHeight: 'auto',
                         height: 'auto',
                         overflowY: 'auto',
                         margin: '0',
@@ -345,17 +346,17 @@ const AdminProducts = () => {
                             <X size={24} />
                         </button>
 
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem' }}>
+                        <h2 style={{ fontSize: '1.35rem', fontWeight: 'bold', marginBottom: '1.25rem' }}>
                             {editingProduct ? 'Editar Produto' : 'Novo Produto'}
                         </h2>
 
-                        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
                             {/* Image Upload */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 <label style={{ fontSize: '0.9rem', opacity: 0.8 }}>Imagem do Produto</label>
                                 <label style={{
-                                    height: '150px', border: '2px dashed rgba(255,255,255,0.2)', borderRadius: '10px',
+                                    height: '120px', border: '2px dashed rgba(255,255,255,0.2)', borderRadius: '10px',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                                     background: 'rgba(255,255,255,0.02)', overflow: 'hidden', position: 'relative'
                                 }}>
@@ -410,7 +411,7 @@ const AdminProducts = () => {
                                 <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>Deixe em branco ou clique na lixeira para ocultar o preço.</span>
                             </div>
 
-                            <Button type="submit" variant="primary" style={{ marginTop: '1rem', justifyContent: 'center' }} disabled={uploading}>
+                            <Button type="submit" variant="primary" style={{ marginTop: '0.35rem', justifyContent: 'center' }} disabled={uploading}>
                                 {uploading ? 'Salvando...' : 'Salvar Produto'}
                             </Button>
                         </form>
