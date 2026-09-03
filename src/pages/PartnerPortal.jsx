@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   BadgeCheck, 
   Calendar, 
   CircleDollarSign, 
   Clock3, 
   Copy, 
+  Eye,
   Gift, 
   HelpCircle, 
   Info, 
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { Toaster, toast } from 'sonner';
+import { isAdminPreview } from '../utils/adminPreview';
 
 const DIRECTOR_WHATSAPP_PHONE = '5522998994412';
 const DIRECTOR_WHATSAPP_DISPLAY = '(22) 99899-4412';
@@ -30,6 +32,8 @@ const date = value => value ? new Date(value).toLocaleDateString('pt-BR', { date
 
 const PartnerPortal = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const adminPreview = isAdminPreview(location.search);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -37,6 +41,18 @@ const PartnerPortal = () => {
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError('');
+    if (adminPreview) {
+      setData({
+        profile: { full_name: 'Visualização administrativa', status: 'approved', referral_code: 'PREVIEW10', created_at: new Date().toISOString() },
+        coupon: { code: 'PREVIEW10', discount_type: 'percentage', discount_value: 10, redeemed_count: 0 },
+        metrics: { paidSalesCount: 0, paidSalesAmount: 0, pendingCommission: 0, availableCommission: 0, paidCommission: 0 },
+        productCredits: { granted: 0, used: 0, balance: 0, movements: [] },
+        orders: [],
+        commissions: [],
+      });
+      setLoading(false);
+      return;
+    }
     const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
     const accessToken = refreshed.session?.access_token;
     if (refreshError || !accessToken) {
@@ -64,7 +80,7 @@ const PartnerPortal = () => {
       setData(response);
     }
     setLoading(false);
-  }, [navigate]);
+  }, [adminPreview, navigate]);
 
   useEffect(() => {
     const timer = window.setTimeout(load, 0);
@@ -121,7 +137,7 @@ const PartnerPortal = () => {
         <Toaster richColors />
         <header className="partner-portal-header">
           <strong>GRAPHÈNE <small>PARCEIROS</small></strong>
-          <button onClick={signOut}><LogOut size={16}/> Sair</button>
+          {adminPreview ? <button onClick={() => navigate('/admin')}><LogOut size={16}/> Voltar ao painel</button> : <button onClick={signOut}><LogOut size={16}/> Sair</button>}
         </header>
         <main className="partner-status-card">
           <Clock3/>
@@ -159,7 +175,7 @@ const PartnerPortal = () => {
             >
               <MessageCircle size={15}/> Falar com Diretor {DIRECTOR_WHATSAPP_DISPLAY}
             </a>
-            <button onClick={signOut}><LogOut size={16}/> Sair</button>
+            {adminPreview ? <button onClick={() => navigate('/admin')}><LogOut size={16}/> Voltar ao painel</button> : <button onClick={signOut}><LogOut size={16}/> Sair</button>}
           </div>
         </header>
 
@@ -200,6 +216,7 @@ const PartnerPortal = () => {
   return (
     <div className="partner-portal-shell">
       <Toaster richColors />
+      {adminPreview && <div className="admin-partner-preview-bar"><Eye size={15}/><span>Visualização administrativa: dados e ações reais do parceiro estão protegidos.</span><button onClick={() => navigate('/admin')}>Voltar ao painel</button></div>}
 
       {/* Top Portal Header */}
       <header className="partner-portal-header">
@@ -221,9 +238,7 @@ const PartnerPortal = () => {
             <span>WhatsApp Diretoria {DIRECTOR_WHATSAPP_DISPLAY}</span>
           </a>
 
-          <button onClick={signOut} className="btn-portal-signout" title="Sair da conta">
-            <LogOut size={16}/> Sair
-          </button>
+          {adminPreview ? <button onClick={() => navigate('/admin')} className="btn-portal-signout" title="Voltar ao painel administrativo"><LogOut size={16}/> Voltar ao painel</button> : <button onClick={signOut} className="btn-portal-signout" title="Sair da conta"><LogOut size={16}/> Sair</button>}
         </div>
       </header>
 
@@ -491,6 +506,7 @@ const PartnerPortal = () => {
 const styles = `
 .partner-portal-shell,.partner-portal-loading{min-height:100vh;background:radial-gradient(circle at 90% 0,rgba(39,203,230,.1),transparent 32rem),radial-gradient(circle at 10% 80%,rgba(16,185,129,.05),transparent 28rem),#071018;color:#eaf2f8}
 .partner-portal-loading{display:flex;align-items:center;justify-content:center}
+.admin-partner-preview-bar{display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;background:#102a3b;border-bottom:1px solid rgba(103,220,243,.35);color:#c8f5fb;font-size:.72rem;font-weight:700}.admin-partner-preview-bar svg{color:#67dcf3}.admin-partner-preview-bar button{margin-left:8px;padding:5px 9px;border:1px solid rgba(103,220,243,.35);border-radius:6px;background:transparent;color:#e8fbff;font-size:.7rem;font-weight:800;cursor:pointer}.admin-partner-preview-bar button:hover{background:rgba(103,220,243,.1)}
 .partner-loading-inner{display:flex;align-items:center;gap:12px;font-weight:700;color:#9fb2c3}
 
 /* Header */

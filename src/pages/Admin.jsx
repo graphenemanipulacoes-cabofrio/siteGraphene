@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Package, PackageCheck, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink, WalletCards } from 'lucide-react';
+import { Package, PackageCheck, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink, WalletCards, Eye, UserRound, ShoppingBag } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { Link, useNavigate } from 'react-router-dom';
@@ -321,7 +321,7 @@ const Admin = () => {
                 .lg-visible { display:block; }
                 .admin-main { min-width:0; height:100vh; overflow-y:auto; padding:clamp(28px, 4vw, 58px); scrollbar-width:thin; scrollbar-color:rgba(148,163,184,.28) transparent; }
                 .admin-content { width:min(100%, 1370px); margin:0 auto; }
-                .admin-page-header { display:flex; justify-content:space-between; align-items:flex-end; gap:22px; padding:0 0 28px; margin-bottom:26px; border-bottom:1px solid rgba(203,213,225,.09); }
+                .admin-page-header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:22px; padding:0 0 28px; margin-bottom:26px; border-bottom:1px solid rgba(203,213,225,.09); }
                 .admin-page-heading { display:grid; gap:8px; }
                 .admin-eyebrow { color:#67dcf3; font-size:.68rem; font-weight:800; letter-spacing:.14em; }
                 .admin-page-title { font-size:clamp(1.7rem, 3vw, 2.45rem)!important; font-weight:800; letter-spacing:-.045em; color:#f8fafc; }
@@ -329,6 +329,10 @@ const Admin = () => {
                 .admin-header-actions { display:flex; align-items:center; gap:10px; }
                 .admin-site-link { min-height:40px!important; padding:9px 14px!important; border-radius:9px!important; font-size:.78rem!important; }
                 .admin-role { color:#73849a; border:1px solid rgba(203,213,225,.12); padding:7px 9px; border-radius:7px; font-size:.63rem; font-weight:800; letter-spacing:.1em; }
+                .admin-preview-links { flex-basis:100%; display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:7px; margin-top:14px; padding-top:14px; border-top:1px solid rgba(203,213,225,.08); }
+                .admin-preview-links span { margin-right:3px; color:#71849a; font-size:.65rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+                .admin-preview-links a { display:inline-flex; align-items:center; gap:5px; min-height:30px; padding:6px 9px; border:1px solid rgba(103,220,243,.18); border-radius:7px; color:#a9eaf4; background:rgba(34,199,232,.045); font-size:.7rem; font-weight:800; }
+                .admin-preview-links a:hover { border-color:rgba(103,220,243,.45); background:rgba(34,199,232,.11); color:#fff; }
                 .admin-main .lux-product-card { padding:22px; border:1px solid rgba(203,213,225,.11); border-radius:15px; background:linear-gradient(145deg,rgba(18,31,47,.92),rgba(10,20,33,.92)); box-shadow:0 10px 26px rgba(0,0,0,.15); overflow:hidden; }
                 .admin-main .lux-product-card:hover { border-color:rgba(103,220,243,.28); transform:none; box-shadow:0 12px 30px rgba(0,0,0,.2); }
                 .admin-section-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-bottom:16px; margin-bottom:3px; border-bottom:1px solid rgba(203,213,225,.09); }
@@ -373,6 +377,8 @@ const Admin = () => {
                     .admin-header-actions { width:100%; justify-content:space-between; }
                     .admin-page-title { font-size:1.65rem!important; }
                     .admin-site-link { flex:1; justify-content:center!important; }
+                    .admin-preview-links { width:100%; justify-content:flex-start; margin-top:0; }
+                    .admin-preview-links span { width:100%; margin:0 0 2px; }
                     .lg-visible { display:none; }
                 }
             `}</style>
@@ -505,6 +511,13 @@ const Admin = () => {
                             🌐 Ver Site
                         </Button>
                     </div>
+                    <nav className="admin-preview-links" aria-label="Visualização das áreas do site">
+                        <span>Visualizar áreas</span>
+                        <Link to="/?adminPreview=1"><Eye size={14}/> Loja</Link>
+                        <Link to="/minha-conta?adminPreview=1"><UserRound size={14}/> Cliente</Link>
+                        <Link to="/parceiros/painel?adminPreview=1"><Users size={14}/> Parceiro</Link>
+                        <Link to="/checkout?adminPreview=1"><ShoppingBag size={14}/> Checkout</Link>
+                    </nav>
                 </header>
 
                 {view === 'orders' ? (
