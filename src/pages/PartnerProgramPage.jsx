@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
     Award, 
@@ -29,15 +29,15 @@ import { getWhatsAppUrl } from '../config';
 const money = value => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const PartnerProgramPage = () => {
-    // Simulator states
-    const [salesCount, setSalesCount] = useState(25);
-    const [ticketMedio, setTicketMedio] = useState(240);
-    const commissionPercent = 10;
-    const creditPercent = 5;
+    const creditValues = [300, 600, 900, 1200];
+    const [creditIndex, setCreditIndex] = useState(0);
 
-    const totalVendido = salesCount * ticketMedio;
-    const estimatedCommission = (totalVendido * commissionPercent) / 100;
-    const estimatedProductCredit = (totalVendido * creditPercent) / 100;
+    useEffect(() => {
+        const timer = window.setInterval(() => {
+            setCreditIndex(current => (current + 1) % creditValues.length);
+        }, 2400);
+        return () => window.clearInterval(timer);
+    }, [creditValues.length]);
 
     // FAQ Accordion
     const [openFaq, setOpenFaq] = useState(null);
@@ -146,7 +146,7 @@ const PartnerProgramPage = () => {
                                     <div className="preview-metric-item">
                                         <Gift size={16} color="#fbbf24" />
                                         <span>Crédito p/ fórmulas</span>
-                                        <strong style={{ color: '#fbbf24' }}>R$ 576,00</strong>
+                                        <strong style={{ color: '#fbbf24' }}>{money(creditValues[creditIndex])}</strong>
                                     </div>
                                     <div className="preview-metric-item">
                                         <TrendingUp size={16} className="text-cyan" />
@@ -229,105 +229,6 @@ const PartnerProgramPage = () => {
                                 </p>
                                 <div className="benefit-pill">
                                     <ShieldCheck size={13} color="#38bdf8" /> Total transparência 24h
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Interactive Simulator */}
-                <section className="store-section simulator-section">
-                    <div className="container">
-                        <div className="simulator-card store-card">
-                            <div className="simulator-header">
-                                <div className="store-badge">
-                                    <LineChart size={14} />
-                                    <span>Simulador de Resultados</span>
-                                </div>
-                                <h2>Estime seu potencial de ganhos</h2>
-                                <p>Veja quanto você pode faturar em comissões em dinheiro + bonificações de crédito para pedidos gratuitos na farmácia.</p>
-                            </div>
-
-                            <div className="simulator-body-grid">
-                                <div className="simulator-controls">
-                                    <div className="sim-control-group">
-                                        <div className="sim-control-head">
-                                            <label>Vendas estimadas por mês com seu cupom</label>
-                                            <span className="sim-val-badge">{salesCount} pedidos</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="5"
-                                            max="150"
-                                            step="5"
-                                            value={salesCount}
-                                            onChange={e => setSalesCount(Number(e.target.value))}
-                                            className="sim-slider"
-                                        />
-                                        <div className="sim-slider-marks">
-                                            <span>5</span>
-                                            <span>50</span>
-                                            <span>100</span>
-                                            <span>150+</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="sim-control-group">
-                                        <div className="sim-control-head">
-                                            <label>Ticket médio por pedido</label>
-                                            <span className="sim-val-badge">{money(ticketMedio)}</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="100"
-                                            max="600"
-                                            step="20"
-                                            value={ticketMedio}
-                                            onChange={e => setTicketMedio(Number(e.target.value))}
-                                            className="sim-slider"
-                                        />
-                                        <div className="sim-slider-marks">
-                                            <span>R$ 100</span>
-                                            <span>R$ 240</span>
-                                            <span>R$ 400</span>
-                                            <span>R$ 600</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="sim-info-note">
-                                        <Sparkles size={16} className="text-cyan" />
-                                        <span>
-                                            Comissão base calculada em <strong>{commissionPercent}%</strong> de retorno em dinheiro + <strong>{creditPercent}%</strong> em créditos de fórmulas gratuitas.
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="simulator-result-box">
-                                    <span className="result-eyebrow">SEU RETORNO MENSAL ESTIMADO</span>
-                                    
-                                    <div className="result-main-value">
-                                        <small>Comissão via Pix</small>
-                                        <strong>{money(estimatedCommission)}</strong>
-                                    </div>
-
-                                    <div className="result-credit-value">
-                                        <Gift size={18} color="#fbbf24" />
-                                        <div>
-                                            <span>+ Crédito para pedidos grátis na loja</span>
-                                            <strong>{money(estimatedProductCredit)} / mês</strong>
-                                        </div>
-                                    </div>
-
-                                    <div className="result-volume-tag">
-                                        Volume total movimentado: <strong>{money(totalVendido)}</strong>
-                                    </div>
-
-                                    <div className="sim-cta-wrap">
-                                        <Link to="/parceiros/cadastro" className="btn-cta-blue" style={{ width: '100%' }}>
-                                            <span>Quero Começar Agora</span>
-                                            <ChevronRight size={17} />
-                                        </Link>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -768,167 +669,6 @@ const PartnerProgramPage = () => {
                     margin-top: 6px;
                 }
 
-                /* Simulator */
-                .simulator-section {
-                    padding-top: 20px;
-                }
-                .simulator-card {
-                    padding: 38px 42px;
-                    background: linear-gradient(145deg, rgba(14, 25, 39, 0.95), rgba(8, 16, 26, 0.95));
-                    border: 1px solid rgba(0, 180, 216, 0.25);
-                }
-                .simulator-header {
-                    text-align: center;
-                    max-width: 680px;
-                    margin: 0 auto 36px;
-                }
-                .simulator-body-grid {
-                    display: grid;
-                    grid-template-columns: 1.15fr 0.85fr;
-                    gap: 40px;
-                    align-items: center;
-                }
-                .simulator-controls {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 26px;
-                }
-                .sim-control-group {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                }
-                .sim-control-head {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-                .sim-control-head label {
-                    font-size: 0.86rem;
-                    font-weight: 700;
-                    color: #d1d5db;
-                }
-                .sim-val-badge {
-                    font-size: 0.88rem;
-                    font-weight: 800;
-                    color: var(--brand-blue);
-                    background: rgba(0, 180, 216, 0.1);
-                    padding: 4px 10px;
-                    border-radius: 6px;
-                    border: 1px solid rgba(0, 180, 216, 0.25);
-                }
-                .sim-slider {
-                    width: 100%;
-                    -webkit-appearance: none;
-                    height: 6px;
-                    border-radius: 3px;
-                    background: #1e293b;
-                    outline: none;
-                    cursor: pointer;
-                }
-                .sim-slider::-webkit-slider-thumb {
-                    -webkit-appearance: none;
-                    appearance: none;
-                    width: 20px;
-                    height: 20px;
-                    border-radius: 50%;
-                    background: var(--brand-blue);
-                    box-shadow: 0 0 10px rgba(0, 180, 216, 0.6);
-                    cursor: pointer;
-                }
-                .sim-slider-marks {
-                    display: flex;
-                    justify-content: space-between;
-                    font-size: 0.72rem;
-                    color: var(--text-muted);
-                }
-                .sim-info-note {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    padding: 12px 14px;
-                    border-radius: 8px;
-                    background: rgba(255, 255, 255, 0.03);
-                    border: 1px solid rgba(255, 255, 255, 0.06);
-                    font-size: 0.78rem;
-                    color: var(--text-dim);
-                }
-                .sim-info-note strong { color: #fff; }
-
-                /* Simulator Results Box */
-                .simulator-result-box {
-                    background: rgba(7, 14, 23, 0.85);
-                    border: 1px solid rgba(0, 180, 216, 0.2);
-                    border-radius: 16px;
-                    padding: 28px;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 18px;
-                    text-align: center;
-                }
-                .result-eyebrow {
-                    font-size: 0.68rem;
-                    letter-spacing: 0.1em;
-                    color: var(--brand-blue);
-                    font-weight: 900;
-                }
-                .result-main-value small {
-                    display: block;
-                    font-size: 0.78rem;
-                    color: var(--text-dim);
-                    margin-bottom: 2px;
-                }
-                .result-main-value strong {
-                    font-size: 2.25rem;
-                    font-family: var(--font-heading);
-                    color: var(--brand-green);
-                    display: block;
-                    line-height: 1.1;
-                }
-                .result-credit-value {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 10px;
-                    padding: 10px;
-                    border-radius: 8px;
-                    background: rgba(251, 191, 36, 0.08);
-                    border: 1px solid rgba(251, 191, 36, 0.2);
-                    text-align: left;
-                }
-                .result-credit-value span {
-                    display: block;
-                    font-size: 0.7rem;
-                    color: #d1d5db;
-                }
-                .result-credit-value strong {
-                    display: block;
-                    font-size: 0.95rem;
-                    color: #fbbf24;
-                }
-                .result-volume-tag {
-                    font-size: 0.75rem;
-                    color: var(--text-muted);
-                }
-                .result-volume-tag strong {
-                    color: #fff;
-                }
-                .sim-cta-wrap {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                    margin-top: 4px;
-                }
-                .sim-login-sublink {
-                    font-size: 0.78rem;
-                    color: #7dd3fc;
-                    font-weight: 700;
-                }
-                .sim-login-sublink:hover {
-                    color: #fff;
-                    text-decoration: underline;
-                }
-
                 /* Steps */
                 .steps-grid {
                     display: grid;
@@ -1094,7 +834,6 @@ const PartnerProgramPage = () => {
                     .benefits-cards-grid { grid-template-columns: repeat(2, 1fr); }
                     .steps-grid { grid-template-columns: repeat(2, 1fr); }
                     .partner-hero-grid { grid-template-columns: 1fr; gap: 36px; }
-                    .simulator-body-grid { grid-template-columns: 1fr; }
                 }
 
                 @media (max-width: 760px) {
@@ -1107,7 +846,6 @@ const PartnerProgramPage = () => {
                     .partner-cta-cluster a { width: 100%; justify-content: center; }
                     .final-cta-buttons { flex-direction: column; width: 100%; }
                     .final-cta-buttons a { width: 100%; justify-content: center; }
-                    .simulator-card { padding: 26px 18px; }
                 }
             `}</style>
         </div>
