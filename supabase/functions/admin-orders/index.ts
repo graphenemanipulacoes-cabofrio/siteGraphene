@@ -74,9 +74,95 @@ Deno.serve(async (req: Request) => {
     }
 
     if (body.action === 'list_partner_applications') {
-      const { data, error } = await admin.from('partner_profiles').select('id,full_name,email,phone,document,pix_key,channel,requested_coupon_code,status,referral_code,commission_recipient_id,coupon_id,approved_at,approved_by,rejection_reason,created_at,updated_at').order('created_at', { ascending: false });
-      if (error) return json({ error: 'unable_to_load_partners' }, 500, origin);
-      return json({ partners: data || [] }, 200, origin);
+      const [partnersResult, creditsResult] = await Promise.all([
+        admin.from('partner_profiles').select('id,full_name,email,phone,document,pix_key,channel,requested_coupon_code,status,referral_code,commission_recipient_id,coupon_id,approved_at,approved_by,rejection_reason,created_at,updated_at').order('created_at', { ascending: false }),
+        admin.from('partner_product_credits').select('partner_id,type,amount'),
+      ]);
+      if (partnersResult.error) return json({ error: 'unable_to_load_partners' }, 500, origin);
+      const creditsRows = creditsResult.data || [];
+      const partnersWithCredits = (partnersResult.data || []).map(p => {
+        const pCredits = creditsRows.filter(c => c.partner_id === p.id);
+        const granted = pCredits.filter(c => c.type === 'grant').reduce((acc, c) => acc + Number(c.amount || 0), 0);
+        const used = pCredits.filter(c => c.type === 'usage').reduce((acc, c) => acc + Number(c.amount || 0), 0);
+        return {
+          ...p,
+          product_credit_granted: granted,
+          product_credit_used: used,
+          product_credit_balance: Math.max(0, granted - used),
+        };
+      });
+      return json({ partners: partnersWithCredits }, 200, origin);
+    }
+
+    if (body.action === 'list_partner_credits') {
+      const partnerId = clean(body.partnerId, 36);
+      if (!uuidPattern.test(partnerId)) return json({ error: 'invalid_partner' }, 400, origin);
+      const { data, error } = await admin.from('partner_product_credits')
+        .select('id,partner_id,type,amount,description,invoice_ref,spent_at,created_by,created_at')
+        .eq('partner_id', partnerId)
+        .order('spent_at', { ascending: false });
+      const movements = data || [];
+      const sum = (rows: any[], field: string) => rows.reduce((total, item) => total + Number(item[field] || 0), 0);
+      const granted = sum(movements.filter(item => item.type === 'grant'), 'amount');
+      const used = sum(movements.filter(item => item.type === 'usage'), 'amount');
+      return json({ movements, granted, used, balance: Math.max(0, granted - used) }, 200, origin);
+    }
+
+    if (body.action === 'add_partner_product_credit') {
+      const partnerId = clean(body.partnerId, 36);
+      const amount = Number(body.amount);
+      const description = clean(body.description, 300) || 'Crédito de produtos concedido';
+      const invoiceRef = clean(body.invoiceRef, 120) || null;
+      if (!uuidPattern.test(partnerId) || !Number.isFinite(amount) || amount <= 0) {
+        return json({ error: 'invalid_credit_amount' }, 400, origin);
+      }
+      const { data, error } = await admin.from('partner_product_credits').insert({
+        partner_id: partnerId,
+        type: 'grant',
+        amount,
+        description,
+        invoice_ref: invoiceRef,
+        spent_at: now,
+        created_by: session.admin_username,
+      }).select().single();
+      if (error) {
+        console.error('unable_to_add_partner_credit', error.message);
+        return json({ error: 'unable_to_add_credit' }, 500, origin);
+      }
+      return json({ credit: data }, 201, origin);
+    }
+
+    if (body.action === 'record_partner_product_usage') {
+      const partnerId = clean(body.partnerId, 36);
+      const amount = Number(body.amount);
+      const description = clean(body.description, 300);
+      const invoiceRef = clean(body.invoiceRef, 120) || null;
+      const spentAt = clean(body.spentAt, 40) ? new Date(body.spentAt).toISOString() : now;
+      if (!uuidPattern.test(partnerId) || !Number.isFinite(amount) || amount <= 0 || !description) {
+        return json({ error: 'invalid_product_usage' }, 400, origin);
+      }
+      const { data, error } = await admin.from('partner_product_credits').insert({
+        partner_id: partnerId,
+        type: 'usage',
+        amount,
+        description,
+        invoice_ref: invoiceRef,
+        spent_at: spentAt,
+        created_by: session.admin_username,
+      }).select().single();
+      if (error) {
+        console.error('unable_to_record_partner_usage', error.message);
+        return json({ error: 'unable_to_record_usage' }, 500, origin);
+      }
+      return json({ usage: data }, 201, origin);
+    }
+
+    if (body.action === 'delete_partner_credit_entry') {
+      const entryId = clean(body.entryId, 36);
+      if (!uuidPattern.test(entryId)) return json({ error: 'invalid_entry_id' }, 400, origin);
+      const { error } = await admin.from('partner_product_credits').delete().eq('id', entryId);
+      if (error) return json({ error: 'unable_to_delete_entry' }, 500, origin);
+      return json({ ok: true }, 200, origin);
     }
 
     if (body.action === 'approve_partner') {

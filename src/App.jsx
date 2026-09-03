@@ -7,6 +7,7 @@ import PrescritoresPage from './pages/PrescritoresPage';
 import AvaliacoesPage from './pages/AvaliacoesPage';
 import Login from './pages/Login';
 import Admin from './pages/Admin';
+import PartnerProgramPage from './pages/PartnerProgramPage';
 import PartnerRegistration from './pages/PartnerRegistration';
 import PartnerAccess from './pages/PartnerAccess';
 import PartnerPortal from './pages/PartnerPortal';
@@ -30,6 +31,7 @@ function App() {
         <Route path="/avaliacoes" element={<AvaliacoesPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/parceiros" element={<PartnerProgramPage />} />
         <Route path="/parceiros/cadastro" element={<PartnerRegistration />} />
         <Route path="/parceiros/entrar" element={<PartnerAccess />} />
         <Route path="/parceiros/painel" element={<PartnerPortal />} />

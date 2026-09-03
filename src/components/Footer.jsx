@@ -30,6 +30,7 @@ const Footer = () => {
                         <li><Link to="/receita">Enviar Receita Médica</Link></li>
                         <li><Link to="/laboratorio">O Laboratório & Loja</Link></li>
                         <li><Link to="/prescritores">Prescritores VIP</Link></li>
+                        <li><Link to="/parceiros">Programa de Parceiros</Link></li>
                         <li><Link to="/avaliacoes">Avaliações</Link></li>
                     </ul>
                 </div>

@@ -1,8 +1,15 @@
-project_id = "site-graphene"
+project_id = "ngphbcrdphluuphctvpr"
 
 [functions.create-checkout]
 verify_jwt = true
 
 [functions.payment-webhook]
 verify_jwt = false
+
+[functions.admin-orders]
+verify_jwt = false
+
+[functions.partner-portal]
+verify_jwt = false
+
 

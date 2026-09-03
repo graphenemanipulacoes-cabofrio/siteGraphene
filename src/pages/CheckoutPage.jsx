@@ -64,7 +64,7 @@ const CheckoutPage = () => {
                 <label>Complemento<input name="complement" maxLength="80" value={form.complement} onChange={setField} /></label>
             </div></section>
             <section className="payment-placeholder"><h2><CreditCard size={19}/> Pagamento protegido</h2><div><strong>PIX e cartão pelo Mercado Pago</strong><p>Os dados do cartão são preenchidos no ambiente seguro do Mercado Pago. A Graphène não recebe nem armazena o número do cartão.</p></div></section>
-            <section className="coupon-field"><h2><TicketPercent size={19}/> Cupom de indicação</h2><label>Código do cupom<input value={couponCode} onChange={event => setCouponCode(event.target.value.toUpperCase())} maxLength="40" placeholder="Ex.: YASMIN15" autoCapitalize="characters" /></label><p>O desconto será validado com segurança antes de gerar o pagamento.</p></section>
+            <section className="coupon-field"><h2><TicketPercent size={19}/> Cupom de indicação</h2><label>Código do cupom<input value={couponCode} onChange={event => setCouponCode(event.target.value.toUpperCase())} maxLength="40" placeholder="Ex.: DESCONTO10" autoCapitalize="characters" /></label><p>O desconto será validado com segurança antes de gerar o pagamento.</p></section>
             {error && <div className="checkout-error" role="alert">{error}</div>}
             <button className="place-order" type="submit" disabled={loading}>{loading ? <LoaderCircle className="spin" size={18}/> : <LockKeyhole size={17}/>} {loading ? 'Criando pagamento seguro...' : `Ir para o pagamento de ${money(subtotal)}`}</button>
             <small>O valor é recalculado com os preços oficiais do banco antes de gerar a cobrança.</small>

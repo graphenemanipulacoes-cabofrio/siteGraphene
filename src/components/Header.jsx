@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getWhatsAppUrl } from '../config';
-import { Menu, X, MessageCircle, FileUp, Search, ShieldCheck, MapPin, Truck, Phone, Award, ChevronRight, ShoppingBag, UserRound } from 'lucide-react';
+import { Menu, X, MessageCircle, FileUp, Search, ShieldCheck, MapPin, Truck, Phone, Award, ChevronRight, ShoppingBag, UserRound, LockKeyhole } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 
@@ -42,6 +42,7 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
         { label: 'Manipular Receita', to: '/receita' },
         { label: 'O Laboratório', to: '/laboratorio' },
         { label: 'Prescritores VIP', to: '/prescritores' },
+        { label: 'Programa de Parceiros', to: '/parceiros' },
         { label: 'Avaliações', to: '/avaliacoes' },
     ];
 
@@ -58,6 +59,11 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                         <span><MapPin size={13} /> Laboratório Próprio — Cabo Frio, RJ</span>
                     </div>
                     <div className="top-bar-right">
+                        <Link to="/parceiros/entrar" className="top-partner-link" title="Acesse com seu e-mail e senha para ver vendas e comissões">
+                            <LockKeyhole size={11} />
+                            <span>Painel do Parceiro</span>
+                        </Link>
+                        <span className="divider-dot">•</span>
                         <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="top-wa-link">
                             <Phone size={12} />
                             <span>(22) 99936-1256</span>
@@ -183,6 +189,9 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                             <Link to="/receita" className="btn-cta-blue" style={{ width: '100%' }} onClick={() => setMenuOpen(false)}>
                                 <FileUp size={17} /> Enviar Minha Receita
                             </Link>
+                            <Link to="/parceiros/entrar" className="btn-drawer-partner" style={{ width: '100%' }} onClick={() => setMenuOpen(false)}>
+                                <LockKeyhole size={16} /> Painel do Parceiro (Entrar)
+                            </Link>
                             <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="btn-buy-wa" style={{ width: '100%' }}>
                                 <MessageCircle size={17} /> Atendimento WhatsApp
                             </a>
@@ -210,6 +219,8 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                 .top-bar-left span, .top-bar-right span { display: inline-flex; align-items: center; gap: 4px; }
                 .divider-dot { color: var(--text-muted); opacity: 0.5; }
                 .top-wa-link { display: inline-flex; align-items: center; gap: 4px; color: var(--brand-green); font-weight: 700; }
+                .top-partner-link { display: inline-flex; align-items: center; gap: 5px; color: #67dff3; font-weight: 700; font-size: 0.74rem; transition: var(--transition); }
+                .top-partner-link:hover { color: #fff; text-decoration: underline; }
                 .anvisa-tag { color: var(--brand-blue); font-weight: 600; }
 
                 .store-main-header {
@@ -284,7 +295,7 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                 }
 
                 .store-subnav { border-top: 1px solid rgba(255,255,255,0.04); padding: 8px 0; }
-                .subnav-flex { display: flex; align-items: center; gap: 24px; }
+                .subnav-flex { display: flex; align-items: center; gap: clamp(12px, 1.8vw, 24px); }
                 .subnav-link {
                     font-size: 0.84rem;
                     font-weight: 600;
@@ -298,6 +309,25 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                 .subnav-link:hover { color: var(--brand-blue); }
                 .subnav-link--active { color: var(--brand-blue); border-bottom-color: var(--brand-blue); }
                 .subnav-link--highlight { color: #38bdf8; font-weight: 700; }
+
+                .btn-drawer-partner {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    padding: 12px;
+                    border-radius: var(--radius-sm);
+                    background: rgba(0, 180, 216, 0.12);
+                    border: 1px solid rgba(0, 180, 216, 0.35);
+                    color: #67dff3 !important;
+                    font-weight: 800;
+                    font-size: 0.84rem;
+                    transition: var(--transition);
+                }
+                .btn-drawer-partner:hover {
+                    background: var(--brand-blue);
+                    color: #07090e !important;
+                }
 
                 /* Mobile Search Strip */
                 .store-mobile-search-strip {
