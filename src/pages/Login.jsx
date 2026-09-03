@@ -26,8 +26,11 @@ const Login = () => {
                 body: { username, password }
             });
 
-            if (error || !data?.token) {
-                toast.error('Credenciais inválidas!');
+            if (error) {
+                console.error('Admin login function error:', error);
+                toast.error('Não foi possível conectar ao servidor de login. Tente novamente em instantes.');
+            } else if (!data?.token) {
+                toast.error(data?.error === 'invalid_credentials' ? 'Usuário ou senha inválidos.' : 'Não foi possível concluir o login.');
             } else {
                 clearFailedAttempts();
                 createSession(data);
