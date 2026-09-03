@@ -8,6 +8,7 @@ import { Toaster, toast } from 'sonner';
 import AdminProducts from '../components/AdminProducts';
 import AdminOrders from '../components/AdminOrders';
 import AdminFinance from '../components/AdminFinance';
+import AdminPartners from '../components/AdminPartners';
 import { getSession, destroySession } from '../utils/security';
 
 const Admin = () => {
@@ -87,9 +88,6 @@ const Admin = () => {
         }
         if (view === 'admins') {
             fetchAdmins();
-        }
-        if (view === 'partners') {
-            fetchPartners();
         }
     }, [view, fetchRequests]);
 
@@ -239,7 +237,7 @@ const Admin = () => {
         }
     };
 
-    const fetchPartners = async () => {
+    const _fetchPartners = async () => {
         const { data, error } = await supabase
             .from('parceiros')
             .select('*')
@@ -499,7 +497,7 @@ const Admin = () => {
                         <h1 className="admin-page-title">
                             {view === 'active' ? 'Solicitações' : view === 'orders' ? 'Pedidos e Entregas' : view === 'finance' ? 'Central Financeira' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : view === 'partners' ? 'Parceiros' : 'Lixeira'}
                         </h1>
-                        <p className="admin-page-copy">{view === 'orders' ? 'Acompanhe pagamentos, separação e envios em um só lugar.' : view === 'finance' ? 'Controle vendas, taxas, comissões, cupons e repasses em uma única área.' : view === 'active' ? 'Receitas e solicitações recebidas pelos canais da Graphène.' : 'Gerencie os dados operacionais da Graphène com segurança.'}</p>
+                        <p className="admin-page-copy">{view === 'orders' ? 'Acompanhe pagamentos, separação e envios em um só lugar.' : view === 'finance' ? 'Controle vendas, taxas, comissões, cupons e repasses em uma única área.' : view === 'partners' ? 'Analise inscrições, ative cupons e acompanhe o acesso dos parceiros.' : view === 'active' ? 'Receitas e solicitações recebidas pelos canais da Graphène.' : 'Gerencie os dados operacionais da Graphène com segurança.'}</p>
                     </div>
                     <div className="admin-header-actions">
                         <span className="admin-role">ACESSO ADMINISTRATIVO</span>
@@ -516,6 +514,8 @@ const Admin = () => {
                 ) : view === 'products' ? (
                     <AdminProducts />
                 ) : view === 'partners' ? (
+                    <AdminPartners onUnauthorized={handleLogout} />
+                ) : view === 'partners_legacy' ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                             <Button

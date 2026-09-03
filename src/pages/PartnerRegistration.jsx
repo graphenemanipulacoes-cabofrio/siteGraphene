@@ -1,203 +1,62 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { BadgeCheck, ChevronRight, ShieldCheck, TicketPercent, WalletCards } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import FloatingWhatsApp from '../components/FloatingWhatsApp';
 import { supabase } from '../lib/supabaseClient';
 import { Toaster, toast } from 'sonner';
 
+const initialForm = { fullName: '', document: '', email: '', phone: '', pixKey: '', channel: '', requestedCouponCode: '', password: '', passwordConfirmation: '' };
+
 const PartnerRegistration = () => {
-    const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
-        nome_completo: '',
-        documento: '',
-        email: '',
-        whatsapp: '',
-        chave_pix: '',
-        banco: '',
-        agencia: '',
-        conta: ''
-    });
+  const [form, setForm] = useState(initialForm);
+  const [loading, setLoading] = useState(false);
+  const update = event => setForm(current => ({ ...current, [event.target.name]: event.target.value }));
+  const submit = async event => {
+    event.preventDefault();
+    if (form.password !== form.passwordConfirmation) return toast.error('As senhas não coincidem.');
+    setLoading(true);
+    const { data, error } = await supabase.functions.invoke('partner-register', { body: { fullName: form.fullName, document: form.document, email: form.email, phone: form.phone, pixKey: form.pixKey, channel: form.channel, requestedCouponCode: form.requestedCouponCode, password: form.password } });
+    setLoading(false);
+    if (error || data?.error) return toast.error(data?.error === 'email_already_registered' ? 'Este e-mail já possui uma solicitação ou conta de parceiro.' : data?.error === 'invalid_coupon_code' ? 'Use apenas letras, números, hífen ou sublinhado no código.' : 'Revise os dados e tente novamente.');
+    setForm(initialForm);
+    toast.success('Solicitação enviada. Você já pode entrar para acompanhar a análise.');
+  };
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-
-        try {
-            const { error } = await supabase
-                .from('parceiros')
-                .insert([
-                    {
-                        ...formData,
-                        status: 'pendente'
-                    }
-                ]);
-
-            if (error) throw error;
-
-            toast.success('Credenciamento submetido com sucesso. Nossa equipe entrará em contato.');
-            setFormData({
-                nome_completo: '',
-                documento: '',
-                email: '',
-                whatsapp: '',
-                chave_pix: '',
-                banco: '',
-                agencia: '',
-                conta: ''
-            });
-        } catch (error) {
-            console.error('Error submitting partner registration:', error);
-            toast.error('Erro ao processar. Por favor, tente novamente.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="lux-page-root">
-            <Header />
-            <Toaster position="top-right" richColors />
-
-            <main className="section">
-                <div className="container-narrow">
-                    <div className="editorial-header">
-                        <span className="editorial-tag">Canal Médico & Prescritores</span>
-                        <h1>Credenciamento Profissional</h1>
-                        <p>
-                            Parceria técnica magistral para médicos, nutricionistas e especialistas da saúde.
-                        </p>
-                    </div>
-
-                    <div className="lux-form-box">
-                        <form onSubmit={handleSubmit} className="lux-form">
-                            <div className="lux-form-row">
-                                <div className="lux-input-group">
-                                    <label>Nome Completo *</label>
-                                    <input
-                                        name="nome_completo"
-                                        value={formData.nome_completo}
-                                        onChange={handleChange}
-                                        type="text"
-                                        required
-                                        placeholder="Seu nome completo"
-                                    />
-                                </div>
-                                <div className="lux-input-group">
-                                    <label>CPF ou CNPJ *</label>
-                                    <input
-                                        name="documento"
-                                        value={formData.documento}
-                                        onChange={handleChange}
-                                        type="text"
-                                        required
-                                        placeholder="Apenas números"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="lux-form-row">
-                                <div className="lux-input-group">
-                                    <label>E-mail *</label>
-                                    <input
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        type="email"
-                                        required
-                                        placeholder="exemplo@dominio.com"
-                                    />
-                                </div>
-                                <div className="lux-input-group">
-                                    <label>WhatsApp com DDD *</label>
-                                    <input
-                                        name="whatsapp"
-                                        value={formData.whatsapp}
-                                        onChange={handleChange}
-                                        type="tel"
-                                        required
-                                        placeholder="(22) 99999-9999"
-                                    />
-                                </div>
-                            </div>
-
-                            <div style={{ height: '1px', background: 'var(--border-hairline)', margin: '12px 0' }} />
-                            
-                            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.25rem', color: 'var(--text-main)' }}>
-                                Dados Bancários para Repasse
-                            </h3>
-
-                            <div className="lux-form-row">
-                                <div className="lux-input-group">
-                                    <label>Chave PIX *</label>
-                                    <input
-                                        name="chave_pix"
-                                        value={formData.chave_pix}
-                                        onChange={handleChange}
-                                        type="text"
-                                        required
-                                        placeholder="E-mail, CPF, celular ou chave"
-                                    />
-                                </div>
-                                <div className="lux-input-group">
-                                    <label>Instituição Financeira (Banco) *</label>
-                                    <input
-                                        name="banco"
-                                        value={formData.banco}
-                                        onChange={handleChange}
-                                        type="text"
-                                        required
-                                        placeholder="Ex: Nubank, Itaú..."
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="lux-form-row">
-                                <div className="lux-input-group">
-                                    <label>Agência *</label>
-                                    <input
-                                        name="agencia"
-                                        value={formData.agencia}
-                                        onChange={handleChange}
-                                        type="text"
-                                        required
-                                        placeholder="0001"
-                                    />
-                                </div>
-                                <div className="lux-input-group">
-                                    <label>Conta com Dígito *</label>
-                                    <input
-                                        name="conta"
-                                        value={formData.conta}
-                                        onChange={handleChange}
-                                        type="text"
-                                        required
-                                        placeholder="12345-6"
-                                    />
-                                </div>
-                            </div>
-
-                            <button
-                                type="submit"
-                                className="btn-luxury-primary"
-                                disabled={loading}
-                                style={{ width: '100%', marginTop: '16px' }}
-                            >
-                                {loading ? 'Enviando...' : 'Finalizar Solicitação de Credenciamento'}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </main>
-
-            <Footer />
-            <FloatingWhatsApp />
+  return <div className="lux-page-root partner-page">
+    <Header /><Toaster position="top-right" richColors />
+    <main className="partner-registration-main">
+      <section className="partner-registration-copy">
+        <span className="partner-eyebrow"><BadgeCheck size={15}/> PROGRAMA DE PARCEIROS</span>
+        <h1>Venda com a Graphène. Acompanhe cada resultado.</h1>
+        <p>Cadastre-se para receber um cupom exclusivo, acompanhar vendas confirmadas e visualizar comissões em uma área particular.</p>
+        <div className="partner-benefits">
+          <div><TicketPercent/><span><strong>Cupom exclusivo</strong><small>O código é ativado após aprovação.</small></span></div>
+          <div><WalletCards/><span><strong>Painel individual</strong><small>Vendas, desempenho e comissões em tempo real.</small></span></div>
+          <div><ShieldCheck/><span><strong>Repasse rastreável</strong><small>Valores liberados após o prazo de segurança.</small></span></div>
         </div>
-    );
+      </section>
+      <section className="partner-registration-card">
+        <div className="partner-card-heading"><span>ETAPA 1 DE 1</span><h2>Solicitar parceria</h2><p>Após a análise, sua conta será liberada para o painel.</p></div>
+        <form onSubmit={submit} className="partner-form">
+          <label>Nome completo<input name="fullName" value={form.fullName} onChange={update} placeholder="Seu nome ou razão social" autoComplete="name" required /></label>
+          <div className="partner-form-row"><label>CPF ou CNPJ<input name="document" value={form.document} onChange={update} inputMode="numeric" placeholder="Somente números" required /></label><label>WhatsApp<input name="phone" value={form.phone} onChange={update} inputMode="tel" placeholder="(22) 99999-9999" autoComplete="tel" required /></label></div>
+          <label>E-mail de acesso<input name="email" value={form.email} onChange={update} type="email" placeholder="voce@exemplo.com" autoComplete="email" required /></label>
+          <label>Chave Pix para futuros repasses<input name="pixKey" value={form.pixKey} onChange={update} placeholder="CPF, e-mail, celular ou chave aleatória" required /></label>
+          <div className="partner-form-row"><label>Canal principal <span>opcional</span><input name="channel" value={form.channel} onChange={update} placeholder="Instagram, indicação..." /></label><label>Cupom desejado <span>opcional</span><input name="requestedCouponCode" value={form.requestedCouponCode} onChange={event => setForm(current => ({ ...current, requestedCouponCode: event.target.value.toUpperCase() }))} placeholder="YASMIN15" maxLength="40" /></label></div>
+          <div className="partner-form-row"><label>Crie uma senha<input name="password" value={form.password} onChange={update} type="password" minLength="10" placeholder="Mínimo de 10 caracteres" autoComplete="new-password" required /></label><label>Confirme a senha<input name="passwordConfirmation" value={form.passwordConfirmation} onChange={update} type="password" minLength="10" placeholder="Repita sua senha" autoComplete="new-password" required /></label></div>
+          <button type="submit" disabled={loading}>{loading ? 'Enviando solicitação...' : <>Enviar para análise <ChevronRight size={18}/></>}</button>
+        </form>
+        <p className="partner-login-note">Já é parceiro? <Link to="/parceiros/entrar">Acessar meu painel</Link></p>
+      </section>
+    </main>
+    <Footer /><FloatingWhatsApp /><style>{styles}</style>
+  </div>;
 };
+
+const styles = `
+.partner-page{background:#071018;color:#eaf2f8}.partner-registration-main{width:min(1120px,calc(100% - 40px));margin:0 auto;padding:116px 0 88px;display:grid;grid-template-columns:.9fr 1.1fr;gap:72px;align-items:center}.partner-eyebrow{display:inline-flex;gap:7px;align-items:center;color:#69e5f8;font-size:.71rem;font-weight:900;letter-spacing:.1em}.partner-registration-copy h1{max-width:550px;margin:16px 0;color:#fff;font-family:var(--font-heading);font-size:clamp(2.15rem,4vw,3.6rem);line-height:1.03}.partner-registration-copy>p{max-width:510px;color:#a9bac9;font-size:1rem;line-height:1.7}.partner-benefits{display:grid;gap:14px;margin-top:34px}.partner-benefits>div{display:flex;gap:12px;align-items:center}.partner-benefits svg{width:19px;color:#61dff4}.partner-benefits strong,.partner-benefits small{display:block}.partner-benefits strong{font-size:.86rem;color:#edf5fb}.partner-benefits small{margin-top:2px;font-size:.76rem;color:#91a7bb}.partner-registration-card{padding:30px;border:1px solid rgba(167,220,235,.17);border-radius:18px;background:linear-gradient(150deg,rgba(18,37,56,.96),rgba(8,21,34,.96));box-shadow:0 30px 80px rgba(0,0,0,.22)}.partner-card-heading span{font-size:.67rem;color:#68def3;font-weight:900;letter-spacing:.1em}.partner-card-heading h2{margin:8px 0 4px;color:#fff;font-size:1.5rem}.partner-card-heading p{font-size:.8rem;color:#91a7bb}.partner-form{display:grid;gap:13px;margin-top:24px}.partner-form label{display:grid;gap:6px;color:#b9c9d6;font-size:.72rem;font-weight:800}.partner-form label span{font-weight:500;color:#72869a}.partner-form input{width:100%;min-height:43px;padding:10px 11px;border:1px solid rgba(203,213,225,.15);border-radius:8px;background:#081625;color:#fff;outline:none}.partner-form input:focus{border-color:#3dd8ee;box-shadow:0 0 0 3px rgba(61,216,238,.12)}.partner-form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.partner-form button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:46px;margin-top:3px;border:0;border-radius:9px;background:#28cce9;color:#031219;font-size:.8rem;font-weight:900;cursor:pointer}.partner-form button:disabled{opacity:.6;cursor:wait}.partner-login-note{text-align:center;margin:18px 0 0;color:#9bafc0;font-size:.78rem}.partner-login-note a{color:#6ce7f8;font-weight:800}@media(max-width:820px){.partner-registration-main{padding-top:92px;grid-template-columns:1fr;gap:36px}.partner-registration-copy h1{max-width:620px}.partner-registration-card{max-width:650px;width:100%}}@media(max-width:520px){.partner-registration-main{width:min(100% - 28px,1120px);padding-bottom:54px}.partner-registration-card{padding:22px 17px}.partner-form-row{grid-template-columns:1fr}.partner-registration-copy h1{font-size:2.25rem}}
+`;
 
 export default PartnerRegistration;

@@ -8,6 +8,8 @@ import AvaliacoesPage from './pages/AvaliacoesPage';
 import Login from './pages/Login';
 import Admin from './pages/Admin';
 import PartnerRegistration from './pages/PartnerRegistration';
+import PartnerAccess from './pages/PartnerAccess';
+import PartnerPortal from './pages/PartnerPortal';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import CustomerAccessPage from './pages/CustomerAccessPage';
@@ -29,6 +31,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/parceiros/cadastro" element={<PartnerRegistration />} />
+        <Route path="/parceiros/entrar" element={<PartnerAccess />} />
+        <Route path="/parceiros/painel" element={<PartnerPortal />} />
         <Route path="/produto/:id" element={<ProductPage />} />
         <Route path="/carrinho" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />

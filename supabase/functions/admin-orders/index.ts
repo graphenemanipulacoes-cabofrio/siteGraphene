@@ -73,6 +73,46 @@ Deno.serve(async (req: Request) => {
       return json({ mercadoPagoConfigured: Boolean(Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN')), orders: ordersResult.data || [], recipients: recipientsResult.data || [], coupons: couponsResult.data || [], commissions: commissionsResult.data || [], paymentEvents: eventsResult.data || [] }, 200, origin);
     }
 
+    if (body.action === 'list_partner_applications') {
+      const { data, error } = await admin.from('partner_profiles').select('id,full_name,email,phone,document,pix_key,channel,requested_coupon_code,status,referral_code,commission_recipient_id,coupon_id,approved_at,approved_by,rejection_reason,created_at,updated_at').order('created_at', { ascending: false });
+      if (error) return json({ error: 'unable_to_load_partners' }, 500, origin);
+      return json({ partners: data || [] }, 200, origin);
+    }
+
+    if (body.action === 'approve_partner') {
+      const partnerId = clean(body.partnerId, 36);
+      const referralCode = clean(body.referralCode, 40).toUpperCase();
+      const commissionValue = Number(body.commissionValue);
+      const discountValue = Number(body.discountValue);
+      const holdDays = Number(body.holdDays);
+      if (!uuidPattern.test(partnerId) || !/^[A-Z0-9_-]{3,40}$/.test(referralCode) || !Number.isFinite(commissionValue) || commissionValue < 0 || commissionValue > 100 || !Number.isFinite(discountValue) || discountValue <= 0 || discountValue > 100 || !Number.isInteger(holdDays) || holdDays < 0 || holdDays > 180) return json({ error: 'invalid_partner_approval' }, 400, origin);
+      const { data: profile } = await admin.from('partner_profiles').select('id,full_name,email,status,commission_recipient_id,coupon_id').eq('id', partnerId).maybeSingle();
+      if (!profile || !['pending', 'rejected'].includes(profile.status)) return json({ error: 'partner_not_pending' }, 409, origin);
+      const { data: recipient, error: recipientError } = await admin.from('commission_recipients').insert({ name: profile.full_name, role: 'influencer', email: profile.email, commission_type: 'percentage', commission_value: commissionValue, attribution_scope: 'coupon', hold_days: holdDays, is_active: true }).select().single();
+      if (recipientError || !recipient) return json({ error: 'unable_to_create_recipient' }, 500, origin);
+      const { data: coupon, error: couponError } = await admin.from('discount_coupons').insert({ recipient_id: recipient.id, code: referralCode, discount_type: 'percentage', discount_value: discountValue, minimum_order_amount: 0, is_active: true }).select().single();
+      if (couponError || !coupon) {
+        await admin.from('commission_recipients').delete().eq('id', recipient.id);
+        return json({ error: couponError?.code === '23505' ? 'coupon_exists' : 'unable_to_create_coupon' }, 409, origin);
+      }
+      const { data: partner, error: approvalError } = await admin.from('partner_profiles').update({ status: 'approved', commission_recipient_id: recipient.id, coupon_id: coupon.id, referral_code: referralCode, approved_at: now, approved_by: session.admin_username, rejection_reason: null, updated_at: now }).eq('id', partnerId).select().single();
+      if (approvalError) {
+        await admin.from('discount_coupons').delete().eq('id', coupon.id);
+        await admin.from('commission_recipients').delete().eq('id', recipient.id);
+        return json({ error: 'unable_to_approve_partner' }, 500, origin);
+      }
+      return json({ partner }, 200, origin);
+    }
+
+    if (body.action === 'reject_partner') {
+      const partnerId = clean(body.partnerId, 36);
+      const reason = clean(body.reason, 500);
+      if (!uuidPattern.test(partnerId)) return json({ error: 'invalid_partner' }, 400, origin);
+      const { data, error } = await admin.from('partner_profiles').update({ status: 'rejected', rejection_reason: reason || 'Solicitação não aprovada neste momento.', approved_at: null, approved_by: session.admin_username, updated_at: now }).eq('id', partnerId).in('status', ['pending', 'rejected']).select().single();
+      if (error || !data) return json({ error: 'unable_to_reject_partner' }, 500, origin);
+      return json({ partner: data }, 200, origin);
+    }
+
     if (body.action === 'create_recipient') {
       const name = clean(body.name, 120);
       const role = clean(body.role, 30);
