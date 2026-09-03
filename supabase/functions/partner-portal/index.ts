@@ -22,14 +22,14 @@ Deno.serve(async (req: Request) => {
   if (!origin || req.method !== 'POST') return json({ error: 'request_not_allowed' }, 403, origin || undefined);
 
   try {
+    const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false, autoRefreshToken: false } });
     const token = req.headers.get('authorization') || '';
-    const userClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: token } }, auth: { persistSession: false, autoRefreshToken: false } });
-    const { data: auth, error: authError } = await userClient.auth.getUser();
+    const { data: auth, error: authError } = await admin.auth.getUser(token.replace(/^Bearer\s+/i, ''));
     if (authError || !auth.user) return json({ error: 'unauthorized' }, 401, origin);
 
-    const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false, autoRefreshToken: false } });
     const { data: profile, error: profileError } = await admin.from('partner_profiles').select('id,full_name,email,phone,status,referral_code,requested_coupon_code,commission_recipient_id,coupon_id,approved_at,rejection_reason,created_at').eq('id', auth.user.id).maybeSingle();
-    if (profileError || !profile) return json({ error: 'partner_not_found' }, 404, origin);
+    if (profileError) return json({ error: 'unable_to_load_profile' }, 500, origin);
+    if (!profile) return json({ state: 'not_partner' }, 200, origin);
     if (profile.status !== 'approved' || !profile.commission_recipient_id) return json({ profile, metrics: null, orders: [], commissions: [] }, 200, origin);
 
     await admin.rpc('release_available_commissions');
@@ -38,8 +38,15 @@ Deno.serve(async (req: Request) => {
       admin.from('commissions').select('id,order_id,base_amount,amount,status,available_at,paid_at,created_at,orders(id,total,created_at,payment_status)').eq('recipient_id', profile.commission_recipient_id).order('created_at', { ascending: false }).limit(150),
       profile.coupon_id ? admin.from('discount_coupons').select('code,redeemed_count,max_redemptions,is_active,discount_type,discount_value').eq('id', profile.coupon_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
     ]);
-    if (ordersResult.error || commissionsResult.error || couponResult.error) return json({ error: 'unable_to_load_dashboard' }, 500, origin);
-
+    // Uma falha pontual em um dos blocos de histórico não pode impedir o parceiro
+    // de acessar o próprio painel. Os dados disponíveis continuam sendo exibidos.
+    if (ordersResult.error || commissionsResult.error || couponResult.error) {
+      console.error('partner_portal_dashboard_query_failure', {
+        orders: ordersResult.error?.message,
+        commissions: commissionsResult.error?.message,
+        coupon: couponResult.error?.message,
+      });
+    }
     const orders = ordersResult.data || [];
     const commissions = commissionsResult.data || [];
     const paidOrders = orders.filter(order => order.payment_status === 'paid');
@@ -52,8 +59,9 @@ Deno.serve(async (req: Request) => {
       paidCommission: sum(commissions.filter(item => item.status === 'paid'), 'amount'),
       conversionOrders: orders.length,
     };
-    return json({ profile, metrics, coupon: couponResult.data, orders, commissions }, 200, origin);
-  } catch {
+    return json({ profile, metrics, coupon: couponResult.data || null, orders, commissions }, 200, origin);
+  } catch (error) {
+    console.error('partner_portal_failure', error instanceof Error ? error.message : 'unknown');
     return json({ error: 'internal_error' }, 500, origin || undefined);
   }
 });
