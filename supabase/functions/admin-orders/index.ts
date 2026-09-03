@@ -1,5 +1,20 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { allowedOrigin, json } from '../_shared/http.ts';
+
+const json = (body: unknown, status = 200, origin?: string) => new Response(status === 204 ? null : JSON.stringify(body), {
+  status,
+  headers: {
+    'Content-Type': 'application/json', 'Cache-Control': 'no-store',
+    'Access-Control-Allow-Origin': origin || 'null',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-admin-token',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Vary': 'Origin',
+  },
+});
+
+const allowedOrigin = (requestOrigin: string | null) => {
+  const siteUrl = Deno.env.get('SITE_URL') || '';
+  const localOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+  return requestOrigin && (requestOrigin === siteUrl || localOrigins.includes(requestOrigin)) ? requestOrigin : null;
+};
 
 const encoder = new TextEncoder();
 const hex = (buffer: ArrayBuffer) => [...new Uint8Array(buffer)].map(byte => byte.toString(16).padStart(2, '0')).join('');
@@ -7,6 +22,9 @@ const sha256 = async (value: string) => hex(await crypto.subtle.digest('SHA-256'
 const clean = (value: unknown, max: number) => typeof value === 'string' ? value.trim().slice(0, max) : '';
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const allowedStatuses = new Set(['awaiting_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']);
+const recipientRoles = new Set(['influencer', 'marketing', 'development', 'other']);
+const commissionTypes = new Set(['percentage', 'fixed']);
+const attributionScopes = new Set(['coupon', 'all_paid_orders']);
 
 Deno.serve(async (req: Request) => {
   const origin = allowedOrigin(req.headers.get('origin'));
@@ -40,6 +58,77 @@ Deno.serve(async (req: Request) => {
       `).order('created_at', { ascending: false }).limit(250);
       if (error) return json({ error: 'unable_to_load_orders' }, 500, origin);
       return json({ orders: data || [] }, 200, origin);
+    }
+
+    if (body.action === 'finance_dashboard') {
+      await admin.rpc('release_available_commissions');
+      const [ordersResult, recipientsResult, couponsResult, commissionsResult, eventsResult] = await Promise.all([
+        admin.from('orders').select('id,customer_email,subtotal,discount_code,discount_amount,total,provider_fee,net_amount,payment_provider,payment_status,payment_method,payment_reference,paid_at,status,created_at,commission_recipients(name,role)').order('created_at', { ascending: false }).limit(300),
+        admin.from('commission_recipients').select('*').order('created_at', { ascending: false }),
+        admin.from('discount_coupons').select('*,commission_recipients(name)').order('created_at', { ascending: false }),
+        admin.from('commissions').select('*,commission_recipients(name,role),orders(id,customer_email,discount_code,total,paid_at)').order('created_at', { ascending: false }).limit(500),
+        admin.from('payment_events').select('*').order('created_at', { ascending: false }).limit(120),
+      ]);
+      if (ordersResult.error || recipientsResult.error || couponsResult.error || commissionsResult.error || eventsResult.error) return json({ error: 'unable_to_load_finance' }, 500, origin);
+      return json({ mercadoPagoConfigured: Boolean(Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN')), orders: ordersResult.data || [], recipients: recipientsResult.data || [], coupons: couponsResult.data || [], commissions: commissionsResult.data || [], paymentEvents: eventsResult.data || [] }, 200, origin);
+    }
+
+    if (body.action === 'create_recipient') {
+      const name = clean(body.name, 120);
+      const role = clean(body.role, 30);
+      const commissionType = clean(body.commissionType, 20);
+      const scope = clean(body.attributionScope, 30);
+      const commissionValue = Number(body.commissionValue);
+      const holdDays = Number(body.holdDays);
+      if (!name || !recipientRoles.has(role) || !commissionTypes.has(commissionType) || !attributionScopes.has(scope) || !Number.isFinite(commissionValue) || commissionValue < 0 || (commissionType === 'percentage' && commissionValue > 100) || !Number.isInteger(holdDays) || holdDays < 0 || holdDays > 180) return json({ error: 'invalid_recipient' }, 400, origin);
+      const { data, error } = await admin.from('commission_recipients').insert({ name, role, email: clean(body.email, 320) || null, commission_type: commissionType, commission_value: commissionValue, attribution_scope: scope, hold_days: holdDays, is_active: true }).select().single();
+      if (error) return json({ error: 'unable_to_create_recipient' }, 500, origin);
+      return json({ recipient: data }, 200, origin);
+    }
+
+    if (body.action === 'update_recipient') {
+      const id = clean(body.id, 36);
+      const commissionValue = Number(body.commissionValue);
+      const holdDays = Number(body.holdDays);
+      const commissionType = clean(body.commissionType, 20);
+      const scope = clean(body.attributionScope, 30);
+      if (!uuidPattern.test(id) || !commissionTypes.has(commissionType) || !attributionScopes.has(scope) || !Number.isFinite(commissionValue) || commissionValue < 0 || (commissionType === 'percentage' && commissionValue > 100) || !Number.isInteger(holdDays) || holdDays < 0 || holdDays > 180) return json({ error: 'invalid_recipient' }, 400, origin);
+      const { data, error } = await admin.from('commission_recipients').update({ commission_type: commissionType, commission_value: commissionValue, attribution_scope: scope, hold_days: holdDays, is_active: Boolean(body.isActive), updated_at: now }).eq('id', id).select().single();
+      if (error) return json({ error: 'unable_to_update_recipient' }, 500, origin);
+      return json({ recipient: data }, 200, origin);
+    }
+
+    if (body.action === 'create_coupon') {
+      const recipientId = clean(body.recipientId, 36);
+      const code = clean(body.code, 40).toUpperCase();
+      const discountType = clean(body.discountType, 20);
+      const discountValue = Number(body.discountValue);
+      const minimumOrderAmount = Number(body.minimumOrderAmount || 0);
+      const maxRedemptions = body.maxRedemptions === '' || body.maxRedemptions == null ? null : Number(body.maxRedemptions);
+      if (!uuidPattern.test(recipientId) || !/^[A-Z0-9_-]{3,40}$/.test(code) || !commissionTypes.has(discountType) || !Number.isFinite(discountValue) || discountValue <= 0 || (discountType === 'percentage' && discountValue > 100) || !Number.isFinite(minimumOrderAmount) || minimumOrderAmount < 0 || (maxRedemptions !== null && (!Number.isInteger(maxRedemptions) || maxRedemptions < 1))) return json({ error: 'invalid_coupon' }, 400, origin);
+      const { data, error } = await admin.from('discount_coupons').insert({ recipient_id: recipientId, code, discount_type: discountType, discount_value: discountValue, minimum_order_amount: minimumOrderAmount, max_redemptions: maxRedemptions, is_active: true }).select('*,commission_recipients(name)').single();
+      if (error) return json({ error: error.code === '23505' ? 'coupon_exists' : 'unable_to_create_coupon' }, 409, origin);
+      return json({ coupon: data }, 200, origin);
+    }
+
+    if (body.action === 'toggle_coupon') {
+      const id = clean(body.id, 36);
+      if (!uuidPattern.test(id)) return json({ error: 'invalid_coupon' }, 400, origin);
+      const { data, error } = await admin.from('discount_coupons').update({ is_active: Boolean(body.isActive), updated_at: now }).eq('id', id).select('*,commission_recipients(name)').single();
+      if (error) return json({ error: 'unable_to_update_coupon' }, 500, origin);
+      return json({ coupon: data }, 200, origin);
+    }
+
+    if (body.action === 'settle_recipient_commissions') {
+      const recipientId = clean(body.recipientId, 36);
+      const reference = clean(body.reference, 160);
+      if (!uuidPattern.test(recipientId) || !reference) return json({ error: 'invalid_payout' }, 400, origin);
+      const { data: available, error: availableError } = await admin.from('commissions').select('id,amount').eq('recipient_id', recipientId).eq('status', 'available');
+      if (availableError || !available?.length) return json({ error: 'no_available_commissions' }, 409, origin);
+      const total = available.reduce((sum, commission) => sum + Number(commission.amount || 0), 0);
+      const { error } = await admin.from('commissions').update({ status: 'paid', paid_at: now, payout_reference: reference, updated_at: now }).in('id', available.map(commission => commission.id));
+      if (error) return json({ error: 'unable_to_register_payout' }, 500, origin);
+      return json({ ok: true, total }, 200, origin);
     }
 
     if (body.action === 'list_admins') {

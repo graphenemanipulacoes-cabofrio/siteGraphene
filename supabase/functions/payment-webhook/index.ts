@@ -28,10 +28,15 @@ Deno.serve(async (req: Request) => {
   const { data: order } = await admin.from('orders').select('id,total,payment_status').eq('id', orderId).maybeSingle();
   if (!order) return new Response('ignored', { status: 200 });
   const paid = payment.status === 'approved' && Math.abs(Number(payment.transaction_amount) - Number(order.total)) < 0.01;
-  await admin.from('orders').update({
-    payment_status: paid ? 'paid' : payment.status === 'rejected' ? 'failed' : 'pending',
-    status: paid ? 'paid' : order.payment_status === 'paid' ? 'paid' : 'awaiting_payment',
+  const cancelled = ['cancelled', 'refunded', 'charged_back'].includes(String(payment.status));
+  const providerFee = Array.isArray(payment.fee_details) ? payment.fee_details.reduce((sum: number, fee: Record<string, unknown>) => sum + Number(fee.amount || 0), 0) : 0;
+  const netAmount = Number(payment.transaction_details?.net_received_amount ?? (Number(payment.transaction_amount || 0) - providerFee));
+  const paymentStatus = paid ? 'paid' : payment.status === 'refunded' ? 'refunded' : payment.status === 'rejected' ? 'failed' : cancelled ? 'failed' : 'pending';
+  const { error: updateError } = await admin.from('orders').update({
+    payment_status: paymentStatus,
+    status: paid ? 'paid' : cancelled ? 'cancelled' : order.payment_status === 'paid' ? 'paid' : 'awaiting_payment',
     payment_method: payment.payment_type_id || payment.payment_method_id || null,
+    payment_provider: 'mercado_pago', provider_fee: providerFee, net_amount: netAmount,
     payment_details: {
       provider: 'mercado_pago',
       payment_id: String(payment.id || dataId),
@@ -40,5 +45,13 @@ Deno.serve(async (req: Request) => {
     },
     paid_at: paid ? new Date().toISOString() : null, updated_at: new Date().toISOString(),
   }).eq('id', order.id);
+  if (updateError) return new Response('database_error', { status: 502 });
+  await admin.from('payment_events').insert({
+    order_id: order.id, provider: 'mercado_pago', provider_payment_id: String(payment.id || dataId),
+    status: String(payment.status || 'unknown'), status_detail: String(payment.status_detail || ''),
+    payment_method: payment.payment_type_id || payment.payment_method_id || null,
+    gross_amount: Number(payment.transaction_amount || 0), provider_fee: providerFee, net_amount: netAmount,
+  });
+  await admin.rpc('create_order_commissions', { p_order_id: order.id });
   return new Response('ok', { status: 200 });
 });

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CreditCard, LoaderCircle, LockKeyhole, MapPin, ShoppingBag, UserRound } from 'lucide-react';
+import { CreditCard, LoaderCircle, LockKeyhole, MapPin, ShoppingBag, TicketPercent, UserRound } from 'lucide-react';
 import StoreLayout from '../components/StoreLayout';
 import { useStore } from '../context/StoreContext';
 import { commerceStyles } from './CartPage';
@@ -13,6 +13,7 @@ const CheckoutPage = () => {
     const [form, setForm] = useState({ name: '', cpf: '', phone: '', zip: '', address: '', number: '', complement: '' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [couponCode, setCouponCode] = useState('');
     const [checkoutKey] = useState(() => crypto.randomUUID());
     const setField = event => setForm(current => ({ ...current, [event.target.name]: event.target.value }));
 
@@ -25,6 +26,7 @@ const CheckoutPage = () => {
             items: cart.map(item => ({ productId: item.id, quantity: item.quantity })),
             shipping: { name: form.name, phone: form.phone, zip: form.zip, address: form.address, number: form.number, complement: form.complement },
             payerDocument: form.cpf,
+            couponCode,
         }});
 
         if (invokeError || !data?.paymentUrl) {
@@ -33,6 +35,8 @@ const CheckoutPage = () => {
                 invalid_document: 'Digite um CPF válido com 11 números.',
                 invalid_or_unpriced_product: 'Um dos produtos precisa ter o preço atualizado antes da compra.',
                 unable_to_create_order: 'Não foi possível validar os produtos deste pedido.',
+                invalid_coupon: 'Este cupom não está disponível.',
+                coupon_minimum_not_reached: 'O valor mínimo deste cupom não foi atingido.',
             };
             setError(messages[data?.error] || 'Não foi possível iniciar o pagamento. Tente novamente.');
             setLoading(false);
@@ -60,6 +64,7 @@ const CheckoutPage = () => {
                 <label>Complemento<input name="complement" maxLength="80" value={form.complement} onChange={setField} /></label>
             </div></section>
             <section className="payment-placeholder"><h2><CreditCard size={19}/> Pagamento protegido</h2><div><strong>PIX e cartão pelo Mercado Pago</strong><p>Os dados do cartão são preenchidos no ambiente seguro do Mercado Pago. A Graphène não recebe nem armazena o número do cartão.</p></div></section>
+            <section className="coupon-field"><h2><TicketPercent size={19}/> Cupom de indicação</h2><label>Código do cupom<input value={couponCode} onChange={event => setCouponCode(event.target.value.toUpperCase())} maxLength="40" placeholder="Ex.: YASMIN15" autoCapitalize="characters" /></label><p>O desconto será validado com segurança antes de gerar o pagamento.</p></section>
             {error && <div className="checkout-error" role="alert">{error}</div>}
             <button className="place-order" type="submit" disabled={loading}>{loading ? <LoaderCircle className="spin" size={18}/> : <LockKeyhole size={17}/>} {loading ? 'Criando pagamento seguro...' : `Ir para o pagamento de ${money(subtotal)}`}</button>
             <small>O valor é recalculado com os preços oficiais do banco antes de gerar a cobrança.</small>

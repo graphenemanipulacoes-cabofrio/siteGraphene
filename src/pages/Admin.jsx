@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Package, PackageCheck, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink } from 'lucide-react';
+import { Package, PackageCheck, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink, WalletCards } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { Link, useNavigate } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabaseClient';
 import { Toaster, toast } from 'sonner';
 import AdminProducts from '../components/AdminProducts';
 import AdminOrders from '../components/AdminOrders';
+import AdminFinance from '../components/AdminFinance';
 import { getSession, destroySession } from '../utils/security';
 
 const Admin = () => {
@@ -395,6 +396,10 @@ const Admin = () => {
                     <PackageCheck size={22} />
                     <span>Pedidos</span>
                 </div>
+                <div className={`nav-item ${view === 'finance' ? 'active' : ''}`} onClick={() => setView('finance')}>
+                    <WalletCards size={22} />
+                    <span>Financeiro</span>
+                </div>
                 <div className={`nav-item ${view === 'products' ? 'active' : ''}`} onClick={() => setView('products')}>
                     <Package size={22} />
                     <span>Produtos</span>
@@ -437,6 +442,13 @@ const Admin = () => {
                         onClick={() => { setView('orders'); setExpandedId(null); }}
                     >
                         <PackageCheck size={18} /> Pedidos e Entregas
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        className={`admin-nav-link ${view === 'finance' ? 'active' : ''}`}
+                        onClick={() => { setView('finance'); setExpandedId(null); }}
+                    >
+                        <WalletCards size={18} /> Financeiro
                     </Button>
                     <span className="admin-nav-label">GESTÃO</span>
                     <Button
@@ -485,9 +497,9 @@ const Admin = () => {
                         )}
                         <span className="admin-eyebrow">CENTRAL DE OPERAÇÕES</span>
                         <h1 className="admin-page-title">
-                            {view === 'active' ? 'Solicitações' : view === 'orders' ? 'Pedidos e Entregas' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : view === 'partners' ? 'Parceiros' : 'Lixeira'}
+                            {view === 'active' ? 'Solicitações' : view === 'orders' ? 'Pedidos e Entregas' : view === 'finance' ? 'Central Financeira' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : view === 'partners' ? 'Parceiros' : 'Lixeira'}
                         </h1>
-                        <p className="admin-page-copy">{view === 'orders' ? 'Acompanhe pagamentos, separação e envios em um só lugar.' : view === 'active' ? 'Receitas e solicitações recebidas pelos canais da Graphène.' : 'Gerencie os dados operacionais da Graphène com segurança.'}</p>
+                        <p className="admin-page-copy">{view === 'orders' ? 'Acompanhe pagamentos, separação e envios em um só lugar.' : view === 'finance' ? 'Controle vendas, taxas, comissões, cupons e repasses em uma única área.' : view === 'active' ? 'Receitas e solicitações recebidas pelos canais da Graphène.' : 'Gerencie os dados operacionais da Graphène com segurança.'}</p>
                     </div>
                     <div className="admin-header-actions">
                         <span className="admin-role">ACESSO ADMINISTRATIVO</span>
@@ -499,6 +511,8 @@ const Admin = () => {
 
                 {view === 'orders' ? (
                     <AdminOrders onUnauthorized={handleLogout} />
+                ) : view === 'finance' ? (
+                    <AdminFinance onUnauthorized={handleLogout} />
                 ) : view === 'products' ? (
                     <AdminProducts />
                 ) : view === 'partners' ? (
