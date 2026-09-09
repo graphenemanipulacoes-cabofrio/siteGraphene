@@ -141,7 +141,7 @@ const defaultProducts = [
 const ProductGrid = ({ searchTerm = '' }) => {
     const [activeTab, setActiveTab] = useState('Todos');
     const [productsList, setProductsList] = useState(defaultProducts);
-    const { addItem, customer } = useStore();
+    const { addItem } = useStore();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -185,13 +185,9 @@ const ProductGrid = ({ searchTerm = '' }) => {
     }
 
     const startPurchase = (product, destination, intent) => {
-        if (!customer) {
-            navigate('/entrar', { state: { returnTo: destination, intent, pendingProduct: product } });
-            return;
-        }
-        addItem(product);
-        toast.success(`${product.name} foi adicionado à sacola.`);
-        navigate(destination);
+        if (!addItem(product)) return;
+        if (intent === 'checkout') navigate(destination);
+        else toast.success('Adicionado ao carrinho', { description: product.name, duration: 2500 });
     };
 
     return (
@@ -246,15 +242,15 @@ const ProductGrid = ({ searchTerm = '' }) => {
                                     <div className="product-price">
                                         {item.price ? (
                                             <>
-                                                <span className="price-small">a partir de</span>
+                                                <span className="price-small">Preço por unidade</span>
                                                 <strong>R$ {item.price}</strong>
                                             </>
-                                        ) : null}
+                                        ) : <span className="price-small">Preço não informado</span>}
                                     </div>
                                 </div>
                                 <div className="product-card-actions">
-                                    <button onClick={() => startPurchase(item, '/carrinho', 'cart')} className="btn-add-cart"><ShoppingBag size={16} /><span>Adicionar ao carrinho</span></button>
-                                    <button onClick={() => startPurchase(item, '/checkout', 'checkout')} className="btn-buy-now"><Zap size={16} /><span>Comprar agora</span></button>
+                                    <button disabled={!item.price} onClick={() => startPurchase(item, '/carrinho', 'cart')} className="btn-add-cart"><ShoppingBag size={16} /><span>Adicionar ao carrinho</span></button>
+                                    <button disabled={!item.price} onClick={() => startPurchase(item, '/checkout', 'checkout')} className="btn-buy-now"><Zap size={16} /><span>Comprar agora</span></button>
                                 </div>
                             </div>
                         </div>

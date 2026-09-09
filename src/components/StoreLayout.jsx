@@ -15,7 +15,7 @@ const StoreLayout = ({ children, search, searchTerm, onSearchChange }) => {
             <Header showSearch={search} searchTerm={searchTerm} onSearchChange={onSearchChange} />
             <main>{children}</main>
             <Footer />
-            <FloatingWhatsApp />
+            {!['/checkout', '/pedido/retorno'].includes(location.pathname) && <FloatingWhatsApp />}
             {adminPreview && <style>{adminPreviewStyles}</style>}
         </div>
     );

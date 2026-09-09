@@ -16,11 +16,6 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Close mobile menu on route change
-    useEffect(() => {
-        setMenuOpen(false);
-    }, [location.pathname]);
-
     // Prevent body scroll when mobile menu is open
     useEffect(() => {
         if (menuOpen) {
@@ -98,10 +93,10 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                             <UserRound size={18} />
                             <span className="header-icon-label">{customer ? 'Minha conta' : 'Entrar'}</span>
                         </Link>
-                        <Link to="/carrinho" className="btn-header-icon cart-header-link" aria-label={`Sacola com ${itemCount} itens`} title="Sacola">
+                        <Link to="/carrinho" className="btn-header-icon cart-header-link" aria-label={`Carrinho com ${itemCount} ${itemCount === 1 ? 'item' : 'itens'}`} title="Carrinho">
                             <ShoppingBag size={18} />
                             {itemCount > 0 && <span className="cart-count">{itemCount > 9 ? '9+' : itemCount}</span>}
-                            <span className="header-icon-label">Sacola</span>
+                            <span className="header-icon-label">Carrinho</span>
                         </Link>
                         <Link to="/receita" className="btn-header-receita">
                             <FileUp size={15} />
@@ -168,7 +163,7 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
 
                         <div className="mobile-drawer-links">
                             <Link to={customer ? '/minha-conta' : '/entrar'} className="mobile-drawer-link" onClick={() => setMenuOpen(false)}><div className="drawer-link-content"><UserRound size={15}/><span>{customer ? 'Minha conta' : 'Entrar / Criar conta'}</span></div><ChevronRight size={16} opacity={0.4} /></Link>
-                            <Link to="/carrinho" className="mobile-drawer-link" onClick={() => setMenuOpen(false)}><div className="drawer-link-content"><ShoppingBag size={15}/><span>Sacola {itemCount ? `(${itemCount})` : ''}</span></div><ChevronRight size={16} opacity={0.4} /></Link>
+                            <Link to="/carrinho" className="mobile-drawer-link" onClick={() => setMenuOpen(false)}><div className="drawer-link-content"><ShoppingBag size={15}/><span>Carrinho {itemCount ? `(${itemCount})` : ''}</span></div><ChevronRight size={16} opacity={0.4} /></Link>
                             {navItems.map((item, idx) => (
                                 <Link
                                     key={idx}
