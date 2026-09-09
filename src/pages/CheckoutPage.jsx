@@ -9,6 +9,17 @@ import { isAdminPreview } from '../utils/adminPreview';
 
 const money = value => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+const readFunctionError = async (invokeError, data) => {
+    if (data?.error) return data.error;
+    const response = invokeError?.context;
+    if (!response || typeof response.clone !== 'function') return null;
+    try {
+        return (await response.clone().json())?.error || null;
+    } catch {
+        return null;
+    }
+};
+
 const CheckoutPage = () => {
     const { cart, subtotal, customer, authReady, clearCart } = useStore();
     const location = useLocation();
@@ -24,24 +35,44 @@ const CheckoutPage = () => {
         event.preventDefault();
         setLoading(true);
         setError('');
+
+        let { data: sessionData } = await supabase.auth.getSession();
+        let session = sessionData.session;
+        if (session?.expires_at && session.expires_at * 1000 - Date.now() < 60_000) {
+            const { data: refreshed } = await supabase.auth.refreshSession();
+            session = refreshed.session;
+        }
+        if (!session?.access_token) {
+            setError('Sua sessão expirou. Entre novamente para continuar o pagamento.');
+            setLoading(false);
+            return;
+        }
+
         const { data, error: invokeError } = await supabase.functions.invoke('create-checkout', { body: {
             checkoutKey,
             items: cart.map(item => ({ productId: item.id, quantity: item.quantity })),
             shipping: { name: form.name, phone: form.phone, zip: form.zip, address: form.address, number: form.number, complement: form.complement },
             payerDocument: form.cpf,
             couponCode,
-        }});
+        }, headers: { Authorization: `Bearer ${session.access_token}` }});
 
         if (invokeError || !data?.paymentUrl) {
+            const errorCode = await readFunctionError(invokeError, data);
             const messages = {
+                authentication_required: 'Sua sessão expirou. Entre novamente para continuar o pagamento.',
                 payment_provider_not_configured: 'O pagamento ainda não foi ativado pela loja.',
+                payment_provider_credentials_invalid: 'A conexão da loja com o Mercado Pago precisa ser renovada.',
+                payment_provider_request_rejected: 'O Mercado Pago recusou os dados desta cobrança. Revise seus dados e tente novamente.',
+                payment_provider_unavailable: 'O Mercado Pago está temporariamente indisponível. Tente novamente em alguns instantes.',
+                invalid_cart: 'Seu carrinho precisa ser atualizado. Volte ao carrinho e tente novamente.',
+                invalid_shipping: 'Confira todos os dados do endereço de entrega.',
                 invalid_document: 'Digite um CPF válido com 11 números.',
                 invalid_or_unpriced_product: 'Um dos produtos precisa ter o preço atualizado antes da compra.',
                 unable_to_create_order: 'Não foi possível validar os produtos deste pedido.',
                 invalid_coupon: 'Este cupom não está disponível.',
                 coupon_minimum_not_reached: 'O valor mínimo deste cupom não foi atingido.',
             };
-            setError(messages[data?.error] || 'Não foi possível iniciar o pagamento. Tente novamente.');
+            setError(messages[errorCode] || 'Não foi possível iniciar o pagamento. Tente novamente.');
             setLoading(false);
             return;
         }

@@ -49,7 +49,13 @@ Deno.serve(async (req: Request) => {
       p_customer_id: user.id, p_customer_email: user.email, p_checkout_key: checkoutKey, p_items: items, p_shipping_address: shipping,
       p_coupon_code: couponCode || null,
     });
-    if (orderError || !order) return json({ error: 'unable_to_create_order' }, 422, origin);
+    if (orderError || !order) {
+      const reason = String(orderError?.message || '');
+      const knownError = ['invalid_cart', 'invalid_shipping_address', 'invalid_or_unpriced_product', 'invalid_coupon', 'coupon_minimum_not_reached']
+        .find(code => reason.includes(code));
+      console.error('checkout_order_failed', { code: orderError?.code, reason: knownError || 'database_error' });
+      return json({ error: knownError || 'unable_to_create_order' }, 422, origin);
+    }
     await admin.from('orders').update({ customer_document: customerDocument }).eq('id', order.order_id);
 
     const accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
@@ -73,7 +79,16 @@ Deno.serve(async (req: Request) => {
     const preference = await preferenceResponse.json();
     if (!preferenceResponse.ok || !preference.init_point) {
       await admin.from('orders').update({ payment_status: 'failed', updated_at: new Date().toISOString() }).eq('id', order.order_id);
-      return json({ error: 'payment_provider_error', orderId: order.order_id }, 502, origin);
+      const providerError = [401, 403].includes(preferenceResponse.status)
+        ? 'payment_provider_credentials_invalid'
+        : preferenceResponse.status === 400
+          ? 'payment_provider_request_rejected'
+          : 'payment_provider_unavailable';
+      console.error('mercado_pago_preference_failed', {
+        status: preferenceResponse.status,
+        code: typeof preference?.error === 'string' ? preference.error.slice(0, 80) : 'unknown',
+      });
+      return json({ error: providerError, orderId: order.order_id }, 502, origin);
     }
     await admin.from('orders').update({ payment_reference: String(preference.id), payment_url: preference.init_point, updated_at: new Date().toISOString() }).eq('id', order.order_id);
     return json({ orderId: order.order_id, paymentUrl: preference.init_point }, 200, origin);
