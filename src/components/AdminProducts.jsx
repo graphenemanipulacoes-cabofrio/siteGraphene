@@ -19,6 +19,7 @@ import {
     rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import SortableProductCard from './SortableProductCard';
+import { getSession } from '../utils/security';
 
 const AdminProducts = () => {
     const [products, setProducts] = useState([]);
@@ -52,14 +53,13 @@ const AdminProducts = () => {
 
     const fetchProducts = async () => {
         try {
-            const { data, error } = await supabase
-                .from('produtos')
-                .select('*')
-                .order('display_order', { ascending: true }) // Order by custom order
-                .order('created_at', { ascending: true }); // Fallback
-
-            if (error) throw error;
-            setProducts(data || []);
+            const session = getSession();
+            const { data, error } = await supabase.rpc('admin_manage_products', {
+                p_action: 'list',
+                p_token: session?.token || '',
+            });
+            if (error || data?.error) throw new Error(data?.error || 'Não foi possível carregar os produtos');
+            setProducts(data.products || []);
         } catch (error) {
             console.error('Error fetching products:', error);
         } finally {
@@ -90,25 +90,27 @@ const AdminProducts = () => {
 
     const updateOrder = async (updatedProducts) => {
         try {
-            // Update each product's display_order individually
-            for (let i = 0; i < updatedProducts.length; i++) {
-                await supabase
-                    .from('produtos')
-                    .update({ display_order: i })
-                    .eq('id', updatedProducts[i].id);
-            }
-
-            // Note: If 'display_order' doesn't exist, this will fail. We need to add the column.
-
+            const session = getSession();
+            const { data, error } = await supabase.rpc('admin_manage_products', {
+                p_action: 'reorder',
+                p_token: session?.token || '',
+                p_product_ids: updatedProducts.map(product => product.id),
+            });
+            if (error || data?.error) throw new Error(data?.error || 'Não foi possível salvar a ordem');
         } catch (error) {
             console.error('Error updating order:', error);
             toast.error('Erro ao salvar ordem.');
+            throw error;
         }
     };
 
     const handleSaveOrder = async () => {
-        await updateOrder(products);
-        toast.success('Ordem salva com sucesso!');
+        try {
+            await updateOrder(products);
+            toast.success('Ordem salva com sucesso!');
+        } catch {
+            // A mensagem específica já foi exibida em updateOrder.
+        }
     };
 
     const handleOpenModal = (product = null) => {
@@ -154,67 +156,32 @@ const AdminProducts = () => {
         setUploading(true);
 
         try {
-            let imageUrl = editingProduct?.image_url;
-
+            let imageUrl = editingProduct?.image_url || null;
             if (imageFile) {
-                const fileExt = imageFile.name.split('.').pop();
-                const fileName = `product_${Date.now()}.${fileExt}`;
-                const { error: uploadError } = await supabase.storage
-                    .from('receitas')
-                    .upload(fileName, imageFile);
-
-                if (uploadError) throw uploadError;
-
-                const { data } = supabase.storage
-                    .from('receitas')
-                    .getPublicUrl(fileName);
-
-                imageUrl = data.publicUrl;
+                const extension = imageFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+                const fileName = `products/product_${Date.now()}.${extension}`;
+                const { error: uploadError } = await supabase.storage.from('receitas').upload(fileName, imageFile, { upsert: false });
+                if (uploadError) throw new Error('Não foi possível enviar a imagem do produto');
+                imageUrl = supabase.storage.from('receitas').getPublicUrl(fileName).data.publicUrl;
             }
-
-            const finalPrice = !price ? 0 : parseFloat(price);
-
-            const productData = {
-                name,
-                description,
-                price: finalPrice,
-                image_url: imageUrl
-            };
-
-            let savedProduct;
-
-            if (editingProduct) {
-                // Update
-                const { data, error } = await supabase
-                    .from('produtos')
-                    .update(productData)
-                    .eq('id', editingProduct.id)
-                    .select();
-
-                if (error) throw error;
-                if (!data || data.length === 0) throw new Error('Permissão negada ou ID não encontrado (RLS)');
-                savedProduct = data[0];
-
-                // Update local state immediately
-                setProducts(prev => prev.map(p => p.id === savedProduct.id ? savedProduct : p));
-                toast.success('Produto atualizado!');
-            } else {
-                // Insert
-                // Get max order to put at end? Or just let it be null (start) or end (max+1).
-                // Simplest: defaults to 0 or we handle fetch.
-                const { data, error } = await supabase
-                    .from('produtos')
-                    .insert([productData])
-                    .select();
-
-                if (error) throw error;
-                if (!data || data.length === 0) throw new Error('Erro ao inserir (RLS)');
-                savedProduct = data[0];
-
-                // Add to local state
-                setProducts(prev => [...prev, savedProduct]);
-                toast.success('Produto criado!');
-            }
+            const session = getSession();
+            const { data, error } = await supabase.rpc('admin_manage_products', {
+                p_action: 'save',
+                p_token: session?.token || '',
+                p_product: {
+                    id: editingProduct?.id ?? null,
+                    name,
+                    description,
+                    price: !price ? 0 : Number(price),
+                    image_url: imageUrl,
+                },
+            });
+            if (error || data?.error || !data?.product) throw new Error(data?.error || 'Não foi possível salvar o produto');
+            const savedProduct = data.product;
+            setProducts(prev => editingProduct
+                ? prev.map(product => product.id === savedProduct.id ? savedProduct : product)
+                : [...prev, savedProduct]);
+            toast.success(editingProduct ? 'Produto atualizado!' : 'Produto criado!');
 
             setIsModalOpen(false);
 
@@ -230,12 +197,13 @@ const AdminProducts = () => {
         if (!confirm('Tem certeza que deseja excluir este produto?')) return;
 
         try {
-            const { error } = await supabase
-                .from('produtos')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
+            const session = getSession();
+            const { data, error } = await supabase.rpc('admin_manage_products', {
+                p_action: 'delete',
+                p_token: session?.token || '',
+                p_product: { id },
+            });
+            if (error || data?.error) throw new Error(data?.error || 'Não foi possível excluir o produto');
             setProducts(prev => prev.filter(p => p.id !== id));
             toast.success('Produto excluído.');
         } catch (error) {
