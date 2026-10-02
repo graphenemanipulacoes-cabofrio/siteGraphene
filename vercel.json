@@ -12,9 +12,26 @@
         }
     ],
     "rewrites": [
-        {
-            "source": "/(.*)",
-            "destination": "/index.html"
-        }
+        { "source": "/ativos", "destination": "/ativos.html" },
+        { "source": "/laboratorio", "destination": "/laboratorio.html" },
+        { "source": "/receita", "destination": "/receita.html" },
+        { "source": "/prescritores", "destination": "/prescritores.html" },
+        { "source": "/avaliacoes", "destination": "/avaliacoes.html" },
+        { "source": "/parceiros", "destination": "/parceiros.html" },
+        { "source": "/sobre", "destination": "/sobre.html" },
+        { "source": "/compras", "destination": "/compras.html" },
+        { "source": "/privacidade", "destination": "/privacidade.html" },
+        { "source": "/produto/:id", "destination": "/product.html" },
+        { "source": "/admin", "destination": "/private.html" },
+        { "source": "/login", "destination": "/private.html" },
+        { "source": "/entrar", "destination": "/private.html" },
+        { "source": "/minha-conta", "destination": "/private.html" },
+        { "source": "/carrinho", "destination": "/private.html" },
+        { "source": "/checkout", "destination": "/private.html" },
+        { "source": "/pedido/retorno", "destination": "/private.html" },
+        { "source": "/redefinir-senha", "destination": "/private.html" },
+        { "source": "/parceiros/entrar", "destination": "/private.html" },
+        { "source": "/parceiros/painel", "destination": "/private.html" },
+        { "source": "/parceiros/cadastro", "destination": "/private.html" }
     ]
 }

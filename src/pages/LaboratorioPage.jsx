@@ -2,7 +2,7 @@ import React from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import FloatingWhatsApp from '../components/FloatingWhatsApp';
-import { Scale, ShieldCheck, HeartPulse, Check, X, MapPin, Clock, Phone } from 'lucide-react';
+import { Scale, ShieldCheck, HeartPulse, Check, MapPin, Clock, Phone } from 'lucide-react';
 
 const GOOGLE_MAPS_EMBED = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3675.93!2d-42.0180!3d-22.8790!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2sGraph%C3%A8ne+Farm%C3%A1cia+de+Manipula%C3%A7%C3%A3o!5e0!3m2!1spt-BR!2sbr!4v1692000000000!5m2!1spt-BR!2sbr';
 
@@ -13,9 +13,9 @@ const LaboratorioPage = () => {
             <main>
                 <section className="page-hero">
                     <div className="container">
-                        <div className="store-badge"><span>Estrutura & Rigor Técnico</span></div>
+                        <div className="store-badge"><span>Conheça nossa estrutura</span></div>
                         <h1>O Laboratório <span className="highlight-blue">Graphène</span></h1>
-                        <p>Conheça a infraestrutura técnica, os processos de controle de qualidade e o compromisso com a precisão magistral que nos diferencia.</p>
+                        <p>Conheça nossa unidade em Cabo Frio, a rotina de atendimento e os cuidados adotados na preparação de fórmulas individualizadas.</p>
                     </div>
                 </section>
 
@@ -35,7 +35,7 @@ const LaboratorioPage = () => {
                                     </div>
                                     <div>
                                         <h3>Pesagem Computadorizada</h3>
-                                        <p>Balanças analíticas integradas por código de barras que bloqueiam qualquer desvio na pesagem de miligramas.</p>
+                                        <p>Utilizamos recursos de pesagem e conferência durante as etapas de preparação.</p>
                                     </div>
                                 </div>
 
@@ -44,8 +44,8 @@ const LaboratorioPage = () => {
                                         <ShieldCheck size={22} />
                                     </div>
                                     <div>
-                                        <h3>Matérias-Primas com Cromatografia</h3>
-                                        <p>Insumos certificados lote a lote com laudo de pureza dos melhores fornecedores do Brasil e do mundo.</p>
+                                        <h3>Documentação de Matérias-Primas</h3>
+                                        <p>Consulte nossa equipe sobre a procedência e a documentação disponível dos insumos utilizados.</p>
                                     </div>
                                 </div>
 
@@ -55,7 +55,7 @@ const LaboratorioPage = () => {
                                     </div>
                                     <div>
                                         <h3>Acompanhamento Farmacêutico</h3>
-                                        <p>Farmacêuticos dedicados para dúvidas de posologia, veículos ideais e sinergias com médicos e pacientes.</p>
+                                        <p>Nossa equipe está disponível para orientar sobre o atendimento e esclarecer dúvidas relacionadas à prescrição.</p>
                                     </div>
                                 </div>
                             </div>
@@ -63,26 +63,26 @@ const LaboratorioPage = () => {
                     </div>
                 </section>
 
-                {/* Tabela Comparativa */}
+                {/* Informações sobre o processo */}
                 <section className="store-section" style={{ paddingTop: 0 }}>
                     <div className="container">
                         <div className="store-card comparison-card">
-                            <h2 style={{ marginBottom: '20px' }}>Por que escolher a <span className="highlight-blue">Graphène</span></h2>
+                            <h2 style={{ marginBottom: '20px' }}>Como funciona o <span className="highlight-blue">atendimento</span></h2>
                             <div className="comp-table">
                                 <div className="comp-row comp-header">
-                                    <div>Critério</div>
-                                    <div>Padrão Graphène</div>
-                                    <div>Farmácias Tradicionais</div>
+                                    <div>Etapa</div>
+                                    <div>Na Graphène</div>
+                                    <div>O que você pode consultar</div>
                                 </div>
                                 {[
-                                    ['Controle de Pesagem', 'Computadorizada com Leitor Óptico', 'Pesagem manual suscetível a erros'],
-                                    ['Laudos dos Insumos', 'Cromatografia Lote a Lote', 'Amostragem básica genérica'],
-                                    ['Velocidade de Retorno', 'Em até 15 min no WhatsApp', 'Horas ou dias de espera'],
+                                    ['Solicitação', 'Recebimento dos dados para orçamento', 'Informações necessárias para análise'],
+                                    ['Matérias-primas', 'Consulta de composição e disponibilidade', 'Documentação disponível dos insumos'],
+                                    ['Atendimento', 'Retorno pelos nossos canais', 'Prazos e próximos passos'],
                                 ].map(([crit, g, o], idx) => (
                                     <div key={idx} className="comp-row">
                                         <div className="comp-crit">{crit}</div>
                                         <div className="comp-yes"><Check size={16} color="var(--brand-green)" /> {g}</div>
-                                        <div className="comp-no"><X size={16} color="#ef4444" /> {o}</div>
+                                        <div className="comp-no"><Check size={16} color="var(--brand-blue)" /> {o}</div>
                                     </div>
                                 ))}
                             </div>

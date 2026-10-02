@@ -11,137 +11,113 @@ const activesList = [
         id: 'ormona',
         name: 'Ormona®',
         lab: 'Ages Bioactive Compounds',
-        category: 'Saúde Feminina',
-        headline: 'O 1º Nutracêutico para Todas as Etapas do Climatério e Menopausa',
-        description: 'Destaque no Fantástico (TV Globo). Modulação hormonal natural para alívio de fogachos, melhora do sono, disposição e proteção cardiovascular feminina.',
-        seal_img: '/assets/ativos/0 (9).jpeg',
-        banner_img: '/assets/ativos/0 (15).jpeg',
-        tags: ['Climatério', 'Menopausa', 'TV Globo / Fantástico', 'Bioativos Naturais']
+        category: 'Compostos bioativos',
+        headline: 'Matéria-prima da Ages Bioactive Compounds',
+        description: 'Conheça as informações técnicas disponibilizadas pelo fornecedor. A adequação a uma fórmula individualizada depende de avaliação profissional.',
+        tags: ['Ages Bioactive', 'Informações técnicas', 'Uso individualizado']
     },
     {
         id: 'terasen',
         name: 'Terasen®',
         lab: 'Ages Bioactive Compounds',
-        category: 'Dermatologia & Longevidade',
-        headline: 'Nutricosmético Oral Avançado para Longevidade da Pele e Melasma',
-        description: 'Bioativos nobres do bioma amazônico que combatem a senescência celular da pele, clareiam manchas de melasma de dentro para fora e protegem o colágeno.',
-        seal_img: '/assets/ativos/0 (14).jpeg',
-        banner_img: '/assets/ativos/0 (18).jpeg',
-        tags: ['Anti-Melasma', 'Skin Longevity', 'Bioativos Amazônicos', 'Colágeno']
+        category: 'Extratos vegetais',
+        headline: 'Bioativos de origem vegetal',
+        description: 'Matéria-prima apresentada pela Ages Bioactive Compounds. Nossa equipe pode orientar sobre documentação, composição e disponibilidade.',
+        tags: ['Origem vegetal', 'Ages Bioactive', 'Documentação técnica']
     },
     {
         id: 'chronic',
         name: 'Chronic®',
         lab: 'Ages Bioactive Compounds',
-        category: 'Articulações & Mobilidade',
-        headline: 'Inteligência Bioativa para Músculos, Ossos e Articulações',
-        description: 'Extrato vegetal padronizado de Bixa orellana rico em geranilgeraniol e tocotrienóis. Fortalecimento músculo-esquelético, alívio de dores articulares e prevenção da sarcopenia.',
-        seal_img: '/assets/ativos/0 (7).jpeg',
-        banner_img: '/assets/ativos/0 (16).jpeg',
-        tags: ['Mobilidade', 'Dores Articulares', 'Ossos & Músculos', 'Anti-inflamatório']
+        category: 'Extratos vegetais',
+        headline: 'Extrato vegetal padronizado',
+        description: 'Matéria-prima derivada de Bixa orellana. Consulte nossa equipe sobre suas características técnicas e critérios de utilização.',
+        tags: ['Bixa orellana', 'Extrato vegetal', 'Ages Bioactive']
     },
     {
         id: 'glisodin',
         name: 'GliSODin®',
         lab: 'Lemma Supply',
-        category: 'Antioxidante & Longevidade',
-        headline: 'A Primeira Superóxido Dismutase (SOD) Oralmente Eficaz do Mundo',
-        description: 'Tecnologia patenteada francesa extraída do melão cantaloupe unida à gliadina. Potente neutralizador de radicais livres, proteção celular, imunidade e fotoenvelhecimento.',
-        seal_img: '/assets/ativos/0 (2).jpeg',
-        banner_img: '/assets/ativos/0 (1).jpeg',
-        tags: ['SOD Oral', 'Patente Francesa', 'Anti-Aging Celular', 'Imunomodulador']
+        category: 'Compostos bioativos',
+        headline: 'Composição à base de SOD e gliadina',
+        description: 'Conheça a composição e a documentação técnica dessa matéria-prima apresentada pela Lemma Supply.',
+        tags: ['SOD', 'Gliadina', 'Lemma Supply']
     },
     {
         id: 'mitburn',
         name: 'Mitburn®',
         lab: 'Biodiversité',
-        category: 'Metabolismo & Emagrecimento',
-        headline: 'Biogênese Mitocondrial e Queima de Gordura Visceral',
-        description: 'Ativo 100% natural obtido a partir de oliveiras orgânicas da França. Estimula o receptor TGR5, aumentando o gasto energético celular e reduzindo a gordura abdominal.',
-        seal_img: '/assets/ativos/0 (5).jpeg',
-        banner_img: null,
-        tags: ['Gordura Abdominal', 'Biogênese Mitocondrial', 'Gasto Calórico', '100% Original']
+        category: 'Extratos vegetais',
+        headline: 'Matéria-prima de origem vegetal',
+        description: 'Ingrediente apresentado pela Biodiversité. Nossa equipe pode informar características, documentação e disponibilidade.',
+        tags: ['Origem vegetal', 'Biodiversité', 'Consulta técnica']
     },
     {
         id: 'zembrin',
         name: 'Zembrin®',
-        lab: 'O Legítimo • Lemma',
-        category: 'Mente & Foco',
-        headline: 'Fitoterápico Padronizado para Alívio Rápido de Ansiedade e Estresse',
-        description: 'Extrato botânico de Sceletium tortuosum clinicamente comprovado para diminuir os níveis de cortisol, melhorar o humor e aumentar a clareza mental e o foco.',
-        seal_img: '/assets/ativos/0 (3).jpeg',
-        banner_img: null,
-        tags: ['Anti-Estresse', 'Foco & Humor', 'Controle de Cortisol', 'Clínico']
+        lab: 'Lemma Supply',
+        category: 'Extratos vegetais',
+        headline: 'Extrato botânico padronizado',
+        description: 'Matéria-prima de Sceletium tortuosum apresentada pela Lemma Supply. Consulte a equipe farmacêutica sobre informações técnicas.',
+        tags: ['Sceletium tortuosum', 'Extrato botânico', 'Lemma Supply']
     },
     {
         id: 'exsynutriment',
         name: 'Exsynutriment®',
         lab: 'AQIA • Biotec',
-        category: 'Dermatologia & Longevidade',
-        headline: 'A Autêntica Pílula da Beleza: Silício Orgânico Hidrossolúvel',
-        description: 'Molécula patenteada essencial para a síntese biológica de colágeno, elastina e queratina. Firmeza facial, fortalecimento capilar e endurecimento de unhas frágeis.',
-        seal_img: '/assets/ativos/0 (11).jpeg',
-        banner_img: null,
-        tags: ['Pílula da Beleza', 'Silício Orgânico', 'Cabelo e Unhas', 'Firmeza']
+        category: 'Compostos bioativos',
+        headline: 'Composto de silício orgânico',
+        description: 'Conheça a apresentação e a documentação técnica dessa matéria-prima fornecida pela AQIA Biotec.',
+        tags: ['Silício orgânico', 'AQIA Biotec', 'Consulta técnica']
     },
     {
         id: 'drenow-c',
         name: 'Drenow C®',
         lab: 'Florien',
-        category: 'Metabolismo & Emagrecimento',
-        headline: 'Drenagem Linfática em Cápsulas com Dupla Ação Antioxidante',
-        description: 'Composto fitoativo rico em vitamina C natural e bioflavonoides que reduz significativamente o inchaço corporal, celulite e a retenção de líquidos sem perda de minerais.',
-        seal_img: '/assets/ativos/0 (8).jpeg',
-        banner_img: null,
-        tags: ['Drenagem Oral', 'Anti-Inchaço', 'Celulite', 'Florien Original']
+        category: 'Compostos bioativos',
+        headline: 'Composição com vitamina C e bioflavonoides',
+        description: 'Matéria-prima apresentada pela Florien. Peça informações sobre composição, documentação e disponibilidade.',
+        tags: ['Vitamina C', 'Bioflavonoides', 'Florien']
     },
     {
         id: 'akkermat',
         name: 'Akkermat®',
         lab: 'Florien',
-        category: 'Metabolismo & Emagrecimento',
-        headline: 'Controle de Apetite por Estímulo da Bactéria Magra Akkermansia',
-        description: 'Fitoativo em beadlets com tecnologia patenteada que estimula o GLP-1 natural, induz saciedade prolongada e atua na microbiota intestinal contra a compulsão alimentar.',
-        seal_img: '/assets/ativos/0 (13).jpeg',
-        banner_img: null,
-        tags: ['Saciedade', 'Estímulo GLP-1', 'Beadlets Florien', 'Compulsão']
+        category: 'Compostos bioativos',
+        headline: 'Matéria-prima em apresentação beadlets',
+        description: 'Ingrediente apresentado pela Florien. Nossa equipe pode esclarecer as especificações técnicas fornecidas pelo fabricante.',
+        tags: ['Beadlets', 'Florien', 'Documentação técnica']
     },
     {
         id: 'bio-arct',
         name: 'Bio-Arct®',
         lab: 'AQIA • Biotec',
-        category: 'Antioxidante & Longevidade',
-        headline: 'Biomassa Polar Rica em Dipeptídeos para Energia e Detox Mitocondrial',
-        description: 'Nutracêutico extraído do Mar Ártico com ação energizante mitocondrial, neutralização de toxinas e estímulo à produção de óxido nítrico.',
-        seal_img: '/assets/ativos/0 (22).jpeg',
-        banner_img: null,
-        tags: ['Bioenergia', 'Detox Polar', 'Mar Ártico', 'Biotec']
+        category: 'Compostos bioativos',
+        headline: 'Matéria-prima de origem marinha',
+        description: 'Conheça a composição e as informações técnicas desse ingrediente apresentado pela AQIA Biotec.',
+        tags: ['Origem marinha', 'AQIA Biotec', 'Consulta técnica']
     },
     {
         id: 'glycoxil',
         name: 'Glycoxil®',
         lab: 'AQIA • Biotec',
-        category: 'Dermatologia & Longevidade',
-        headline: 'O Mais Potente Antiglicante Oral: Proteção Anti-Açúcar',
-        description: 'Patente que previne e reverte a glicação (envelhecimento das proteínas pelo excesso de açúcar), protegendo vasos, órgãos e a juventude da pele.',
-        seal_img: '/assets/ativos/0 (20).jpeg',
-        banner_img: null,
-        tags: ['Anti-Glicação', 'Proteção Celular', 'Anti-Rugas', 'Biotec']
+        category: 'Compostos bioativos',
+        headline: 'Ingrediente com documentação do fornecedor',
+        description: 'Matéria-prima apresentada pela AQIA Biotec. Consulte a equipe para informações sobre composição e critérios de uso.',
+        tags: ['AQIA Biotec', 'Informações técnicas', 'Uso individualizado']
     },
     {
         id: 'phytgen',
         name: 'PhyTgen®',
         lab: 'Lemma Supply',
-        category: 'Metabolismo & Emagrecimento',
-        headline: 'Associação Potente de Fucoxantina e Óleo de Romã',
-        description: 'Gasto calórico de até 400 kcal por dia, aceleração do metabolismo basal e redução da gordura no fígado (esteatose hepática).',
-        seal_img: '/assets/ativos/0 (4).jpeg',
-        banner_img: null,
-        tags: ['Queima 400kcal', 'Fucoxantina', 'Fígado Saudável', 'Lemma']
+        category: 'Compostos bioativos',
+        headline: 'Associação de fucoxantina e óleo de romã',
+        description: 'Conheça as características técnicas dessa matéria-prima apresentada pela Lemma Supply. Uso em fórmula sujeito à avaliação profissional.',
+        tags: ['Fucoxantina', 'Óleo de romã', 'Lemma Supply']
     }
 ];
 
-const categories = ['Todos', 'Saúde Feminina', 'Dermatologia & Longevidade', 'Metabolismo & Emagrecimento', 'Mente & Foco', 'Articulações & Mobilidade'];
+const categories = ['Todos', 'Extratos vegetais', 'Compostos bioativos'];
 
 const AtivosPage = () => {
     const [selectedCategory, setSelectedCategory] = useState('Todos');
@@ -151,7 +127,7 @@ const AtivosPage = () => {
         : activesList.filter(a => a.category === selectedCategory);
 
     const handleOrderActive = (activeName) => {
-        const msg = `Olá! Vi o ativo patenteado *${activeName}* no site da Graphène e gostaria de solicitar uma cotação/fórmula manipulada.`;
+        const msg = `Olá! Vi a matéria-prima *${activeName}* no site da Graphène e gostaria de consultar informações técnicas e disponibilidade.`;
         window.open(getWhatsAppUrl(msg), '_blank');
     };
 
@@ -164,11 +140,11 @@ const AtivosPage = () => {
                     <div className="container">
                         <div className="store-badge">
                             <Award size={14} />
-                            <span>Matérias-Primas Originais • Grau Ouro</span>
+                            <span>Informações sobre matérias-primas</span>
                         </div>
-                        <h1>Ativos Patenteados & <span className="highlight-blue">Selos de Autenticidade</span></h1>
+                        <h1>Matérias-primas e <span className="highlight-blue">fornecedores</span></h1>
                         <p>
-                            Na Graphène, cada fórmula é manipulada exclusivamente com as matérias-primas originais certificadas pelos maiores centros de biotecnologia do mundo (Ages, Lemma Supply, Biotec, Florien).
+                            Conheça alguns ingredientes e fornecedores apresentados pela Graphène. A escolha de uma matéria-prima para uma fórmula individualizada depende da prescrição, da avaliação farmacêutica e dos requisitos aplicáveis.
                         </p>
                     </div>
                 </section>
@@ -181,9 +157,9 @@ const AtivosPage = () => {
                                 <ShieldCheck size={32} color="var(--brand-green)" />
                             </div>
                             <div className="guarantee-text">
-                                <h3>Seu pote sai do nosso laboratório com o Selo Oficial de Procedência</h3>
+                                    <h3>Informações para uma escolha consciente</h3>
                                 <p>
-                                    Recuse cópias genéricas. Quando você manipula Ormona®, Terasen®, GliSODin®, Zembrin® ou Mitburn® na Graphène, você recebe a matéria-prima legítima respaldada por estudos clínicos publicados e dosagem 100% garantida por pesagem computadorizada.
+                                    Marcas e nomes de ingredientes não substituem orientação profissional. Nossa equipe pode esclarecer composição, procedência e documentação disponível antes de preparar um orçamento.
                                 </p>
                             </div>
                         </div>
@@ -212,12 +188,8 @@ const AtivosPage = () => {
                             {filteredActives.map((active) => (
                                 <div key={active.id} className="store-card active-card">
                                     <div className="active-card-top">
-                                        <div className="active-seal-box">
-                                            <img
-                                                src={active.seal_img}
-                                                alt={`Selo Oficial ${active.name}`}
-                                                className="active-seal-img"
-                                            />
+                                        <div className="active-seal-box" aria-hidden="true">
+                                            <Sparkles size={28} color="var(--brand-blue)" />
                                         </div>
                                         <div className="active-header-info">
                                             <span className="active-lab-tag">{active.lab}</span>
@@ -225,13 +197,6 @@ const AtivosPage = () => {
                                             <span className="active-cat-badge">{active.category}</span>
                                         </div>
                                     </div>
-
-                                    {/* Imagem do Ativo */}
-                                    {active.banner_img && (
-                                        <div className="active-banner-preview">
-                                            <img src={active.banner_img} alt={active.name} />
-                                        </div>
-                                    )}
 
                                     <div className="active-card-body">
                                         <h4>{active.headline}</h4>
@@ -253,7 +218,7 @@ const AtivosPage = () => {
                                             style={{ width: '100%' }}
                                         >
                                             <MessageCircle size={16} />
-                                            <span>Cotar Fórmula com {active.name}</span>
+                                            <span>Consultar sobre {active.name}</span>
                                         </button>
                                     </div>
                                 </div>
@@ -266,17 +231,17 @@ const AtivosPage = () => {
                                 <Sparkles size={26} color="var(--brand-blue)" />
                                 <div>
                                     <h3>É médico, nutricionista ou profissional de saúde?</h3>
-                                    <p>Consulte nosso compêndio técnico com literatura científica completa e veículos farmacêuticos exclusivos para prescrição.</p>
+                                    <p>Fale com a equipe farmacêutica sobre informações técnicas e atendimento a profissionais habilitados.</p>
                                 </div>
                             </div>
                             <div className="cta-box-btns">
                                 <Link to="/prescritores" className="btn-cta-blue">
-                                    <span>Portal Prescritores</span>
+                                    <span>Canal para profissionais</span>
                                     <ArrowRight size={16} />
                                 </Link>
                                 <Link to="/receita" className="btn-cta-outline">
                                     <FileUp size={16} />
-                                    <span>Enviar Receita</span>
+                                    <span>Solicitar orçamento</span>
                                 </Link>
                             </div>
                         </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient.ts';
 import { config, getWhatsAppUrl } from '../config';
 import { toast, Toaster } from 'sonner';
@@ -53,7 +54,7 @@ const ReceitaPage = () => {
         e.preventDefault();
         setLoading(true);
         if (!firstName.trim() || !lastName.trim() || !phone || phone.length < 14) { toast.error('Preencha nome e WhatsApp válido.'); setLoading(false); return; }
-        if (!files.length && !notes.trim()) { toast.error('Anexe a receita ou descreva a fórmula.'); setLoading(false); return; }
+        if (!files.length && !notes.trim()) { toast.error('Anexe a prescrição ou informe os dados para análise.'); setLoading(false); return; }
         try {
             const urls = [];
             for (const f of files) {
@@ -69,7 +70,7 @@ const ReceitaPage = () => {
                 arquivo_url: JSON.stringify(urls), observacoes: notes.trim() || null
             }]);
             if (error) throw error;
-            toast.success('Receita enviada! Responderemos no seu WhatsApp.');
+            toast.success('Solicitação recebida! Nossa equipe entrará em contato pelo WhatsApp.');
             setFiles([]); setFirstName(''); setLastName(''); setPhone(''); setNotes('');
         } catch (err) { console.error(err); toast.error('Erro no envio. Envie pelo WhatsApp.'); }
         finally { setLoading(false); }
@@ -83,8 +84,8 @@ const ReceitaPage = () => {
                 <section className="page-hero">
                     <div className="container">
                         <div className="store-badge"><span>Atendimento Farmacêutico</span></div>
-                        <h1>Envie sua <span className="highlight-blue">Receita Médica</span></h1>
-                        <p>Anexe a foto ou PDF da prescrição. Nossa equipe farmacêutica em Cabo Frio validará as dosagens e enviará o orçamento oficial no seu WhatsApp.</p>
+                        <h1>Solicite um <span className="highlight-blue">orçamento individualizado</span></h1>
+                        <p>Se você já tem uma prescrição, envie a foto ou o PDF para análise da equipe farmacêutica em Cabo Frio. A preparação depende da avaliação do pedido e dos requisitos aplicáveis.</p>
                     </div>
                 </section>
 
@@ -107,7 +108,7 @@ const ReceitaPage = () => {
                                         <input type="file" id="recipeFile" onChange={(e) => e.target.files?.length && processFiles(e.target.files)} multiple accept=".jpg,.jpeg,.png,.pdf" className="file-input" />
                                         <label htmlFor="recipeFile" className="drop-label">
                                             <UploadCloud size={28} color="var(--brand-blue)" />
-                                            <strong>Clique ou arraste sua receita</strong>
+                                            <strong>Clique ou arraste sua prescrição</strong>
                                             <span>PDF, JPG ou PNG • Máximo 5MB</span>
                                         </label>
                                     </div>
@@ -121,11 +122,12 @@ const ReceitaPage = () => {
                                     ))}</div>
                                 )}
 
-                                <div className="fg"><label>Observações (Opcional)</label><textarea rows="3" placeholder="Preferências de dosagem, sabor, veículo..." value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
+                                <div className="fg"><label>Observações (Opcional)</label><textarea rows="3" placeholder="Informações adicionais para a equipe..." value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
 
                                 <button type="submit" className="btn-cta-blue form-submit" disabled={loading}>
-                                    {loading ? 'Enviando...' : <><FileUp size={18} /> Enviar Receita para Orçamento</>}
+                                    {loading ? 'Enviando...' : <><FileUp size={18} /> Solicitar análise e orçamento</>}
                                 </button>
+                                <p className="privacy-note">Os arquivos são enviados para análise da equipe. Consulte o <Link to="/privacidade">Aviso de Privacidade</Link>.</p>
 
                                 <div className="wa-fallback">
                                     <span>Prefere enviar direto?</span>
@@ -169,6 +171,8 @@ const ReceitaPage = () => {
                 .chip-x:hover { color: #ef4444; }
 
                 .form-submit { width: 100%; padding: 15px; font-size: 0.95rem; }
+                .privacy-note { margin: -8px 0 0; text-align: center; color: var(--text-muted); font-size: .76rem; line-height: 1.5; }
+                .privacy-note a { color: var(--brand-blue); text-decoration: underline; text-underline-offset: 3px; }
 
                 .wa-fallback { display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 14px; border-top: 1px solid var(--border-subtle); text-align: center; }
                 .wa-fallback span { font-size: 0.8rem; color: var(--text-muted); }

@@ -46,8 +46,8 @@ const PartnerRegistration = () => {
     <main className="partner-registration-main">
       <section className="partner-registration-copy">
         <span className="partner-eyebrow"><BadgeCheck size={15}/> PROGRAMA DE PARCEIROS</span>
-        <h1>Venda com a Graphène. Acompanhe cada resultado.</h1>
-        <p>Cadastre-se para receber um cupom exclusivo, acompanhar vendas confirmadas e visualizar comissões em uma área particular.</p>
+        <h1>Conheça o programa de parceiros Graphène.</h1>
+        <p>Solicite uma parceria comercial para divulgar produtos elegíveis. Após aprovação, você poderá acompanhar vendas atribuídas ao seu cupom e comissões em uma área particular. O programa não remunera prescrições ou encaminhamento de pacientes.</p>
         <div className="partner-benefits">
           <div><TicketPercent/><span><strong>Cupom exclusivo</strong><small>O código é ativado após aprovação.</small></span></div>
           <div><WalletCards/><span><strong>Painel individual</strong><small>Vendas, desempenho e comissões em tempo real.</small></span></div>

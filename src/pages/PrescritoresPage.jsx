@@ -4,7 +4,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import FloatingWhatsApp from '../components/FloatingWhatsApp';
 import { getWhatsAppUrl } from '../config';
-import { Stethoscope, ArrowRight, CheckCircle2, MessageCircle } from 'lucide-react';
+import { Stethoscope, ArrowRight, CheckCircle2, MapPin } from 'lucide-react';
 
 const PrescritoresPage = () => {
     return (
@@ -13,9 +13,9 @@ const PrescritoresPage = () => {
             <main>
                 <section className="page-hero">
                     <div className="container">
-                        <div className="store-badge"><Stethoscope size={14} /><span>Prescritores & Parceiros</span></div>
-                        <h1>Canal Exclusivo para <span className="highlight-blue">Profissionais de Saúde</span></h1>
-                        <p>Atuamos como extensão do seu consultório em Cabo Frio e Região dos Lagos. Pureza certificada e dosagem exata para a evolução clínica dos seus pacientes.</p>
+                        <div className="store-badge"><Stethoscope size={14} /><span>Atendimento técnico</span></div>
+                        <h1>Canal para <span className="highlight-blue">profissionais de saúde</span></h1>
+                        <p>Profissionais habilitados podem falar com a equipe farmacêutica sobre o atendimento a prescrições e solicitar informações técnicas disponíveis.</p>
                     </div>
                 </section>
 
@@ -23,14 +23,14 @@ const PrescritoresPage = () => {
                     <div className="container">
                         <div className="presc-layout">
                             <div className="store-card presc-main-card">
-                                <h2>Vantagens do Programa de <span className="highlight-blue">Prescritores VIP</span></h2>
+                                <h2>Como podemos <span className="highlight-blue">ajudar</span></h2>
                                 <div className="presc-perks">
                                     {[
-                                        'Canal de WhatsApp direto com o farmacêutico responsável',
-                                        'Compêndio técnico com mais de 800 matérias-primas nobres',
-                                        'Prioridade máxima no lote de manipulação e entrega',
-                                        'Condições especiais para pacientes de prescritores cadastrados',
-                                        'Relatório técnico sob demanda para acompanhamento clínico',
+                                        'Canal de contato com a equipe farmacêutica',
+                                        'Consulta de informações técnicas disponíveis sobre matérias-primas',
+                                        'Orientação sobre o processo de análise de prescrições',
+                                        'Informações sobre apresentação e disponibilidade, conforme o caso',
+                                        'Esclarecimento de dúvidas relacionadas ao atendimento',
                                     ].map((text, i) => (
                                         <div key={i} className="perk-item">
                                             <CheckCircle2 size={18} color="var(--brand-green)" />
@@ -40,28 +40,28 @@ const PrescritoresPage = () => {
                                 </div>
 
                                 <div className="presc-actions">
-                                    <Link to="/parceiros/cadastro" className="btn-cta-blue">
-                                        <span>Cadastrar como Prescritor</span>
+                                    <a href={getWhatsAppUrl('Olá, sou profissional de saúde e gostaria de falar com a equipe farmacêutica.')} target="_blank" rel="noopener noreferrer" className="btn-cta-blue">
+                                        <span>Falar com a equipe</span>
                                         <ArrowRight size={16} />
-                                    </Link>
-                                    <a href={getWhatsAppUrl('Olá, sou profissional de saúde e gostaria de falar com a equipe técnica.')} target="_blank" rel="noopener noreferrer" className="btn-cta-outline">
-                                        <MessageCircle size={16} />
-                                        <span>Falar com Gerente Médico</span>
                                     </a>
+                                    <Link to="/laboratorio" className="btn-cta-outline">
+                                        <MapPin size={16} />
+                                        <span>Conhecer a unidade</span>
+                                    </Link>
                                 </div>
                             </div>
 
                             <div className="store-card presc-side-card">
-                                <h3>Especialidades Atendidas</h3>
+                                <h3>Atendimento profissional</h3>
                                 <div className="spec-list">
-                                    {['Nutrologia', 'Endocrinologia', 'Dermatologia', 'Ortomolecular', 'Geriatria', 'Nutrição Clínica', 'Ginecologia', 'Psiquiatria'].map((s, i) => (
+                                    {['Informações técnicas', 'Matérias-primas', 'Apresentações', 'Documentação', 'Atendimento farmacêutico'].map((s, i) => (
                                         <span key={i} className="spec-tag">{s}</span>
                                     ))}
                                 </div>
 
                                 <div className="presc-quote">
-                                    <p>"A Graphène é nossa farmácia de confiança em Cabo Frio. Rigor no controle e velocidade na entrega."</p>
-                                    <strong>Dra. Camila Nogueira — CRM-RJ, Nutrologia</strong>
+                                    <p>Este canal é destinado a dúvidas técnicas e de atendimento. Não está vinculado ao programa comercial de indicação ou comissão.</p>
+                                    <strong>Equipe Graphène</strong>
                                 </div>
                             </div>
                         </div>

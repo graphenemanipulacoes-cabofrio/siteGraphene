@@ -33,10 +33,10 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
 
     const navItems = [
         { label: 'Início', to: '/' },
-        { label: 'Ativos Patenteados', to: '/ativos', highlight: true },
-        { label: 'Manipular Receita', to: '/receita' },
+        { label: 'Matérias-primas', to: '/ativos', highlight: true },
+        { label: 'Solicitar orçamento', to: '/receita' },
         { label: 'O Laboratório', to: '/laboratorio' },
-        { label: 'Prescritores VIP', to: '/prescritores' },
+        { label: 'Profissionais de saúde', to: '/prescritores' },
         { label: 'Programa de Parceiros', to: '/parceiros' },
         { label: 'Avaliações', to: '/avaliacoes' },
     ];
@@ -49,7 +49,7 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
             <div className="store-top-bar">
                 <div className="container top-bar-flex">
                     <div className="top-bar-left">
-                        <span><Truck size={13} /> Despacho expresso para todo o Brasil</span>
+                        <span><Truck size={13} /> Consulte opções de entrega</span>
                         <span className="divider-dot">•</span>
                         <span><MapPin size={13} /> Laboratório Próprio — Cabo Frio, RJ</span>
                     </div>
@@ -64,7 +64,7 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                             <span>(22) 99936-1256</span>
                         </a>
                         <span className="divider-dot">•</span>
-                        <span className="anvisa-tag"><ShieldCheck size={13} /> ANVISA & CRF-RJ</span>
+                        <span className="anvisa-tag"><ShieldCheck size={13} /> Atendimento farmacêutico</span>
                     </div>
                 </div>
             </div>
@@ -100,7 +100,7 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                         </Link>
                         <Link to="/receita" className="btn-header-receita">
                             <FileUp size={15} />
-                            <span>Enviar Receita</span>
+                            <span>Solicitar orçamento</span>
                         </Link>
                         <a href={getWhatsAppUrl('Olá, gostaria de fazer um pedido na Graphène.')} target="_blank" rel="noopener noreferrer" className="btn-header-wa">
                             <MessageCircle size={15} />
@@ -182,7 +182,7 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
 
                         <div className="mobile-drawer-footer">
                             <Link to="/receita" className="btn-cta-blue" style={{ width: '100%' }} onClick={() => setMenuOpen(false)}>
-                                <FileUp size={17} /> Enviar Minha Receita
+                                <FileUp size={17} /> Solicitar orçamento
                             </Link>
                             <Link to="/parceiros/entrar" className="btn-drawer-partner" style={{ width: '100%' }} onClick={() => setMenuOpen(false)}>
                                 <LockKeyhole size={16} /> Painel do Parceiro (Entrar)

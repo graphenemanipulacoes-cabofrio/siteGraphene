@@ -196,10 +196,10 @@ const ProductGrid = ({ searchTerm = '' }) => {
                 <div className="store-section-header">
                     <div className="store-badge">
                         <ShoppingBag size={14} />
-                        <span>Fórmulas e Produtos em Linha</span>
+                        <span>Produtos da Loja</span>
                     </div>
                     <h2>Nossos Produtos em <span className="highlight-blue">Destaque</span></h2>
-                    <p>Fórmulas consagradas em estoque. Manipulamos qualquer composição personalizada sob prescrição médica.</p>
+                    <p>Confira as informações e os preços de cada item. Para fórmulas individualizadas, envie sua prescrição para análise e orçamento da equipe farmacêutica.</p>
                 </div>
 
                 {/* Filter Pills com scroll horizontal suave no mobile */}

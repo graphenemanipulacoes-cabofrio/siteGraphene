@@ -49,12 +49,12 @@ const PartnerProgramPage = () => {
             a: 'O acesso é super simples e direto! Basta clicar no botão "Acessar Painel" no topo desta página ou navegar até /parceiros/entrar com o e-mail e senha cadastrados. Seu painel particular exibe vendas confirmadas, comissões liberadas e histórico de repasses em tempo real.'
         },
         {
-            q: 'Como funcionam os créditos para pedidos e fórmulas grátis?',
-            a: 'Além da comissão em dinheiro depositada via Pix, parceiros que mantêm volume ativo acumulam créditos especiais para resgatar manipulados, suplementos e produtos da nossa linha oficial sem pagar nada. Você formula seus próprios pedidos para consumo próprio ou para produzir conteúdo com a marca.'
+            q: 'Há créditos ou benefícios adicionais?',
+            a: 'Créditos e benefícios, quando previstos no acordo de parceria, são definidos individualmente e se aplicam apenas aos produtos elegíveis. Consulte as condições antes de divulgar qualquer oferta.'
         },
         {
             q: 'Qual a comissão e o desconto do meu cupom para os seguidores?',
-            a: 'Ao ser aprovado, você recebe um cupom personalizado (normalmente 10% de desconto para quem comprar através da sua indicação). A comissão padrão é de 10% sobre o valor faturado de cada pedido pago, creditada automaticamente no seu painel.'
+            a: 'O desconto, a comissão e os produtos elegíveis são definidos na aprovação da parceria. Seu painel mostra as vendas atribuídas ao cupom, sujeitas a confirmação de pagamento, cancelamentos e prazos do acordo.'
         },
         {
             q: 'Como e quando recebo meus pagamentos via Pix?',
@@ -62,7 +62,7 @@ const PartnerProgramPage = () => {
         },
         {
             q: 'Quem pode se inscrever no programa de parceiros?',
-            a: 'Médicos, nutricionistas, educadores físicos, influenciadores de saúde, bem-estar, longevidade e atletas que valorizam rigor farmacêutico e matérias-primas de alta pureza. Cada solicitação passa por uma análise ágil da nossa equipe.'
+            a: 'Criadores de conteúdo e parceiros comerciais podem solicitar avaliação. O programa não se destina a remunerar prescrições, encaminhamento de pacientes ou decisões de profissionais de saúde.'
         }
     ];
 
@@ -81,11 +81,11 @@ const PartnerProgramPage = () => {
                             </div>
 
                             <h1>
-                                Transforme sua influência em <span className="highlight-blue">ganhos reais</span> e fórmulas exclusivas.
+                                Uma parceria com <span className="highlight-blue">regras claras</span> e acompanhamento de vendas.
                             </h1>
 
                             <p className="partner-hero-sub">
-                                Receba <strong>comissão em dinheiro</strong> em todas as compras com o seu cupom, ofereça <strong>desconto exclusivo</strong> para sua comunidade e ganhe <strong>créditos para pedidos grátis</strong> de fórmulas manipuladas sob medida.
+                                Divulgue produtos elegíveis com um cupom próprio, acompanhe as vendas atribuídas e consulte as condições de comissão e eventuais benefícios definidos para sua parceria.
                             </p>
 
                             <div className="partner-cta-cluster">
@@ -102,8 +102,8 @@ const PartnerProgramPage = () => {
 
                             <div className="partner-trust-pills">
                                 <div><CheckCircle2 size={15} color="var(--brand-green)" /> <span>Painel individual em tempo real</span></div>
-                                <div><CheckCircle2 size={15} color="var(--brand-green)" /> <span>Repasse rápido via Pix</span></div>
-                                <div><CheckCircle2 size={15} color="var(--brand-green)" /> <span>Créditos para uso pessoal</span></div>
+                                <div><CheckCircle2 size={15} color="var(--brand-green)" /> <span>Repasses conforme o acordo</span></div>
+                                <div><CheckCircle2 size={15} color="var(--brand-green)" /> <span>Regras definidas na aprovação</span></div>
                             </div>
                         </div>
 
@@ -126,8 +126,8 @@ const PartnerProgramPage = () => {
                                 <div className="preview-coupon-box">
                                     <div>
                                         <small>SEU CUPOM EXCLUSIVO</small>
-                                        <strong>SEUNOME10</strong>
-                                        <span>10% OFF para sua audiência</span>
+                                        <strong>SEUCODIGO</strong>
+                                        <span>Condições definidas na aprovação</span>
                                     </div>
                                     <div className="preview-coupon-badge">Ativo</div>
                                 </div>
@@ -145,7 +145,7 @@ const PartnerProgramPage = () => {
                                     </div>
                                     <div className="preview-metric-item">
                                         <Gift size={16} color="#fbbf24" />
-                                        <span>Crédito p/ fórmulas</span>
+                                        <span>Crédito ilustrativo</span>
                                         <strong style={{ color: '#fbbf24' }}>{money(creditValues[creditIndex])}</strong>
                                     </div>
                                     <div className="preview-metric-item">
@@ -156,7 +156,7 @@ const PartnerProgramPage = () => {
                                 </div>
 
                                 <div className="preview-footer-note">
-                                    <span>Atualizado automaticamente a cada venda aprovada.</span>
+                                    <span>Exemplo ilustrativo. Valores e condições variam por parceria.</span>
                                 </div>
                             </div>
                         </div>
@@ -172,7 +172,7 @@ const PartnerProgramPage = () => {
                                 <span>Vantagens Exclusivas</span>
                             </div>
                             <h2>Por que ser um <span className="highlight-blue">Parceiro Graphène</span>?</h2>
-                            <p>Uma parceria estruturada para valorizar seu trabalho de indicação com ferramentas profissionais e retorno de verdade.</p>
+                            <p>Ferramentas para acompanhar resultados e condições comerciais definidas com transparência.</p>
                         </div>
 
                         <div className="benefits-cards-grid">
@@ -181,9 +181,9 @@ const PartnerProgramPage = () => {
                                 <div className="benefit-card-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.3)' }}>
                                     <PiggyBank size={26} color="var(--brand-green)" />
                                 </div>
-                                <h3>Comissão em Dinheiro a Cada Venda</h3>
+                                <h3>Comissões sobre Vendas Elegíveis</h3>
                                 <p>
-                                    Receba comissões percentuais diretamente sobre cada produto vendido através do seu cupom. Sem pegadinhas: cada pedido pago soma no seu saldo particular.
+                                    Acompanhe as vendas atribuídas ao seu cupom. O cálculo e o repasse seguem os produtos elegíveis, o prazo de segurança e as condições do seu acordo.
                                 </p>
                                 <div className="benefit-pill">
                                     <Zap size={13} color="var(--brand-green)" /> Repasses periódicos via Pix
@@ -195,12 +195,12 @@ const PartnerProgramPage = () => {
                                 <div className="benefit-card-icon" style={{ background: 'rgba(251, 191, 36, 0.1)', borderColor: 'rgba(251, 191, 36, 0.3)' }}>
                                     <Gift size={26} color="#fbbf24" />
                                 </div>
-                                <h3>Créditos para Pedidos & Fórmulas Grátis</h3>
+                                <h3>Benefícios Definidos na Parceria</h3>
                                 <p>
-                                    Parceiros ativos acumulam bônus e créditos na loja para manipular suplementos, nutracêuticos e cosméticos sob medida para você sem pagar nada.
+                                    Alguns acordos podem incluir créditos para produtos elegíveis. A disponibilidade e as regras de uso são informadas individualmente na aprovação.
                                 </p>
                                 <div className="benefit-pill">
-                                    <Sparkles size={13} color="#fbbf24" /> Consumo próprio e conteúdo
+                                    <Sparkles size={13} color="#fbbf24" /> Sujeito às condições do acordo
                                 </div>
                             </div>
 
@@ -211,7 +211,7 @@ const PartnerProgramPage = () => {
                                 </div>
                                 <h3>Desconto Especial para Seus Seguidores</h3>
                                 <p>
-                                    Um cupom exclusivo com seu nome para você divulgar em posts, stories, bio ou prescrições. Seus seguidores ganham desconto real e você fideliza seu público.
+                                    Um código personalizado para divulgar nos canais aprovados. Descontos e itens participantes são definidos antes do início da campanha.
                                 </p>
                                 <div className="benefit-pill">
                                     <Percent size={13} color="var(--brand-blue)" /> Cupom personalizado ativo
@@ -225,10 +225,10 @@ const PartnerProgramPage = () => {
                                 </div>
                                 <h3>Painel Próprio com Métricas em Tempo Real</h3>
                                 <p>
-                                    Nada de esperar relatórios no fim do mês. Você tem login e senha para acompanhar vendas aprovadas, valores convertidos e comissões liberadas ao vivo.
+                                    Acesse seu painel para consultar vendas registradas, pagamentos confirmados, comissões e histórico de repasses.
                                 </p>
                                 <div className="benefit-pill">
-                                    <ShieldCheck size={13} color="#38bdf8" /> Total transparência 24h
+                                    <ShieldCheck size={13} color="#38bdf8" /> Histórico de acompanhamento
                                 </div>
                             </div>
                         </div>
@@ -244,7 +244,7 @@ const PartnerProgramPage = () => {
                                 <span>Simples e Transparente</span>
                             </div>
                             <h2>Como funciona a <span className="highlight-blue">Parceria</span></h2>
-                            <p>Do envio do cadastro ao seu primeiro repasse em apenas 4 etapas descomplicadas.</p>
+                            <p>Do cadastro ao acompanhamento das vendas: conheça as etapas do programa.</p>
                         </div>
 
                         <div className="steps-grid">
@@ -263,13 +263,13 @@ const PartnerProgramPage = () => {
                             <div className="store-card step-card">
                                 <div className="step-num">03</div>
                                 <h4>Compartilhe seu Código</h4>
-                                <p>Divulgue seu cupom com desconto para sua audiência, clientes ou pacientes no Instagram, WhatsApp ou consultório.</p>
+                                <p>Divulgue o código nos canais aprovados e apenas para os produtos elegíveis definidos no acordo.</p>
                             </div>
 
                             <div className="store-card step-card">
                                 <div className="step-num">04</div>
-                                <h4>Lucro & Créditos</h4>
-                                <p>Acompanhe cada compra ao vivo no seu painel e receba suas comissões via Pix + bônus de fórmulas grátis.</p>
+                                <h4>Acompanhe os Resultados</h4>
+                                <p>Consulte vendas confirmadas e repasses conforme as condições e os prazos da parceria.</p>
                             </div>
                         </div>
                     </div>
@@ -292,32 +292,32 @@ const PartnerProgramPage = () => {
                                 <div className="audience-tag-item">
                                     <CheckCircle2 size={18} color="var(--brand-blue)" />
                                     <div>
-                                        <strong>Médicos & Nutricionistas</strong>
-                                        <span>Que prescrevem fórmulas de pureza comprovada com cromatografia.</span>
+                                        <strong>Criadores de Conteúdo</strong>
+                                        <span>Que se comunicam com responsabilidade e respeitam as regras de divulgação de saúde.</span>
                                     </div>
                                 </div>
 
                                 <div className="audience-tag-item">
                                     <CheckCircle2 size={18} color="var(--brand-blue)" />
                                     <div>
-                                        <strong>Creators de Saúde & Fitness</strong>
-                                        <span>Influenciadores que valorizam resultados reais e produtos premium.</span>
+                                        <strong>Influenciadores de Bem-estar</strong>
+                                        <span>Que apresentam produtos elegíveis sem prometer resultados clínicos.</span>
                                     </div>
                                 </div>
 
                                 <div className="audience-tag-item">
                                     <CheckCircle2 size={18} color="var(--brand-blue)" />
                                     <div>
-                                        <strong>Personal Trainers & Treinadores</strong>
-                                        <span>Profissionais que orientam performance, hipertrofia e emagrecimento.</span>
+                                        <strong>Comunidades de Estilo de Vida</strong>
+                                        <span>Perfis com audiência interessada em escolhas informadas e atendimento responsável.</span>
                                     </div>
                                 </div>
 
                                 <div className="audience-tag-item">
                                     <CheckCircle2 size={18} color="var(--brand-blue)" />
                                     <div>
-                                        <strong>Especialistas em Longevidade</strong>
-                                        <span>Estética integrativa, dermatologia e modulação hormonal com ativos patenteados.</span>
+                                        <strong>Parceiros Comerciais</strong>
+                                        <span>Projetos de comunicação avaliados individualmente pela equipe Graphène.</span>
                                     </div>
                                 </div>
                             </div>
@@ -370,7 +370,7 @@ const PartnerProgramPage = () => {
                                 </div>
                                 <h2>Pronto para fazer parte da <span className="highlight-blue">Graphène</span>?</h2>
                                 <p>
-                                    Junte-se a médicos, nutricionistas e influenciadores que recomendam padrão ouro em manipulação farmacêutica e transformam credibilidade em receita recorrente.
+                                    Se você produz conteúdo e quer conhecer uma parceria comercial com condições claras, envie sua solicitação para avaliação.
                                 </p>
 
                                 <div className="final-cta-buttons">

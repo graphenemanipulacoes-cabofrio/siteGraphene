@@ -13,9 +13,9 @@ const AvaliacoesPage = () => {
             <main>
                 <section className="page-hero">
                     <div className="container">
-                        <div className="store-badge"><span>Avaliações Verificadas</span></div>
-                        <h1>Nota <span className="highlight-blue">4.9</span> no Google</h1>
-                        <p>A melhor avaliação do setor em Cabo Frio. Confira os depoimentos reais direto do Google.</p>
+                        <div className="store-badge"><span>Opiniões publicadas no Google</span></div>
+                        <h1>Conheça as <span className="highlight-blue">avaliações da Graphène</span></h1>
+                        <p>Leia as notas e comentários diretamente no Google Maps. As informações são atualizadas pela própria plataforma.</p>
                     </div>
                 </section>
 
@@ -39,12 +39,9 @@ const AvaliacoesPage = () => {
                                     </div>
 
                                     <div className="google-score-display">
-                                        <span className="score-big">4.9</span>
+                                        <span className="score-big">Google</span>
                                         <div className="score-stars-wrap">
-                                            <div className="score-stars">
-                                                {[...Array(5)].map((_, i) => <Star key={i} size={20} fill="#f59e0b" color="#f59e0b" />)}
-                                            </div>
-                                            <span className="score-count">Avaliações verificadas do Google</span>
+                                            <span className="score-count">Notas e comentários na fonte original</span>
                                         </div>
                                     </div>
                                 </div>
@@ -59,29 +56,29 @@ const AvaliacoesPage = () => {
 
                         {/* Nota explicativa */}
                         <div className="store-card aviso-card">
-                            <p>As avaliações da Graphène estão disponíveis diretamente no <strong>Google Maps</strong>. Clique no botão acima para ler todos os depoimentos reais e verificados dos nossos clientes e prescritores parceiros.</p>
+                            <p>As avaliações são publicadas por usuários no <strong>Google Maps</strong>. Clique no botão acima para consultar a classificação e ler os comentários mais recentes na fonte original.</p>
                         </div>
 
                         {/* Trust Highlights */}
                         <div className="trust-highlights-grid">
                             <div className="store-card trust-highlight">
                                 <Star size={28} fill="#f59e0b" color="#f59e0b" />
-                                <h3>Melhor Avaliação</h3>
-                                <p>Farmácia de manipulação com a maior nota do Google em Cabo Frio e Região dos Lagos.</p>
+                                <h3>Leia as experiências</h3>
+                                <p>Consulte relatos de pessoas que avaliaram a Graphène no Google Maps.</p>
                             </div>
                             <div className="store-card trust-highlight">
                                 <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--brand-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
                                 </svg>
-                                <h3>100% Verificadas</h3>
-                                <p>Todas as avaliações são de clientes reais verificados pela plataforma Google.</p>
+                                <h3>Informação na fonte</h3>
+                                <p>Notas, datas e comentários podem ser conferidos diretamente na página da unidade.</p>
                             </div>
                             <div className="store-card trust-highlight">
                                 <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--brand-blue)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                                 </svg>
-                                <h3>Confiança Médica</h3>
-                                <p>Médicos e nutricionistas de Cabo Frio prescrevem e recomendam a Graphène.</p>
+                                <h3>Faça sua própria avaliação</h3>
+                                <p>Compare as opiniões publicadas e fale com nossa equipe se tiver dúvidas sobre o atendimento.</p>
                             </div>
                         </div>
                     </div>
@@ -102,7 +99,7 @@ const AvaliacoesPage = () => {
                 .google-title { display: block; font-size: 1.1rem; font-weight: 800; }
                 .google-subtitle { display: block; font-size: 0.82rem; color: var(--text-dim); }
                 .google-score-display { display: flex; align-items: center; gap: 14px; }
-                .score-big { font-size: 4rem; font-weight: 900; font-family: var(--font-heading); line-height: 1; }
+                .score-big { font-size: clamp(1.65rem, 3vw, 2.5rem); font-weight: 900; font-family: var(--font-heading); line-height: 1; }
                 .score-stars-wrap { display: flex; flex-direction: column; gap: 4px; }
                 .score-stars { display: flex; gap: 3px; }
                 .score-count { font-size: 0.82rem; color: var(--text-muted); }

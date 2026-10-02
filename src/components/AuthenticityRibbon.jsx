@@ -2,17 +2,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
 
-const seals = [
-    { name: 'Ormona®', tag: 'Ages Bioactive', img: '/assets/ativos/0 (9).jpeg' },
-    { name: 'GliSODin®', tag: 'Lemma Supply', img: '/assets/ativos/0 (2).jpeg' },
-    { name: 'Terasen®', tag: 'Ages Bioactive', img: '/assets/ativos/0 (14).jpeg' },
-    { name: 'Zembrin®', tag: 'O Legítimo', img: '/assets/ativos/0 (3).jpeg' },
-    { name: 'Mitburn®', tag: 'Biodiversité', img: '/assets/ativos/0 (5).jpeg' },
-    { name: 'Chronic®', tag: 'Ages Bioactive', img: '/assets/ativos/0 (7).jpeg' },
-    { name: 'Exsynutriment®', tag: 'AQIA Biotec', img: '/assets/ativos/0 (11).jpeg' },
-    { name: 'Drenow C®', tag: 'Florien', img: '/assets/ativos/0 (8).jpeg' },
-    { name: 'Argireline®', tag: 'Lemma Supply', img: '/assets/ativos/0 (10).jpeg' },
-    { name: 'Akkermat®', tag: 'Florien', img: '/assets/ativos/0 (13).jpeg' },
+const suppliers = [
+    'Ages Bioactive Compounds',
+    'Lemma Supply',
+    'AQIA Biotec',
+    'Biodiversité',
+    'Florien',
 ];
 
 const AuthenticityRibbon = () => {
@@ -26,25 +21,22 @@ const AuthenticityRibbon = () => {
                                 <ShieldCheck size={24} color="var(--brand-green)" />
                             </div>
                             <div>
-                                <h3>Garantia de Matéria-Prima Original & Selos</h3>
-                                <p>Manipulamos exclusivamente os ativos legítimos dos fornecedores de referência mundial.</p>
+                                <h3>Conheça as matérias-primas</h3>
+                                <p>Veja marcas e fornecedores apresentados pela Graphène. Consulte nossa equipe sobre procedência e uso em fórmulas individualizadas.</p>
                             </div>
                         </div>
 
                         <Link to="/ativos" className="btn-header-receita ribbon-link-btn">
-                            <span>Ver Todos os Ativos</span>
+                            <span>Conhecer matérias-primas</span>
                             <ArrowRight size={15} />
                         </Link>
                     </div>
 
                     <div className="seals-scroll-row">
-                        {seals.map((s, idx) => (
-                            <Link key={idx} to="/ativos" className="seal-badge-item">
-                                <div className="seal-badge-img-box">
-                                    <img src={s.img} alt={s.name} />
-                                </div>
-                                <strong>{s.name}</strong>
-                                <small>{s.tag}</small>
+                        {suppliers.map((supplier) => (
+                            <Link key={supplier} to="/ativos" className="seal-badge-item">
+                                <strong>{supplier}</strong>
+                                <small>Ver informações</small>
                             </Link>
                         ))}
                     </div>
@@ -129,21 +121,6 @@ const AuthenticityRibbon = () => {
                     background: rgba(0,180,216,0.05);
                 }
 
-                .seal-badge-img-box {
-                    width: 48px;
-                    height: 48px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    margin-bottom: 6px;
-                }
-
-                .seal-badge-img-box img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: contain;
-                }
-
                 .seal-badge-item strong {
                     font-size: 0.76rem;
                     color: #fff;
@@ -165,7 +142,6 @@ const AuthenticityRibbon = () => {
 
                 @media (max-width: 480px) {
                     .seals-scroll-row { grid-template-columns: repeat(2, 1fr); }
-                    .seal-badge-img-box { width: 42px; height: 42px; }
                 }
             `}</style>
         </section>

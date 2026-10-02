@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { config, getWhatsAppUrl } from '../config';
 import { toast } from 'sonner';
@@ -258,6 +259,7 @@ const PrescriptionTerminal = () => {
                                 </>
                             )}
                         </button>
+                        <p className="prescription-privacy-note">Os arquivos serão usados para responder a esta solicitação. Consulte o <Link to="/privacidade">Aviso de Privacidade</Link>.</p>
 
                         <div className="form-wa-direct">
                             <span>Prefere enviar direto pelo mensageiro?</span>
@@ -289,6 +291,9 @@ const PrescriptionTerminal = () => {
                     flex-direction: column;
                     gap: 18px;
                 }
+
+                .prescription-privacy-note { margin: -8px 0 0; color: var(--text-muted); font-size: .76rem; line-height: 1.5; text-align: center; }
+                .prescription-privacy-note a { color: var(--brand-blue); text-decoration: underline; text-underline-offset: 3px; }
 
                 .form-row-2 {
                     display: grid;

@@ -5,26 +5,26 @@ const BenefitsBar = () => {
     const perks = [
         {
             icon: Truck,
-            title: 'Despacho Nacional',
-            desc: 'Entrega rápida para todo o Brasil',
+            title: 'Entrega sob consulta',
+            desc: 'Confira prazos e regiões no atendimento',
             color: 'var(--brand-blue)'
         },
         {
             icon: Scale,
             title: 'Pesagem Computadorizada',
-            desc: 'Balanças com leitor de código óptico',
+            desc: 'Controle das etapas de preparação',
             color: 'var(--brand-green)'
         },
         {
             icon: ShieldCheck,
-            title: 'Insumos com Laudo',
-            desc: 'Cromatografia analítica lote a lote',
+            title: 'Seleção de Insumos',
+            desc: 'Informações de procedência disponíveis',
             color: 'var(--brand-blue)'
         },
         {
             icon: HeartPulse,
             title: 'Atenção Farmacêutica',
-            desc: 'Suporte direto em Cabo Frio - RJ',
+            desc: 'Orientação da equipe em Cabo Frio - RJ',
             color: 'var(--brand-green)'
         }
     ];
