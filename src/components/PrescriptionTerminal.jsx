@@ -103,27 +103,23 @@ const PrescriptionTerminal = () => {
         }
 
         try {
-            const uploadedUrls = [];
+            const uploadedPaths = [];
             for (const fileObj of files) {
-                const fileExt = fileObj.name.split('.').pop();
-                const safeName = `${Date.now()}_${Math.random().toString(36).substr(2, 6)}.${fileExt}`;
+                const fileExt = fileObj.name.split('.').pop().toLowerCase();
+                const safeName = `intake/${crypto.randomUUID()}.${fileExt}`;
                 const { error: uploadError } = await supabase.storage
-                    .from('receitas')
-                    .upload(safeName, fileObj.file);
+                    .from('receitas-privadas')
+                    .upload(safeName, fileObj.file, { upsert: false });
 
                 if (uploadError) throw uploadError;
 
-                const { data: urlData } = supabase.storage
-                    .from('receitas')
-                    .getPublicUrl(safeName);
-
-                uploadedUrls.push(urlData.publicUrl);
+                uploadedPaths.push(safeName);
             }
 
             const { error: insertError } = await supabase.from('solicitacoes').insert([{
                 nome_cliente: `${firstName.trim()} ${lastName.trim()}`,
                 whatsapp: phone,
-                arquivo_url: JSON.stringify(uploadedUrls),
+                arquivo_url: JSON.stringify(uploadedPaths),
                 observacoes: notes.trim() || null
             }]);
 

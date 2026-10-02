@@ -56,18 +56,17 @@ const ReceitaPage = () => {
         if (!firstName.trim() || !lastName.trim() || !phone || phone.length < 14) { toast.error('Preencha nome e WhatsApp válido.'); setLoading(false); return; }
         if (!files.length && !notes.trim()) { toast.error('Anexe a prescrição ou informe os dados para análise.'); setLoading(false); return; }
         try {
-            const urls = [];
+            const filePaths = [];
             for (const f of files) {
-                const ext = f.name.split('.').pop();
-                const safeName = `${Date.now()}_${Math.random().toString(36).substr(2, 6)}.${ext}`;
-                const { error } = await supabase.storage.from('receitas').upload(safeName, f.file);
+                const ext = f.name.split('.').pop().toLowerCase();
+                const safeName = `intake/${crypto.randomUUID()}.${ext}`;
+                const { error } = await supabase.storage.from('receitas-privadas').upload(safeName, f.file, { upsert: false });
                 if (error) throw error;
-                const { data } = supabase.storage.from('receitas').getPublicUrl(safeName);
-                urls.push(data.publicUrl);
+                filePaths.push(safeName);
             }
             const { error } = await supabase.from('solicitacoes').insert([{
                 nome_cliente: `${firstName.trim()} ${lastName.trim()}`, whatsapp: phone,
-                arquivo_url: JSON.stringify(urls), observacoes: notes.trim() || null
+                arquivo_url: JSON.stringify(filePaths), observacoes: notes.trim() || null
             }]);
             if (error) throw error;
             toast.success('Solicitação recebida! Nossa equipe entrará em contato pelo WhatsApp.');

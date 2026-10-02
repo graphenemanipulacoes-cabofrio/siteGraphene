@@ -22,7 +22,7 @@ As informações do site não equivalem a uma aprovação do Google nem confirma
 
 ## Pendências técnicas
 
-- Publicar e testar a proteção dos arquivos de prescrição no Supabase. O pacote local inclui armazenamento privado e abertura pelo administrador, mas exige a atualização do banco e da função admin-orders antes de ativar no site. Confirmar também o tratamento dos anexos antigos. Esta é uma prioridade de privacidade; não deve ser deixada para depois de aumentar o tráfego de receitas.
+- Revisar e migrar os anexos de prescrição antigos que ainda estão no armazenamento público, sem afetar as imagens públicas dos produtos. A atualização do Supabase e do site separa os novos anexos em armazenamento privado e restringe a leitura das solicitações ao administrador, com links temporários para os novos arquivos. Os anexos anteriores continuam acessíveis pelo fluxo legado e precisam de tratamento separado antes de aumentar o tráfego de receitas. Confirmar o fluxo completo de envio e abertura no admin com um documento fictício, nunca com dados reais de saúde em testes.
 - Testar uma compra completa com autorização do responsável: criação do pedido, pagamento, confirmação pelo Mercado Pago, visualização no admin, cancelamento e eventual reembolso. Nenhuma cobrança real foi feita nesta publicação.
 - Confirmar a propriedade do domínio no Google Search Console e enviar https://www.graphenemanipulacoes.com.br/sitemap.xml. Acompanhar erros e indexação; cadastrar não garante posicionamento.
 - Revisar o Perfil da Empresa no Google e corrigir diferenças de informações, se houver.

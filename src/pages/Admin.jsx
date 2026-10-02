@@ -14,6 +14,8 @@ import { getSession, destroySession } from '../utils/security';
 const Admin = () => {
     const [requests, setRequests] = useState([]);
     const [expandedId, setExpandedId] = useState(null);
+    const [requestFiles, setRequestFiles] = useState({});
+    const [loadingFilesId, setLoadingFilesId] = useState(null);
     const [fullscreenImage, setFullscreenImage] = useState(null);
     const [zoomLevel, setZoomLevel] = useState(1);
     const [view, setView] = useState(localStorage.getItem('admin_view') || 'active');
@@ -25,22 +27,34 @@ const Admin = () => {
     const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
     const navigate = useNavigate();
 
-    const fetchRequests = useCallback(async () => {
-        const { data, error } = await supabase
-            .from('solicitacoes')
-            .select('*')
-            .order('created_at', { ascending: false });
+    const invokeAdmin = useCallback(async (body) => {
+        const session = getSession();
+        if (!session) {
+            navigate('/login');
+            throw new Error('Sua sessão administrativa expirou. Entre novamente.');
+        }
+        const { data, error } = await supabase.functions.invoke('admin-orders', {
+            body,
+            headers: { 'x-admin-token': session.token },
+        });
+        if (error || data?.error) throw new Error(data?.error || error?.message || 'Não foi possível concluir a solicitação.');
+        return data;
+    }, [navigate]);
 
-        if (error) {
-            console.error('Error fetching requests:', error);
-        } else {
-            const filtered = data.filter(req => {
+    const fetchRequests = useCallback(async () => {
+        try {
+            const data = await invokeAdmin({ action: 'list_requests' });
+            const rows = data.requests || [];
+            const filtered = rows.filter(req => {
                 const status = req.status || 'active';
                 return view === 'active' ? status !== 'trash' : status === 'trash';
             });
-            setRequests(filtered || []);
+            setRequests(filtered);
+        } catch (error) {
+            console.error('Error fetching requests:', error);
+            toast.error(error.message || 'Erro ao carregar solicitações.');
         }
-    }, [view]);
+    }, [invokeAdmin, view]);
 
     useEffect(() => {
         localStorage.setItem('admin_view', view);
@@ -57,85 +71,28 @@ const Admin = () => {
     useEffect(() => {
         if (view === 'active' || view === 'trash') {
             fetchRequests();
+            const refreshTimer = window.setInterval(fetchRequests, 60_000);
+            return () => window.clearInterval(refreshTimer);
         }
+        return undefined;
+    }, [view, fetchRequests]);
 
-        // Request browser notification permission
-        if ('Notification' in window) {
-            Notification.requestPermission();
-        }
-
-        // Realtime Subscription
-        const channel = supabase
-            .channel('realtime-solicitacoes')
-            .on(
-                'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'solicitacoes' },
-                (payload) => {
-                    handleNewRequest(payload.new);
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [fetchRequests, view]);
-
-    // Also refetch when view changes to active/trash
     useEffect(() => {
-        if (view === 'active' || view === 'trash') {
-            fetchRequests();
-        }
         if (view === 'admins') {
             fetchAdmins();
         }
-    }, [view, fetchRequests]);
-
-    const handleNewRequest = (newRequest) => {
-        // 1. Play Sound
-        try {
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-            audio.play().catch(e => console.log('Audio play blocked:', e));
-        } catch (e) {
-            console.error('Audio error:', e);
-        }
-
-        // 2. Browser Notification
-        if (Notification.permission === 'granted') {
-            new Notification('Nova Solicitação Recebida!', {
-                body: `${newRequest.nome_cliente} enviou uma nova receita.`,
-                icon: '/vite.svg' // Fallback icon
-            });
-        }
-
-        // 3. In-App Toast
-        toast.success(`Nova solicitação de ${newRequest.nome_cliente}!`);
-
-        // 4. Update State (add to top)
-        // Only add if we represent 'active' view logic (new requests are active by default)
-        // And if we are currently viewing 'active'
-        // Actually, let's just re-fetch or prepend safely.
-        // Prepending is better UX for immediate feedback.
-        // Check if it should be in active view (default is active)
-        if (!newRequest.status || newRequest.status === 'active') {
-            setRequests(prev => [newRequest, ...prev]);
-        }
-    };
+    }, [view]);
 
     const updateStatus = async (id, newStatus) => {
-        console.log(`Attempting to update status for ID: ${id} to ${newStatus}`);
         try {
-            const { error } = await supabase
-                .from('solicitacoes')
-                .update({ status: newStatus })
-                .eq('id', id);
-
-            if (error) {
-                console.error('Supabase update error:', error);
-                throw error;
-            }
+            await invokeAdmin({ action: 'update_request_status', requestId: id, status: newStatus });
 
             setRequests(prev => prev.filter(req => req.id !== id));
+            setRequestFiles(prev => {
+                const next = { ...prev };
+                delete next[id];
+                return next;
+            });
             toast.success(newStatus === 'trash' ? 'Movido para lixeira' : 'Restaurado com sucesso');
 
         } catch (error) {
@@ -145,21 +102,17 @@ const Admin = () => {
     };
 
     const deleteForever = async (id) => {
-        console.log(`Attempting to delete forever ID: ${id}`);
         if (!confirm('Tem certeza? Isso apagará a solicitação e os arquivos permanentemente.')) return;
 
         try {
-            const { error } = await supabase
-                .from('solicitacoes')
-                .delete()
-                .eq('id', id);
-
-            if (error) {
-                console.error('Supabase delete error:', error);
-                throw error;
-            }
+            await invokeAdmin({ action: 'delete_request', requestId: id });
 
             setRequests(prev => prev.filter(req => req.id !== id));
+            setRequestFiles(prev => {
+                const next = { ...prev };
+                delete next[id];
+                return next;
+            });
             toast.success('Excluído permanentemente.');
         } catch (error) {
             console.error('Error deleting:', error);
@@ -167,8 +120,23 @@ const Admin = () => {
         }
     };
 
-    const toggleExpand = (id) => {
-        setExpandedId(expandedId === id ? null : id);
+    const toggleExpand = async (id) => {
+        if (expandedId === id) {
+            setExpandedId(null);
+            return;
+        }
+        setExpandedId(id);
+
+        setLoadingFilesId(id);
+        try {
+            const data = await invokeAdmin({ action: 'get_request_files', requestId: id });
+            setRequestFiles(prev => ({ ...prev, [id]: data.files || [] }));
+        } catch (error) {
+            console.error('Error loading request files:', error);
+            toast.error(error.message || 'Não foi possível abrir os anexos.');
+        } finally {
+            setLoadingFilesId(null);
+        }
     };
 
     const handleWheel = (e) => {
@@ -182,17 +150,6 @@ const Admin = () => {
     const closeFullscreen = () => {
         setFullscreenImage(null);
         setZoomLevel(1);
-    };
-
-    const getFiles = (urlOrJson) => {
-        try {
-            if (urlOrJson.startsWith('[')) {
-                return JSON.parse(urlOrJson);
-            }
-            return [urlOrJson];
-        } catch {
-            return [urlOrJson];
-        }
     };
 
     const fetchAdmins = async () => {
@@ -693,38 +650,43 @@ const Admin = () => {
                                             {expandedId === req.id && req.arquivo_url && (
                                                 <div style={{ background: 'rgba(0, 229, 255, 0.05)', padding: '1.5rem', margin: '0 1rem 1rem 1rem', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                                     <p style={{ opacity: 0.7, marginBottom: '0.5rem' }}>Arquivos Anexados:</p>
-
-                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
-                                                        {getFiles(req.arquivo_url).map((url, idx) => (
-                                                            <div key={idx} style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '10px' }}>
-                                                                {url.toLowerCase().endsWith('.pdf') ? (
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', textAlign: 'center' }}>
-                                                                        <FileText size={48} opacity={0.5} />
-                                                                        <p style={{ fontSize: '0.9rem' }}>Documento PDF</p>
-                                                                        <a href={url} target="_blank" download rel="noopener noreferrer">
-                                                                            <Button variant="outline" style={{ width: '100%', justifyContent: 'center' }}><Download size={16} /> Baixar</Button>
-                                                                        </a>
-                                                                    </div>
-                                                                ) : (
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                                                        <div style={{ position: 'relative', cursor: 'zoom-in', height: '150px', width: '100%' }} onClick={() => setFullscreenImage(url)}>
-                                                                            <img
-                                                                                src={url}
-                                                                                alt="Receita"
-                                                                                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.1)' }}
-                                                                            />
-                                                                            <div style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(0,0,0,0.7)', padding: '3px', borderRadius: '3px' }}>
-                                                                                <Maximize2 size={14} color="white" />
-                                                                            </div>
+                                                    {loadingFilesId === req.id ? (
+                                                        <p>Carregando anexos protegidos…</p>
+                                                    ) : requestFiles[req.id]?.length ? (
+                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                                                            {requestFiles[req.id].map((file, idx) => (
+                                                                <div key={`${file.name}-${idx}`} style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '10px' }}>
+                                                                    {file.name.toLowerCase().endsWith('.pdf') ? (
+                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', textAlign: 'center' }}>
+                                                                            <FileText size={48} opacity={0.5} />
+                                                                            <p style={{ fontSize: '0.9rem' }}>Documento PDF</p>
+                                                                            <a href={file.url} target="_blank" download rel="noopener noreferrer">
+                                                                                <Button variant="outline" style={{ width: '100%', justifyContent: 'center' }}><Download size={16} /> Baixar</Button>
+                                                                            </a>
                                                                         </div>
-                                                                        <a href={url} target="_blank" download rel="noopener noreferrer">
-                                                                            <Button variant="outline" style={{ width: '100%', justifyContent: 'center' }}><Download size={16} /> Baixar</Button>
-                                                                        </a>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                                    ) : (
+                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                                                            <div style={{ position: 'relative', cursor: 'zoom-in', height: '150px', width: '100%' }} onClick={() => setFullscreenImage(file.url)}>
+                                                                                <img
+                                                                                    src={file.url}
+                                                                                    alt="Anexo da solicitação"
+                                                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.1)' }}
+                                                                                />
+                                                                                <div style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(0,0,0,0.7)', padding: '3px', borderRadius: '3px' }}>
+                                                                                    <Maximize2 size={14} color="white" />
+                                                                                </div>
+                                                                            </div>
+                                                                            <a href={file.url} target="_blank" download rel="noopener noreferrer">
+                                                                                <Button variant="outline" style={{ width: '100%', justifyContent: 'center' }}><Download size={16} /> Baixar</Button>
+                                                                            </a>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p>Nenhum anexo disponível.</p>
+                                                    )}
                                                 </div>
                                             )}
                                         </li>
