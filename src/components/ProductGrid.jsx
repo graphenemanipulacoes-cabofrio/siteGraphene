@@ -4,6 +4,7 @@ import { ShoppingBag, Zap } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { toast } from 'sonner';
+import { resolveProductImage } from '../utils/productImages';
 
 const categories = ['Todos', 'Metabolismo & Queima', 'Longevidade & Saúde', 'Performance & Força', 'Sono & Bem-Estar'];
 
@@ -22,7 +23,7 @@ const defaultProducts = [
         category: 'Longevidade & Saúde',
         description: 'Coenzima Q10 100mg. Fundamental para a produção de energia celular e suporte à saúde cardíaca. Ação antioxidante. Contém 60 cápsulas.',
         price: null,
-        image_url: 'https://ngphbcrdphluuphctvpr.supabase.co/storage/v1/object/public/receitas/product_launch_1765958041451_rnbuq.jpg'
+        image_url: '/assets/products/coenzima_q10.png'
     },
     {
         id: '4',
@@ -30,7 +31,7 @@ const defaultProducts = [
         category: 'Metabolismo & Queima',
         description: 'Acelerador metabólico avançado. Mais energia e queima calórica eficiente.',
         price: null,
-        image_url: '/assets/termogenico.png'
+        image_url: '/assets/products/termogenico.png'
     },
     {
         id: '15',
@@ -38,7 +39,7 @@ const defaultProducts = [
         category: 'Performance & Força',
         description: 'Creatina Monohidratada 200g. Auxilia no aumento de força e massa muscular. Fórmula pura e sem sabor. Contém 200g (pó).',
         price: null,
-        image_url: 'https://ngphbcrdphluuphctvpr.supabase.co/storage/v1/object/public/receitas/product_1765960256563.png'
+        image_url: '/assets/products/creatina.png'
     },
     {
         id: '9',
@@ -46,7 +47,7 @@ const defaultProducts = [
         category: 'Longevidade & Saúde',
         description: 'Colágeno Verisol® 2.5g. Auxilia na manutenção da saúde da pele, contribuindo para a elasticidade e redução de rugas. Contém 30 sachês.',
         price: null,
-        image_url: 'https://ngphbcrdphluuphctvpr.supabase.co/storage/v1/object/public/receitas/product_launch_1765957547354_m0p54c.jpg'
+        image_url: '/assets/products/colageno_verisol.png'
     },
     {
         id: '3',
@@ -54,7 +55,7 @@ const defaultProducts = [
         category: 'Metabolismo & Queima',
         description: 'Autêntico extrato da laranja moro. Potente na redução de medidas abdominais.',
         price: null,
-        image_url: '/assets/morosil_new.png'
+        image_url: '/assets/products/morosil.png'
     },
     {
         id: '1',
@@ -62,7 +63,7 @@ const defaultProducts = [
         category: 'Sono & Bem-Estar',
         description: 'Sono reparador, rápido e combate à insônia. Regula o ritmo biológico natural.',
         price: null,
-        image_url: '/assets/melatonina_caps.png'
+        image_url: '/assets/products/melatonina.png'
     },
     {
         id: '5',
@@ -70,7 +71,7 @@ const defaultProducts = [
         category: 'Longevidade & Saúde',
         description: 'Superalimento para vigor físico, libido e equilíbrio hormonal.',
         price: null,
-        image_url: '/assets/maca_peruana.png'
+        image_url: '/assets/products/maca_peruana.png'
     },
     {
         id: '7',
@@ -78,7 +79,7 @@ const defaultProducts = [
         category: 'Longevidade & Saúde',
         description: 'Vitamina D3 5000 UI. Auxilia na formação de ossos e dentes, na absorção de cálcio e fósforo e no funcionamento do sistema imune. Contém 60 cápsulas.',
         price: null,
-        image_url: 'https://ngphbcrdphluuphctvpr.supabase.co/storage/v1/object/public/receitas/product_launch_1765957546699_h3wdl.jpg'
+        image_url: '/assets/products/vitamina_d3.png'
     },
     {
         id: '6',
@@ -86,7 +87,7 @@ const defaultProducts = [
         category: 'Longevidade & Saúde',
         description: 'Magnésio Dimalato 500mg. Auxilia no funcionamento muscular e neuromuscular, metabolismo energético e formação de ossos e dentes. Contém 90 cápsulas.',
         price: null,
-        image_url: 'https://ngphbcrdphluuphctvpr.supabase.co/storage/v1/object/public/receitas/product_launch_1765957545725_3lezkg.jpg'
+        image_url: '/assets/products/magnesio_dimalato.png'
     },
     {
         id: '8',
@@ -94,7 +95,7 @@ const defaultProducts = [
         category: 'Longevidade & Saúde',
         description: 'Cúrcuma 500mg (Curcumina 95%). Potente ação antioxidante e anti-inflamatória. Auxilia na proteção das células contra radicais livres. Contém 60 cápsulas.',
         price: null,
-        image_url: 'https://ngphbcrdphluuphctvpr.supabase.co/storage/v1/object/public/receitas/product_launch_1765957547049_lcx7rn.jpg'
+        image_url: '/assets/products/curcuma.png'
     },
     {
         id: '10',
@@ -102,7 +103,7 @@ const defaultProducts = [
         category: 'Longevidade & Saúde',
         description: 'Biotina 10000mcg. Vitamina essencial para a manutenção da saúde da pele, cabelos e unhas. Contém 60 cápsulas.',
         price: null,
-        image_url: 'https://ngphbcrdphluuphctvpr.supabase.co/storage/v1/object/public/receitas/product_launch_1765958040097_ciols.png'
+        image_url: '/assets/products/biotina.png'
     },
     {
         id: '11',
@@ -110,7 +111,7 @@ const defaultProducts = [
         category: 'Longevidade & Saúde',
         description: 'Resveratrol 250mg (Trans-Resveratrol). Potente antioxidante que auxilia na saúde cardiovascular e combate o envelhecimento celular. Contém 60 cápsulas.',
         price: null,
-        image_url: 'https://ngphbcrdphluuphctvpr.supabase.co/storage/v1/object/public/receitas/product_launch_1765958041072_ujzzek.png'
+        image_url: '/assets/products/resveratrol.png'
     },
     {
         id: '14',
@@ -118,7 +119,7 @@ const defaultProducts = [
         category: 'Performance & Força',
         description: 'Zinco Quelado 30mg. Mineral essencial para o fortalecimento do sistema imune e processos de cicatrização. Alta biodisponibilidade. Contém 60 cápsulas.',
         price: null,
-        image_url: 'https://ngphbcrdphluuphctvpr.supabase.co/storage/v1/object/public/receitas/product_launch_1765958044634_h6sufc.jpg'
+        image_url: '/assets/products/zinco_quelado.png'
     },
     {
         id: '13',
@@ -126,7 +127,7 @@ const defaultProducts = [
         category: 'Longevidade & Saúde',
         description: 'Ômega 3 1000mg. Óleo de peixe rico em EPA e DHA. Auxilia na saúde do coração, cérebro e controle dos níveis de colesterol. Contém 90 cápsulas.',
         price: null,
-        image_url: 'https://ngphbcrdphluuphctvpr.supabase.co/storage/v1/object/public/receitas/product_launch_1765958041781_trjicn.jpg'
+        image_url: '/assets/products/omega_3.png'
     },
     {
         id: '2',
@@ -134,7 +135,7 @@ const defaultProducts = [
         category: 'Sono & Bem-Estar',
         description: 'Adaptógeno natural. Reduz estresse, ansiedade e melhora o foco e disposição.',
         price: null,
-        image_url: '/assets/ashwagandha.png'
+        image_url: '/assets/products/ashwagandha.png'
     }
 ];
 
@@ -160,7 +161,7 @@ const ProductGrid = ({ searchTerm = '' }) => {
                         name: item.name,
                         description: item.description,
                         price: item.price && parseFloat(item.price) > 0 ? parseFloat(item.price).toFixed(2).replace('.', ',') : null,
-                        image_url: item.image_url || '/assets/morosil_new.png'
+                        image_url: resolveProductImage(item)
                     }));
                     setProductsList(formatted);
                 }
@@ -317,12 +318,12 @@ const ProductGrid = ({ searchTerm = '' }) => {
                 
                 .product-img-box {
                     position: relative;
-                    height: 220px;
+                    height: 255px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    padding: 16px;
-                    background: rgba(255,255,255,0.02);
+                    padding: 8px 12px;
+                    background: #ffffff;
                     border-bottom: 1px solid var(--border-subtle);
                 }
 

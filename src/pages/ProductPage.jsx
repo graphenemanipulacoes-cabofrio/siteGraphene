@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabaseClient';
 import StoreLayout from '../components/StoreLayout';
 import { useStore } from '../context/StoreContext';
 import { money } from '../utils/commerce';
+import { resolveProductImage } from '../utils/productImages';
 import { useProductSeo } from '../components/SeoManager';
 import '../styles/purchase.css';
 
@@ -33,7 +34,7 @@ export default function ProductPage() {
         <Link to="/#produtos" className="purchase-back"><ArrowLeft size={16} /> Continuar comprando</Link>
         {!product ? <div className="purchase-empty" role="status"><h1>{result.id === id ? result.error : 'Carregando produto…'}</h1><Link to="/#produtos">Ver produtos</Link></div> :
             <div className="purchase-product">
-                <div className="purchase-product-photo"><img src={product.image_url || '/assets/logo.png'} alt={product.name} /></div>
+                <div className="purchase-product-photo" style={{ background: '#ffffff' }}><img src={resolveProductImage(product)} alt={product.name} /></div>
                 <div><span className="purchase-eyebrow">Graphène Manipulações • Cabo Frio, RJ</span><h1>{product.name}</h1><p className="purchase-description">{product.description}</p>
                     <div className="purchase-product-price"><small>Preço por unidade</small><strong>{hasPrice ? money(product.price) : 'Preço não informado'}</strong></div>
                     <div className="purchase-product-actions"><button className="purchase-primary" disabled={!hasPrice} onClick={() => buy(true)}>Comprar agora <ArrowRight size={18} /></button><button className="purchase-secondary" disabled={!hasPrice} onClick={() => buy(false)}><ShoppingBag size={18} /> Adicionar ao carrinho</button></div>

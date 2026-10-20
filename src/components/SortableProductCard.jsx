@@ -1,8 +1,8 @@
-
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Button from './Button';
 import { GripVertical, Pencil, Trash2, Image as ImageIcon } from 'lucide-react';
+import { resolveProductImage } from '../utils/productImages';
 
 const SortableProductCard = ({ product, handleOpenModal, handleDelete }) => {
     const {
@@ -19,6 +19,8 @@ const SortableProductCard = ({ product, handleOpenModal, handleDelete }) => {
         touchAction: 'auto',
     };
 
+    const resolvedImg = resolveProductImage(product);
+
     return (
         <div ref={setNodeRef} style={style} className="product-card-sortable">
             <div style={{ padding: '1.5rem', background: 'var(--bg-dark-secondary)', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', position: 'relative', display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
@@ -34,9 +36,9 @@ const SortableProductCard = ({ product, handleOpenModal, handleDelete }) => {
                 </button>
 
                 {/* Image */}
-                <div style={{ height: '180px', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                    {product.image_url ? (
-                        <img src={product.image_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <div style={{ height: '190px', background: '#ffffff', borderRadius: 'var(--radius-sm)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', pointerEvents: 'none' }}>
+                    {resolvedImg ? (
+                        <img src={resolvedImg} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     ) : (
                         <ImageIcon size={40} opacity={0.3} />
                     )}

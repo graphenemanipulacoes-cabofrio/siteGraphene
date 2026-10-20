@@ -20,6 +20,7 @@ import {
 } from '@dnd-kit/sortable';
 import SortableProductCard from './SortableProductCard';
 import { getSession } from '../utils/security';
+import { resolveProductImage } from '../utils/productImages';
 
 const AdminProducts = () => {
     const [products, setProducts] = useState([]);
@@ -59,7 +60,7 @@ const AdminProducts = () => {
                 p_token: session?.token || '',
             });
             if (error || data?.error) throw new Error(data?.error || 'Não foi possível carregar os produtos');
-            setProducts(data.products || []);
+            setProducts((data.products || []).map(p => ({ ...p, image_url: resolveProductImage(p) })));
         } catch (error) {
             console.error('Error fetching products:', error);
         } finally {
