@@ -16,7 +16,7 @@ export default function PrivacyNotice() {
         finally { setVisible(false); }
     };
 
-    if (!visible || pathname.startsWith('/admin') || pathname === '/login') return null;
+    if (!visible || pathname.startsWith('/admin') || pathname === '/login' || pathname === '/balcaographene') return null;
 
     return (
         <aside className="privacy-notice" aria-label="Aviso sobre privacidade e armazenamento do navegador">

@@ -99,7 +99,7 @@ const AdminPartners = ({ onUnauthorized }) => {
       try {
         const bodyErr = await result.error.context.json();
         if (bodyErr?.error) errorDetail = bodyErr.error;
-      } catch (_) {}
+      } catch { /* Resposta sem JSON: mantém o erro original. */ }
     }
     if (errorDetail === 'unauthorized') onUnauthorized();
     return { data: result.data, error: errorDetail };

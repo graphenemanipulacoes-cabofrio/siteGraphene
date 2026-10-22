@@ -12,4 +12,6 @@ verify_jwt = false
 [functions.partner-portal]
 verify_jwt = false
 
+[functions.balcao-api]
+verify_jwt = false
 

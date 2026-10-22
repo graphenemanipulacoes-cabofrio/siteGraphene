@@ -11,6 +11,9 @@ const PrescritoresPage = lazy(() => import('./pages/PrescritoresPage'));
 const AvaliacoesPage = lazy(() => import('./pages/AvaliacoesPage'));
 const Login = lazy(() => import('./pages/Login'));
 const Admin = lazy(() => import('./pages/Admin'));
+const CounterPage = lazy(() => import('./pages/CounterPage'));
+const ColaboradoresPage = lazy(() => import('./pages/ColaboradoresPage'));
+const FarmaceuticoPage = lazy(() => import('./pages/FarmaceuticoPage'));
 const PartnerProgramPage = lazy(() => import('./pages/PartnerProgramPage'));
 const PartnerRegistration = lazy(() => import('./pages/PartnerRegistration'));
 const PartnerAccess = lazy(() => import('./pages/PartnerAccess'));
@@ -41,6 +44,9 @@ function App() {
           <Route path="/avaliacoes" element={<AvaliacoesPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/balcaographene" element={<CounterPage />} />
+          <Route path="/colaboradores" element={<ColaboradoresPage />} />
+          <Route path="/farmaceutico" element={<FarmaceuticoPage />} />
           <Route path="/parceiros" element={<PartnerProgramPage />} />
           <Route path="/parceiros/cadastro" element={<PartnerRegistration />} />
           <Route path="/parceiros/entrar" element={<PartnerAccess />} />

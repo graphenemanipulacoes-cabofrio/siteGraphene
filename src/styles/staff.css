@@ -1,0 +1,97 @@
+/* Área da equipe (/colaboradores) e página do farmacêutico (/farmaceutico).
+   Usa as variáveis do site (global.css): azul-marinho com destaque ciano. */
+.staff-root {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 520px at 50% -180px, rgba(34, 199, 232, .10), transparent 70%),
+    var(--bg-store);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  padding: 40px 20px 56px;
+}
+.staff-root *, .staff-root *::before, .staff-root *::after { box-sizing: border-box; }
+.staff-root h1, .staff-root h2, .staff-root h3, .staff-root p { margin: 0; color: inherit; }
+.staff-root a { color: inherit; }
+.staff-root :focus-visible { outline: 2px solid var(--brand-blue); outline-offset: 3px; }
+
+.staff-shell { width: 100%; max-width: 980px; margin: 0 auto; }
+.staff-shell.wide { max-width: 1240px; }
+
+/* Cabeçalho */
+.staff-brand { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 44px; }
+.staff-brand img { height: 46px; width: auto; display: block; }
+.staff-back { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; color: var(--text-muted); text-decoration: none; padding: 8px 4px; }
+.staff-back:hover { color: var(--text-main); }
+
+.staff-intro { margin-bottom: 30px; max-width: 640px; }
+.staff-intro h1 { font-family: var(--font-heading); font-size: clamp(30px, 5vw, 42px); font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
+.staff-intro p { margin-top: 12px; color: var(--text-dim); font-size: 16px; line-height: 1.65; }
+
+/* Portas de acesso */
+.staff-doors { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.staff-door {
+  position: relative; display: grid; grid-template-columns: 52px 1fr; gap: 18px; align-items: start;
+  padding: 24px; border-radius: 16px; text-decoration: none;
+  background: var(--bg-card); border: 1px solid var(--border-card);
+  transition: border-color .2s ease, background .2s ease;
+}
+.staff-door:hover { border-color: var(--border-blue); background: var(--bg-card-elevated); }
+.staff-door-icon { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; color: var(--brand-blue); background: var(--primary-50); border: 1px solid var(--primary-200); }
+.staff-door-body { display: grid; gap: 8px; min-width: 0; }
+.staff-door-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.staff-door h2 { font-family: var(--font-heading); font-size: 21px; font-weight: 700; letter-spacing: -.01em; }
+.staff-door-tag { font-size: 12px; font-weight: 700; color: var(--brand-blue-light); background: rgba(34, 199, 232, .10); border-radius: 999px; padding: 3px 10px; }
+.staff-door p { color: var(--text-dim); font-size: 14.5px; line-height: 1.6; }
+.staff-door-cta { display: inline-flex; align-items: center; gap: 7px; margin-top: 6px; font-weight: 700; font-size: 14.5px; color: var(--brand-blue); }
+.staff-door:hover .staff-door-cta { color: var(--brand-blue-light); }
+.staff-door.primary { grid-column: 1 / -1; border-color: var(--border-blue); background: linear-gradient(180deg, rgba(34, 199, 232, .07), transparent 70%), var(--bg-card); }
+.staff-door.primary .staff-door-icon { background: var(--brand-blue); color: var(--action-ink); border-color: var(--brand-blue); }
+
+.staff-root .staff-note { margin-top: 28px; display: flex; gap: 10px; align-items: flex-start; color: var(--text-muted); font-size: 13.5px; line-height: 1.6; }
+.staff-note svg { flex: none; margin-top: 2px; }
+
+/* Login */
+.staff-login { display: grid; place-items: center; min-height: calc(100vh - 96px); }
+.staff-login-card { width: 100%; max-width: 420px; padding: 34px 30px; border-radius: 18px; background: var(--bg-card); border: 1px solid var(--border-card); display: grid; gap: 16px; }
+.staff-login-card img { height: 42px; width: auto; justify-self: start; margin-bottom: 8px; }
+.staff-login-card h1 { font-family: var(--font-heading); font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+.staff-login-card > p { color: var(--text-dim); font-size: 14.5px; line-height: 1.6; margin-top: -6px; }
+.staff-field { display: grid; gap: 7px; font-size: 14px; font-weight: 600; color: var(--text-dim); }
+.staff-field input { width: 100%; min-height: 48px; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--border-card); background: var(--bg-surface); color: var(--text-main); font: inherit; font-weight: 500; outline: none; }
+.staff-field input:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(34, 199, 232, .16); }
+.staff-error { padding: 12px 14px; border-radius: 10px; background: rgba(251, 113, 133, .10); border: 1px solid rgba(251, 113, 133, .35); color: #fecdd3; font-size: 14px; line-height: 1.5; }
+.staff-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--border-card); background: var(--bg-card-elevated); color: var(--text-main); font: inherit; font-size: 14px; font-weight: 700; text-decoration: none; cursor: pointer; white-space: nowrap; }
+.staff-btn:hover { border-color: var(--border-blue); }
+.staff-btn:disabled { opacity: .55; cursor: not-allowed; }
+.staff-btn.primary { background: var(--brand-blue); border-color: var(--brand-blue); color: var(--action-ink); min-height: 50px; }
+.staff-btn.primary:hover { background: var(--brand-blue-light); }
+.staff-login-links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13.5px; color: var(--text-muted); }
+.staff-login-links a { text-decoration: none; }
+.staff-login-links a:hover { color: var(--text-main); }
+
+/* Barra do farmacêutico */
+.staff-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; padding-bottom: 22px; border-bottom: 1px solid var(--border-subtle); }
+.staff-bar-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.staff-bar-left img { height: 38px; width: auto; }
+.staff-bar-title { display: grid; gap: 2px; min-width: 0; }
+.staff-bar-title strong { font-family: var(--font-heading); font-size: 20px; }
+.staff-bar-title span { color: var(--text-muted); font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.staff-bar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.staff-root .staff-lead { color: var(--text-dim); font-size: 15px; line-height: 1.6; margin-bottom: 26px; max-width: 760px; }
+.staff-spin { animation: staff-spin 1s linear infinite; }
+@keyframes staff-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 720px) {
+  .staff-root { padding: 24px 16px 44px; }
+  .staff-brand { margin-bottom: 30px; }
+  .staff-doors { grid-template-columns: 1fr; }
+  .staff-door { grid-template-columns: 44px 1fr; padding: 20px; gap: 14px; }
+  .staff-door-icon { width: 44px; height: 44px; border-radius: 12px; }
+  .staff-login-card { padding: 28px 22px; }
+  .staff-bar-actions { width: 100%; }
+  .staff-bar-actions .staff-btn { flex: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .staff-door { transition: none; }
+  .staff-spin { animation: none; }
+}

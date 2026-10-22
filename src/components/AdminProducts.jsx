@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabaseClient';
 import Button from './Button';
 import { Plus, Pencil, Trash2, X, Upload, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,10 +18,11 @@ import {
     rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import SortableProductCard from './SortableProductCard';
-import { getSession } from '../utils/security';
+import { adminProductsApi } from '../lib/productsApi';
 import { resolveProductImage } from '../utils/productImages';
 
-const AdminProducts = () => {
+// `api` define o caminho até o servidor: admin (padrão) ou farmacêutico.
+const AdminProducts = ({ api = adminProductsApi }) => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,15 +54,11 @@ const AdminProducts = () => {
 
     const fetchProducts = async () => {
         try {
-            const session = getSession();
-            const { data, error } = await supabase.rpc('admin_manage_products', {
-                p_action: 'list',
-                p_token: session?.token || '',
-            });
-            if (error || data?.error) throw new Error(data?.error || 'Não foi possível carregar os produtos');
-            setProducts((data.products || []).map(p => ({ ...p, image_url: resolveProductImage(p) })));
+            const list = await api.list();
+            setProducts(list.map(p => ({ ...p, image_url: resolveProductImage(p) })));
         } catch (error) {
             console.error('Error fetching products:', error);
+            toast.error(error.message || 'Não foi possível carregar os produtos.');
         } finally {
             setLoading(false);
         }
@@ -91,13 +87,7 @@ const AdminProducts = () => {
 
     const updateOrder = async (updatedProducts) => {
         try {
-            const session = getSession();
-            const { data, error } = await supabase.rpc('admin_manage_products', {
-                p_action: 'reorder',
-                p_token: session?.token || '',
-                p_product_ids: updatedProducts.map(product => product.id),
-            });
-            if (error || data?.error) throw new Error(data?.error || 'Não foi possível salvar a ordem');
+            await api.reorder(updatedProducts.map(product => product.id));
         } catch (error) {
             console.error('Error updating order:', error);
             toast.error('Erro ao salvar ordem.');
@@ -158,27 +148,15 @@ const AdminProducts = () => {
 
         try {
             let imageUrl = editingProduct?.image_url || null;
-            if (imageFile) {
-                const extension = imageFile.name.split('.').pop()?.toLowerCase() || 'jpg';
-                const fileName = `products/product_${Date.now()}.${extension}`;
-                const { error: uploadError } = await supabase.storage.from('receitas').upload(fileName, imageFile, { upsert: false });
-                if (uploadError) throw new Error('Não foi possível enviar a imagem do produto');
-                imageUrl = supabase.storage.from('receitas').getPublicUrl(fileName).data.publicUrl;
-            }
-            const session = getSession();
-            const { data, error } = await supabase.rpc('admin_manage_products', {
-                p_action: 'save',
-                p_token: session?.token || '',
-                p_product: {
-                    id: editingProduct?.id ?? null,
-                    name,
-                    description,
-                    price: !price ? 0 : Number(price),
-                    image_url: imageUrl,
-                },
+            if (imageFile) imageUrl = await api.uploadImage(imageFile);
+            const savedProduct = await api.save({
+                id: editingProduct?.id ?? null,
+                name,
+                description,
+                price: !price ? 0 : Number(price),
+                image_url: imageUrl,
             });
-            if (error || data?.error || !data?.product) throw new Error(data?.error || 'Não foi possível salvar o produto');
-            const savedProduct = data.product;
+            if (!savedProduct) throw new Error('Não foi possível salvar o produto');
             setProducts(prev => editingProduct
                 ? prev.map(product => product.id === savedProduct.id ? savedProduct : product)
                 : [...prev, savedProduct]);
@@ -198,13 +176,7 @@ const AdminProducts = () => {
         if (!confirm('Tem certeza que deseja excluir este produto?')) return;
 
         try {
-            const session = getSession();
-            const { data, error } = await supabase.rpc('admin_manage_products', {
-                p_action: 'delete',
-                p_token: session?.token || '',
-                p_product: { id },
-            });
-            if (error || data?.error) throw new Error(data?.error || 'Não foi possível excluir o produto');
+            await api.remove(id);
             setProducts(prev => prev.filter(p => p.id !== id));
             toast.success('Produto excluído.');
         } catch (error) {

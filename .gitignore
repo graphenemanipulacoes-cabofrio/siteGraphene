@@ -13,6 +13,7 @@ dist-ssr
 *.local
 .env
 supabase/.temp/
+supabase/deploy/
 
 # Editor directories and files
 .vscode/*

@@ -22,8 +22,12 @@ const sha256 = async (value: string) => hex(await crypto.subtle.digest('SHA-256'
 const clean = (value: unknown, max: number) => typeof value === 'string' ? value.trim().slice(0, max) : '';
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const requestIdPattern = /^\d{1,18}$/;
-const privateRecipePathPattern = /^intake\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|jpeg|png|pdf)$/i;
-const legacyRecipeFilenamePattern = /^\d{13}_[a-z0-9]{6}\.(?:jpg|jpeg|png|pdf)$/i;
+// intake/: current form. legacy/: first-form files moved from the public bucket in Oct/2026.
+const privateRecipePathPattern = /^(?:intake\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy\/\d{13}_[a-z0-9]{5,6})\.(?:jpg|jpeg|png|pdf)$/i;
+const productImageTypes: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
+const legacyRecipeFilenamePattern = /^\d{13}_[a-z0-9]{5,6}\.(?:jpg|jpeg|png|pdf)$/i;
+// Files from the first form were moved out of the public bucket in Oct/2026.
+const legacyPrivatePath = (filename: string) => `legacy/${filename}`;
 const prescriptionBucket = 'receitas-privadas';
 const allowedStatuses = new Set(['awaiting_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']);
 const recipientRoles = new Set(['influencer', 'marketing', 'development', 'other']);
@@ -51,6 +55,17 @@ Deno.serve(async (req: Request) => {
     if (body.action === 'logout') {
       await admin.from('admin_sessions').delete().eq('token_hash', tokenHash);
       return json({ ok: true }, 200, origin);
+    }
+
+    // Product photos: the admin receives a single-use signed upload URL. The
+    // public bucket no longer accepts anonymous uploads.
+    if (body.action === 'product_image_upload') {
+      const extension = clean(body.extension, 5).toLowerCase();
+      if (!productImageTypes[extension]) return json({ error: 'invalid_image_type' }, 400, origin);
+      const path = `products/product_${Date.now()}_${crypto.randomUUID().slice(0, 8)}.${extension}`;
+      const { data, error } = await admin.storage.from('receitas').createSignedUploadUrl(path);
+      if (error || !data?.token) return json({ error: 'unable_to_prepare_upload' }, 500, origin);
+      return json({ path: data.path, token: data.token, contentType: productImageTypes[extension] }, 200, origin);
     }
 
     if (body.action === 'list_requests') {
@@ -84,16 +99,17 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        // Allow only same-project URLs for the legacy prescription filename
-        // format. Never turn a user-supplied external link into an admin link.
+        // Old references still hold the former public URL. Accept only
+        // same-project URLs in the legacy filename format and sign the moved
+        // private copy. Never turn a user-supplied external link into an admin link.
         try {
           const legacyUrl = new URL(reference);
           const prefix = '/storage/v1/object/public/receitas/';
           const encodedPath = legacyUrl.pathname.startsWith(prefix) ? legacyUrl.pathname.slice(prefix.length) : '';
           const legacyPath = decodeURIComponent(encodedPath);
-          const filename = legacyPath.split('/').pop() || '';
-          if (legacyUrl.origin === supabaseUrl.origin && legacyPath && legacyRecipeFilenamePattern.test(filename)) {
-            files.push({ url: legacyUrl.href, name: filename, private: false });
+          if (legacyUrl.origin === supabaseUrl.origin && legacyRecipeFilenamePattern.test(legacyPath)) {
+            const { data: signed, error: signedError } = await admin.storage.from(prescriptionBucket).createSignedUrl(legacyPrivatePath(legacyPath), 300);
+            if (!signedError && signed?.signedUrl) files.push({ url: signed.signedUrl, name: legacyPath, private: true });
           }
         } catch {
           // Invalid legacy references are intentionally omitted.
@@ -134,20 +150,16 @@ Deno.serve(async (req: Request) => {
           const prefix = '/storage/v1/object/public/receitas/';
           const encodedPath = legacyUrl.pathname.startsWith(prefix) ? legacyUrl.pathname.slice(prefix.length) : '';
           const legacyPath = decodeURIComponent(encodedPath);
-          const filename = legacyPath.split('/').pop() || '';
-          if (legacyUrl.origin === supabaseUrl.origin && legacyPath && legacyRecipeFilenamePattern.test(filename)) legacyPaths.push(legacyPath);
+          if (legacyUrl.origin === supabaseUrl.origin && legacyRecipeFilenamePattern.test(legacyPath)) legacyPaths.push(legacyPrivatePath(legacyPath));
         } catch {
           // Ignore malformed values rather than removing arbitrary storage objects.
         }
       }
 
-      if (privatePaths.length) {
-        const { error } = await admin.storage.from(prescriptionBucket).remove(privatePaths);
+      const filesToRemove = [...privatePaths, ...legacyPaths];
+      if (filesToRemove.length) {
+        const { error } = await admin.storage.from(prescriptionBucket).remove(filesToRemove);
         if (error) return json({ error: 'unable_to_remove_request_files' }, 500, origin);
-      }
-      if (legacyPaths.length) {
-        const { error } = await admin.storage.from('receitas').remove(legacyPaths);
-        if (error) return json({ error: 'unable_to_remove_legacy_request_files' }, 500, origin);
       }
       const { error } = await admin.from('solicitacoes').delete().eq('id', requestId);
       if (error) return json({ error: 'unable_to_delete_request' }, 500, origin);

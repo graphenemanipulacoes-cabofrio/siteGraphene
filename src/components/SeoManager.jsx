@@ -49,7 +49,12 @@ export default function SeoManager() {
         const privatePage = isPrivate(normalizedPath);
         const isProduct = /^\/produto\/[^/]+$/.test(normalizedPath);
         const isUnknownPage = !pageMetadata[normalizedPath] && !isProduct;
-        const metadata = pageMetadata[normalizedPath] || (isProduct ? productMetadata : {
+        const staffPages = {
+            '/balcaographene': { title: 'Balcão Digital | Graphène', description: 'Área interna da equipe Graphène para consulta de pedidos e solicitações.' },
+            '/colaboradores': { title: 'Área da equipe | Graphène', description: 'Acesso da equipe Graphène às áreas de administração, farmacêutico, balcão e parceiros.' },
+            '/farmaceutico': { title: 'Área do farmacêutico | Graphène', description: 'Área interna para cadastro e revisão dos produtos da Graphène.' },
+        };
+        const metadata = (staffPages[normalizedPath] || pageMetadata[normalizedPath]) || (isProduct ? productMetadata : {
             title: 'Graphène Manipulações em Cabo Frio | Atendimento farmacêutico',
             description: 'Conheça a unidade Graphène em Cabo Frio e fale com a equipe farmacêutica.'
         });

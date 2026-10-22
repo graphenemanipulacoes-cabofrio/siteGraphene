@@ -25,47 +25,6 @@ const Button = ({ children, variant = 'primary', size = 'md', onClick, className
         ...style
     };
 
-    const variants = {
-        primary: {
-            background: 'var(--gradient-primary)',
-            color: 'var(--action-ink)',
-            boxShadow: '0 4px 14px rgba(14, 165, 233, 0.2), inset 0 1px 0 rgba(255,255,255,0.15)',
-        },
-        secondary: {
-            background: 'var(--gradient-secondary)',
-            color: '#ffffff',
-            boxShadow: '0 4px 14px rgba(2, 132, 199, 0.2), inset 0 1px 0 rgba(255,255,255,0.15)',
-        },
-        accent: {
-            background: 'var(--gradient-accent)',
-            color: '#fff',
-            boxShadow: '0 4px 14px rgba(15, 23, 42, 0.15), inset 0 1px 0 rgba(255,255,255,0.1)',
-        },
-        outline: {
-            background: 'rgba(34, 199, 232, 0.06)',
-            border: '1.5px solid var(--border-blue)',
-            color: 'var(--brand-blue)',
-            boxShadow: 'none',
-        },
-        ghost: {
-            background: 'transparent',
-            color: 'var(--text-secondary)',
-            boxShadow: 'none',
-        },
-        glass: {
-            background: 'rgba(255, 255, 255, 0.06)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid var(--border-card)',
-            color: 'var(--text-main)',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)',
-        },
-        dark: {
-            background: 'var(--gradient-dark)',
-            color: '#fff',
-            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-        },
-    };
-
     // Hover effect via pseudo-element simulation
     const onHover = (e) => {
         if (!disabled) {

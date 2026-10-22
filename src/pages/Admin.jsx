@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Package, PackageCheck, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink, WalletCards, Eye, UserRound, ShoppingBag } from 'lucide-react';
+import { Package, PackageCheck, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink, WalletCards, Eye, UserRound, ShoppingBag, Monitor, FlaskConical, LayoutGrid } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { Link, useNavigate } from 'react-router-dom';
@@ -9,6 +9,7 @@ import AdminProducts from '../components/AdminProducts';
 import AdminOrders from '../components/AdminOrders';
 import AdminFinance from '../components/AdminFinance';
 import AdminPartners from '../components/AdminPartners';
+import AdminCounterAccess from '../components/AdminCounterAccess';
 import { getSession, destroySession } from '../utils/security';
 
 const Admin = () => {
@@ -22,9 +23,6 @@ const Admin = () => {
     const [admins, setAdmins] = useState([]);
     const [newAdminUser, setNewAdminUser] = useState('');
     const [newAdminPass, setNewAdminPass] = useState('');
-    const [partners, setPartners] = useState([]);
-    const [selectedPartner, setSelectedPartner] = useState(null);
-    const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
     const navigate = useNavigate();
 
     const invokeAdmin = useCallback(async (body) => {
@@ -194,39 +192,6 @@ const Admin = () => {
         }
     };
 
-    const _fetchPartners = async () => {
-        const { data, error } = await supabase
-            .from('parceiros')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('Error fetching partners:', error);
-            toast.error('Erro ao carregar parceiros');
-        } else {
-            setPartners(data || []);
-        }
-    };
-
-    const updatePartner = async (partnerId, updatedData) => {
-        try {
-            const { error } = await supabase
-                .from('parceiros')
-                .update(updatedData)
-                .eq('id', partnerId);
-
-            if (error) throw error;
-
-            toast.success('Dados do parceiro atualizados!');
-            setPartners(prev => prev.map(p => p.id === partnerId ? { ...p, ...updatedData } : p));
-            setIsPartnerModalOpen(false);
-            setSelectedPartner(null);
-        } catch (error) {
-            console.error('Error updating partner:', error);
-            toast.error('Erro ao salvar alterações');
-        }
-    };
-
     const handleLogout = useCallback(() => {
         const session = getSession();
         if (session?.token) {
@@ -369,6 +334,10 @@ const Admin = () => {
                     <Users size={22} />
                     <span>Time</span>
                 </div>
+                <div className={`nav-item ${view === 'counter' ? 'active' : ''}`} onClick={() => setView('counter')}>
+                    <Monitor size={22} />
+                    <span>Balcão</span>
+                </div>
                 <div className={`nav-item ${view === 'partners' ? 'active' : ''}`} onClick={() => setView('partners')}>
                     <Users size={22} />
                     <span>Parceiros</span>
@@ -412,6 +381,13 @@ const Admin = () => {
                         <WalletCards size={18} /> Financeiro
                     </Button>
                     <span className="admin-nav-label">GESTÃO</span>
+                    <Button
+                        variant="ghost"
+                        className={`admin-nav-link ${view === 'counter' ? 'active' : ''}`}
+                        onClick={() => { setView('counter'); setExpandedId(null); }}
+                    >
+                        <Monitor size={18} /> Acessos da Equipe
+                    </Button>
                     <Button
                         variant="ghost"
                         className={`admin-nav-link ${view === 'products' ? 'active' : ''}`}
@@ -458,7 +434,7 @@ const Admin = () => {
                         )}
                         <span className="admin-eyebrow">CENTRAL DE OPERAÇÕES</span>
                         <h1 className="admin-page-title">
-                            {view === 'active' ? 'Solicitações' : view === 'orders' ? 'Pedidos e Entregas' : view === 'finance' ? 'Central Financeira' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : view === 'partners' ? 'Parceiros' : 'Lixeira'}
+                            {view === 'active' ? 'Solicitações' : view === 'orders' ? 'Pedidos e Entregas' : view === 'counter' ? 'Acessos da Equipe' : view === 'finance' ? 'Central Financeira' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : view === 'partners' ? 'Parceiros' : 'Lixeira'}
                         </h1>
                         <p className="admin-page-copy">{view === 'orders' ? 'Acompanhe pagamentos, separação e envios em um só lugar.' : view === 'finance' ? 'Controle vendas, taxas, comissões, cupons e repasses em uma única área.' : view === 'partners' ? 'Analise inscrições, ative cupons e acompanhe o acesso dos parceiros.' : view === 'active' ? 'Receitas e solicitações recebidas pelos canais da Graphène.' : 'Gerencie os dados operacionais da Graphène com segurança.'}</p>
                     </div>
@@ -474,83 +450,22 @@ const Admin = () => {
                         <Link to="/minha-conta?adminPreview=1"><UserRound size={14}/> Cliente</Link>
                         <Link to="/parceiros/painel?adminPreview=1"><Users size={14}/> Parceiro</Link>
                         <Link to="/checkout?adminPreview=1"><ShoppingBag size={14}/> Checkout</Link>
+                        <Link to="/balcaographene"><Monitor size={14}/> Balcão</Link>
+                        <Link to="/farmaceutico"><FlaskConical size={14}/> Farmacêutico</Link>
+                        <Link to="/colaboradores"><LayoutGrid size={14}/> Equipe</Link>
                     </nav>
                 </header>
 
                 {view === 'orders' ? (
                     <AdminOrders onUnauthorized={handleLogout} />
+                ) : view === 'counter' ? (
+                    <AdminCounterAccess onUnauthorized={handleLogout} />
                 ) : view === 'finance' ? (
                     <AdminFinance onUnauthorized={handleLogout} />
                 ) : view === 'products' ? (
                     <AdminProducts />
                 ) : view === 'partners' ? (
                     <AdminPartners onUnauthorized={handleLogout} />
-                ) : view === 'partners_legacy' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <Button
-                                variant="outline"
-                                onClick={() => window.open('/parceiros/cadastro', '_blank')}
-                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}
-                            >
-                                <ExternalLink size={16} /> Abrir Página de Cadastro
-                            </Button>
-                        </div>
-                        <Card>
-                            <div className="admin-section-heading"><strong>Gestão de parceiros</strong><span>{partners.length} cadastrados</span></div>
-                            <div style={{ overflowX: 'auto' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                                    <thead>
-                                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                                            <th style={{ padding: '1rem', opacity: 0.6 }}>Nome</th>
-                                            <th style={{ padding: '1rem', opacity: 0.6 }}>WhatsApp</th>
-                                            <th style={{ padding: '1rem', opacity: 0.6 }}>Status</th>
-                                            <th style={{ padding: '1rem', opacity: 0.6, textAlign: 'right' }}>Ação</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {partners.length === 0 ? (
-                                            <tr>
-                                                <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>Nenhum parceiro encontrado.</td>
-                                            </tr>
-                                        ) : (
-                                            partners.map(partner => (
-                                                <tr key={partner.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                                    <td style={{ padding: '1rem' }}>{partner.nome_completo}</td>
-                                                    <td style={{ padding: '1rem' }}>{partner.whatsapp}</td>
-                                                    <td style={{ padding: '1rem' }}>
-                                                        <span style={{
-                                                            padding: '4px 10px',
-                                                            borderRadius: '20px',
-                                                            fontSize: '0.8rem',
-                                                            fontWeight: '600',
-                                                            background: partner.status === 'aprovado' ? 'rgba(37, 211, 102, 0.2)' : 'rgba(255, 193, 7, 0.2)',
-                                                            color: partner.status === 'aprovado' ? '#25D366' : '#FFC107',
-                                                            border: `1px solid ${partner.status === 'aprovado' ? '#25D366' : '#FFC107'}`
-                                                        }}>
-                                                            {partner.status.toUpperCase()}
-                                                        </span>
-                                                    </td>
-                                                    <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                                        <Button
-                                                            variant="outline"
-                                                            style={{ padding: '5px 15px', fontSize: '0.85rem' }}
-                                                            onClick={() => {
-                                                                setSelectedPartner(partner);
-                                                                setIsPartnerModalOpen(true);
-                                                            }}
-                                                        >
-                                                            Visualizar
-                                                        </Button>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </Card>
-                    </div>
                 ) : view === 'admins' ? (
                     <div className="admin-settings-stack">
                         <Card>
@@ -736,172 +651,10 @@ const Admin = () => {
                         />
                     </div>
                 )}
-
-                {/* Partner Details Modal */}
-                {isPartnerModalOpen && selectedPartner && (
-                    <div style={{
-                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                        background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
-                        zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
-                    }}>
-                        <div style={{ width: '100%', maxWidth: '600px', padding: '2.5rem', background: 'var(--bg-dark-secondary)', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius-md)', position: 'relative' }}>
-                            <Button
-                                variant="glass"
-                                onClick={() => {
-                                    setIsPartnerModalOpen(false);
-                                    setSelectedPartner(null);
-                                }}
-                                style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', padding: '8px' }}
-                            >
-                                <X size={20} />
-                            </Button>
-
-                            <h2 style={{ fontSize: '1.5rem', marginBottom: '2rem', fontWeight: '800', color: 'var(--text-white)' }}>Detalhes do Parceiro</h2>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2.5rem' }}>
-                                <div style={{ gridColumn: 'span 2' }}>
-                                    <label style={modalLabelStyle}>Nome Completo</label>
-                                    <input
-                                        type="text"
-                                        value={selectedPartner.nome_completo}
-                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, nome_completo: e.target.value })}
-                                        style={modalInputStyle}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={modalLabelStyle}>Documento</label>
-                                    <input
-                                        type="text"
-                                        value={selectedPartner.documento}
-                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, documento: e.target.value })}
-                                        style={modalInputStyle}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={modalLabelStyle}>E-mail</label>
-                                    <input
-                                        type="email"
-                                        value={selectedPartner.email}
-                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, email: e.target.value })}
-                                        style={modalInputStyle}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={modalLabelStyle}>WhatsApp</label>
-                                    <input
-                                        type="text"
-                                        value={selectedPartner.whatsapp}
-                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, whatsapp: e.target.value })}
-                                        style={modalInputStyle}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={modalLabelStyle}>Status</label>
-                                    <select
-                                        value={selectedPartner.status}
-                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, status: e.target.value })}
-                                        style={modalInputStyle}
-                                    >
-                                        <option value="pendente">PENDENTE</option>
-                                        <option value="aprovado">APROVADO</option>
-                                    </select>
-                                </div>
-                                <div style={{ gridColumn: 'span 2' }}>
-                                    <label style={modalLabelStyle}>Chave PIX</label>
-                                    <input
-                                        type="text"
-                                        value={selectedPartner.chave_pix}
-                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, chave_pix: e.target.value })}
-                                        style={modalInputStyle}
-                                    />
-                                </div>
-                                <div style={{ gridColumn: 'span 2' }}>
-                                    <label style={modalLabelStyle}>Banco</label>
-                                    <input
-                                        type="text"
-                                        value={selectedPartner.banco}
-                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, banco: e.target.value })}
-                                        style={modalInputStyle}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={modalLabelStyle}>Agência</label>
-                                    <input
-                                        type="text"
-                                        value={selectedPartner.agencia}
-                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, agencia: e.target.value })}
-                                        style={modalInputStyle}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={modalLabelStyle}>Conta</label>
-                                    <input
-                                        type="text"
-                                        value={selectedPartner.conta}
-                                        onChange={(e) => setSelectedPartner({ ...selectedPartner, conta: e.target.value })}
-                                        style={modalInputStyle}
-                                    />
-                                </div>
-                                <div style={{ gridColumn: 'span 2' }}>
-                                    <label style={modalLabelStyle}>Data de Cadastro</label>
-                                    <p style={{ ...modalValueStyle, opacity: 0.5, padding: '10px 0' }}>{new Date(selectedPartner.created_at).toLocaleString()}</p>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '1rem' }}>
-                                <Button
-                                    variant="primary"
-                                    onClick={() => updatePartner(selectedPartner.id, selectedPartner)}
-                                    style={{ flex: 1, padding: '1rem', borderRadius: 'var(--radius-sm)' }}
-                                >
-                                    Salvar Alterações
-                                </Button>
-                                <Button
-                                    variant="glass"
-                                    onClick={() => {
-                                        setIsPartnerModalOpen(false);
-                                        setSelectedPartner(null);
-                                    }}
-                                    style={{ flex: 1, padding: '1rem', borderRadius: 'var(--radius-sm)' }}
-                                >
-                                    Cancelar
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                )}
                 </div>
             </main>
         </div >
     );
-};
-
-const modalLabelStyle = {
-    display: 'block',
-    fontSize: '0.75rem',
-    opacity: 0.4,
-    marginBottom: '6px',
-    textTransform: 'uppercase',
-    letterSpacing: '1px',
-    fontWeight: '600'
-};
-
-const modalValueStyle = {
-    fontSize: '1rem',
-    fontWeight: '500',
-    color: '#fff'
-};
-
-const modalInputStyle = {
-    width: '100%',
-    padding: '10px 12px',
-    borderRadius: '8px',
-    border: '1px solid rgba(255,255,255,0.08)',
-    background: 'rgba(255,255,255,0.02)',
-    color: '#fff',
-    fontSize: '0.95rem',
-    outline: 'none',
-    transition: 'border-color 0.2s'
 };
 
 export default Admin;

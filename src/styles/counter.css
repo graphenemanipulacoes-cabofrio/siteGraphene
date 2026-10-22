@@ -1,0 +1,40 @@
+/* Painel admin → "Acessos do balcão" (AdminCounterAccess). A tela do balcão usa counter-page.css. */
+.counter-access{display:grid;gap:19px;color:#d3e2ed;font-size:14px;max-width:1000px}
+.counter-access *{box-sizing:border-box}
+.counter-access button,.counter-access input,.counter-access select{font:inherit}
+.counter-access button{cursor:pointer}
+.counter-access button:disabled{opacity:.55;cursor:not-allowed}
+.counter-access input,.counter-access select{border:1px solid #365165;border-radius:8px;background:#0a1c2a;color:#eff8ff;padding:10px 12px;width:100%;min-height:43px;outline:none}
+.counter-access input:focus{border-color:#22c7e8;box-shadow:0 0 0 3px #22c7e81a}
+.counter-access :focus-visible{outline:2px solid #22c7e8;outline-offset:3px}
+.counter-access h2,.counter-access h3{font-weight:700;color:#e5eff5;margin:0}
+.counter-access h2{display:flex;align-items:center;gap:9px;font-size:19px}
+.counter-access h3{font-size:15px}
+.counter-access p{font-size:12px;color:#91a9ba;margin:6px 0 0;line-height:1.7}
+.counter-access .counter-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:39px;padding:8px 12px;border:1px solid #335063;border-radius:8px;background:#132d3e;color:#d8e8f0;font-size:12px;font-weight:650;text-decoration:none;white-space:nowrap}
+.counter-access .counter-button:hover{border-color:#5f8aa3}
+.counter-access .counter-button.primary{background:#22c7e8;border-color:#22c7e8;color:#082731}
+.counter-access .counter-button.danger{background:transparent;color:#efa8ad;border-color:#78474d}
+.counter-access .counter-error{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:13px 16px;border:1px solid #78474d;border-radius:9px;background:#2a1418;color:#f3b4b9;font-size:13px}
+.counter-access .counter-spin{animation:counter-access-spin 1s linear infinite}
+@keyframes counter-access-spin{to{transform:rotate(360deg)}}
+.counter-access-intro{display:flex;align-items:center;justify-content:space-between;gap:15px}
+.counter-access-note{display:flex;align-items:flex-start;gap:10px;padding:15px;background:#0e2a38;border:1px solid #254955;border-radius:10px}
+.counter-access-note p{margin:0}
+.counter-access-note svg{flex:none;color:#77c5d3;margin-top:2px}
+.counter-access-form{display:grid;grid-template-columns:1fr 1fr;gap:15px;padding:22px;background:#102332;border:1px solid #2a4253;border-radius:12px}
+.counter-access-form h3,.counter-access-actions,.counter-access-form label:nth-of-type(4),.counter-access-role{grid-column:1/-1}
+.counter-access-form label{display:grid;gap:7px;align-content:start;color:#b6cbd8;font-size:12px}
+.counter-access-form label small{font-size:10px;color:#7998ac;font-weight:400}
+.counter-access-actions{display:flex;align-items:center;gap:10px}
+.counter-checkbox{display:flex!important;align-items:center;gap:9px!important}
+.counter-checkbox input{width:17px;min-height:auto;height:17px;accent-color:#22c7e8}
+.counter-accounts{display:grid;gap:15px}
+.counter-accounts>article{display:grid;grid-template-columns:1fr auto;gap:14px;border:1px solid #2a4253;padding:18px;border-radius:10px;background:#102332}
+.counter-accounts article small{font-size:11px;color:#7395aa}
+.counter-account-buttons{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.counter-accounts ul{grid-column:1/-1;list-style:none;padding:11px 0 0;border-top:1px solid #2a4253;display:grid;gap:8px;margin:0}
+.counter-accounts li{display:flex;align-items:center;gap:8px;font-size:11px;color:#8aa8bc}
+@media(max-width:900px){.counter-access-intro{align-items:flex-start;flex-wrap:wrap}.counter-accounts>article{grid-template-columns:1fr}}
+@media(max-width:680px){.counter-access-form{grid-template-columns:1fr;padding:16px}.counter-access-actions{flex-wrap:wrap}.counter-account-buttons{align-items:stretch;flex-direction:column}.counter-access h2{font-size:17px}}
+@media(prefers-reduced-motion:reduce){.counter-access .counter-spin{animation:none}}
