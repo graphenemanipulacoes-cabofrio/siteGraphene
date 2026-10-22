@@ -8,6 +8,7 @@ const LEGACY_IMAGE_PATTERNS = [
     '/assets/creatina.jpg',
     'product_launch_176595',
     'product_1765960256563.png',
+    'products/product_1790289847859.jpeg',
 ];
 
 const PRODUCT_ID_MAP = {
