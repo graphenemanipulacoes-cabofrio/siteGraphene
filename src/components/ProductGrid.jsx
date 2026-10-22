@@ -6,13 +6,15 @@ import { useStore } from '../context/StoreContext';
 import { toast } from 'sonner';
 import { resolveProductImage } from '../utils/productImages';
 
-const categories = ['Todos', 'Metabolismo & Queima', 'Longevidade & Saúde', 'Performance & Força', 'Sono & Bem-Estar'];
+const categories = ['Todos', 'Performance & Força', 'Longevidade & Saúde', 'Sono & Bem-Estar', 'Metabolismo & Queima', 'Beleza & Pele'];
 
 const getProductCategory = (name = '') => {
     const n = name.toLowerCase();
-    if (n.includes('termogênico') || n.includes('morosil') || n.includes('mitburn')) return 'Metabolismo & Queima';
-    if (n.includes('creatina') || n.includes('whey') || n.includes('zinco')) return 'Performance & Força';
-    if (n.includes('melatonina') || n.includes('ashwagandha') || n.includes('sono') || n.includes('foco')) return 'Sono & Bem-Estar';
+    const has = (...words) => words.some(w => n.includes(w));
+    if (has('termogênico', 'morosil', 'laranja moro', 'mitburn', 'berberina', 'cromo')) return 'Metabolismo & Queima';
+    if (has('creatina', 'whey', 'zinco', 'glutamina', 'cafeína', 'cafeina')) return 'Performance & Força';
+    if (has('melatonina', 'ashwagandha', 'sono', 'foco', 'passiflora', 'teanina', 'triptofano')) return 'Sono & Bem-Estar';
+    if (!has('tipo ii') && has('colágeno', 'colageno', 'biotina', 'niacinamida', 'minoxidil', 'azelaico', 'dexpantenol', 'ureia')) return 'Beleza & Pele';
     return 'Longevidade & Saúde';
 };
 
