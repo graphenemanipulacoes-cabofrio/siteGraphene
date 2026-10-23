@@ -83,11 +83,16 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
     const accountPath = customer ? '/minha-conta' : '/entrar';
     const accountLabel = customer ? 'Minha conta' : 'Entrar';
     const cartLabel = `Carrinho${itemCount ? `, ${itemCount} ${itemCount === 1 ? 'item' : 'itens'}` : ''}`;
-    const search = showSearch && <label className="gh-search">
+    // Ao confirmar a busca (Enter ou "Buscar" no teclado do celular), leva aos resultados.
+    const submitSearch = event => {
+        event.preventDefault();
+        event.currentTarget.querySelector('input')?.blur();
+        document.getElementById('produtos')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    const search = showSearch && <form role="search" className="gh-search" onSubmit={submitSearch}>
         <Search size={17} aria-hidden="true" />
-        <span className="gh-sr">Buscar produtos</span>
-        <input type="search" placeholder="Buscar creatina, melatonina, coenzima Q10…" value={searchTerm || ''} onChange={event => onSearchChange?.(event.target.value)} />
-    </label>;
+        <input type="search" enterKeyHint="search" aria-label="Buscar produtos" placeholder="Buscar creatina, melatonina, coenzima Q10…" value={searchTerm || ''} onChange={event => onSearchChange?.(event.target.value)} />
+    </form>;
 
     return <>
         <div className="gh-top">

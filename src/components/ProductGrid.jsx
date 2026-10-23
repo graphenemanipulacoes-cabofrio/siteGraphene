@@ -1,28 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient.ts';
-import { ShoppingBag, Zap } from 'lucide-react';
+import { ShoppingBag, LayoutGrid, Dumbbell, Moon, Sparkles, Flame, HeartPulse, MessageCircle, ChevronDown } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { getWhatsAppUrl } from '../config';
 import { resolveProductImage } from '../utils/productImages';
 import { NATURAL_FLAVOR, flavorName, productOptions, requiresChoice, useFlavors, variantPrice } from '../utils/productOptions';
+import { GOALS, goalLabel, goalOf } from '../utils/productGoals';
 import { money } from '../utils/commerce';
+import '../styles/vitrine.css';
 
-const categories = ['Todos', 'Performance & Força', 'Longevidade & Saúde', 'Sono & Bem-Estar', 'Metabolismo & Queima', 'Beleza & Pele'];
-
-const getProductCategory = (name = '') => {
-    const n = name.toLowerCase();
-    const has = (...words) => words.some(w => n.includes(w));
-    if (has('termogênico', 'morosil', 'laranja moro', 'mitburn', 'berberina', 'cromo')) return 'Metabolismo & Queima';
-    if (has('creatina', 'whey', 'zinco', 'glutamina', 'cafeína', 'cafeina')) return 'Performance & Força';
-    if (has('melatonina', 'ashwagandha', 'sono', 'foco', 'passiflora', 'teanina', 'triptofano')) return 'Sono & Bem-Estar';
-    if (!has('tipo ii') && has('colágeno', 'colageno', 'biotina', 'niacinamida', 'minoxidil', 'azelaico', 'dexpantenol', 'ureia')) return 'Beleza & Pele';
-    return 'Longevidade & Saúde';
-};
-
+// Produtos de reserva caso o banco não responda.
 const defaultProducts = [
     {
         id: '12',
         name: 'Coenzima Q10 100mg',
-        category: 'Longevidade & Saúde',
         description: 'Coenzima Q10 100mg. Fundamental para a produção de energia celular e suporte à saúde cardíaca. Ação antioxidante. Contém 60 cápsulas.',
         price: null,
         image_url: '/assets/products/coenzima_q10.png'
@@ -30,7 +21,6 @@ const defaultProducts = [
     {
         id: '4',
         name: 'Composto Termogênico',
-        category: 'Metabolismo & Queima',
         description: 'Acelerador metabólico avançado. Mais energia e queima calórica eficiente.',
         price: null,
         image_url: '/assets/products/termogenico.png'
@@ -38,7 +28,6 @@ const defaultProducts = [
     {
         id: '15',
         name: 'Creatina Monohidratada 200g',
-        category: 'Performance & Força',
         description: 'Creatina Monohidratada 200g. Auxilia no aumento de força e massa muscular. Fórmula pura e sem sabor. Contém 200g (pó).',
         price: null,
         image_url: '/assets/products/creatina.png'
@@ -46,7 +35,6 @@ const defaultProducts = [
     {
         id: '9',
         name: 'Colágeno Verisol® 2.5g',
-        category: 'Longevidade & Saúde',
         description: 'Colágeno Verisol® 2.5g. Auxilia na manutenção da saúde da pele, contribuindo para a elasticidade e redução de rugas. Contém 30 sachês.',
         price: null,
         image_url: '/assets/products/colageno_verisol.png'
@@ -54,7 +42,6 @@ const defaultProducts = [
     {
         id: '3',
         name: 'Morosil® 500mg',
-        category: 'Metabolismo & Queima',
         description: 'Autêntico extrato da laranja moro. Potente na redução de medidas abdominais.',
         price: null,
         image_url: '/assets/products/morosil.png'
@@ -62,7 +49,6 @@ const defaultProducts = [
     {
         id: '1',
         name: 'Melatonina 5mg',
-        category: 'Sono & Bem-Estar',
         description: 'Sono reparador, rápido e combate à insônia. Regula o ritmo biológico natural.',
         price: null,
         image_url: '/assets/products/melatonina.png'
@@ -70,7 +56,6 @@ const defaultProducts = [
     {
         id: '5',
         name: 'Maca Peruana',
-        category: 'Longevidade & Saúde',
         description: 'Superalimento para vigor físico, libido e equilíbrio hormonal.',
         price: null,
         image_url: '/assets/products/maca_peruana.png'
@@ -78,7 +63,6 @@ const defaultProducts = [
     {
         id: '7',
         name: 'Vitamina D3 5000 UI',
-        category: 'Longevidade & Saúde',
         description: 'Vitamina D3 5000 UI. Auxilia na formação de ossos e dentes, na absorção de cálcio e fósforo e no funcionamento do sistema imune. Contém 60 cápsulas.',
         price: null,
         image_url: '/assets/products/vitamina_d3.png'
@@ -86,7 +70,6 @@ const defaultProducts = [
     {
         id: '6',
         name: 'Magnésio Dimalato 500mg',
-        category: 'Longevidade & Saúde',
         description: 'Magnésio Dimalato 500mg. Auxilia no funcionamento muscular e neuromuscular, metabolismo energético e formação de ossos e dentes. Contém 90 cápsulas.',
         price: null,
         image_url: '/assets/products/magnesio_dimalato.png'
@@ -94,7 +77,6 @@ const defaultProducts = [
     {
         id: '8',
         name: 'Cúrcuma (Curcumina 95%) 500mg',
-        category: 'Longevidade & Saúde',
         description: 'Cúrcuma 500mg (Curcumina 95%). Potente ação antioxidante e anti-inflamatória. Auxilia na proteção das células contra radicais livres. Contém 60 cápsulas.',
         price: null,
         image_url: '/assets/products/curcuma.png'
@@ -102,7 +84,6 @@ const defaultProducts = [
     {
         id: '10',
         name: 'Biotina 10000mcg',
-        category: 'Longevidade & Saúde',
         description: 'Biotina 10000mcg. Vitamina essencial para a manutenção da saúde da pele, cabelos e unhas. Contém 60 cápsulas.',
         price: null,
         image_url: '/assets/products/biotina.png'
@@ -110,7 +91,6 @@ const defaultProducts = [
     {
         id: '11',
         name: 'Resveratrol 250mg',
-        category: 'Longevidade & Saúde',
         description: 'Resveratrol 250mg (Trans-Resveratrol). Potente antioxidante que auxilia na saúde cardiovascular e combate o envelhecimento celular. Contém 60 cápsulas.',
         price: null,
         image_url: '/assets/products/resveratrol.png'
@@ -118,7 +98,6 @@ const defaultProducts = [
     {
         id: '14',
         name: 'Zinco Quelado 30mg',
-        category: 'Performance & Força',
         description: 'Zinco Quelado 30mg. Mineral essencial para o fortalecimento do sistema imune e processos de cicatrização. Alta biodisponibilidade. Contém 60 cápsulas.',
         price: null,
         image_url: '/assets/products/zinco_quelado.png'
@@ -126,7 +105,6 @@ const defaultProducts = [
     {
         id: '13',
         name: 'Ômega 3 (EPA/DHA) 1000mg',
-        category: 'Longevidade & Saúde',
         description: 'Ômega 3 1000mg. Óleo de peixe rico em EPA e DHA. Auxilia na saúde do coração, cérebro e controle dos níveis de colesterol. Contém 90 cápsulas.',
         price: null,
         image_url: '/assets/products/omega_3.png'
@@ -134,7 +112,6 @@ const defaultProducts = [
     {
         id: '2',
         name: 'Ashwagandha 300mg',
-        category: 'Sono & Bem-Estar',
         description: 'Adaptógeno natural. Reduz estresse, ansiedade e melhora o foco e disposição.',
         price: null,
         image_url: '/assets/products/ashwagandha.png'
@@ -149,10 +126,18 @@ const flavorColors = {
     coco: '#e7e5e4', menta: '#5eead4', 'tutti-frutti': '#f472b6',
 };
 
+const GOAL_ICONS = { todos: LayoutGrid, treino: Dumbbell, sono: Moon, pele: Sparkles, emagrecimento: Flame, saude: HeartPulse };
+const AVAILABLE_LIMIT = 8;
+const SOON_LIMIT = 6;
+
+const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
+
 const ProductGrid = ({ searchTerm = '' }) => {
-    const [activeTab, setActiveTab] = useState('Todos');
+    const [goal, setGoal] = useState('todos');
+    const [expanded, setExpanded] = useState({ available: false, soon: false });
     const [productsList, setProductsList] = useState(defaultProducts);
     const navigate = useNavigate();
+    const sectionRef = useRef(null);
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -164,17 +149,15 @@ const ProductGrid = ({ searchTerm = '' }) => {
                     .order('created_at', { ascending: true });
 
                 if (!error && data && data.length > 0) {
-                    const formatted = data.map((item, idx) => ({
+                    setProductsList(data.map((item, idx) => ({
                         id: String(item.id || idx),
-                        category: item.category || getProductCategory(item.name),
                         name: item.name,
-                        description: item.description,
+                        description: item.description || '',
                         price: item.price && parseFloat(item.price) > 0 ? parseFloat(item.price).toFixed(2).replace('.', ',') : null,
                         rawPrice: Number(item.price) || 0,
                         options: item.options || {},
                         image_url: resolveProductImage(item)
-                    }));
-                    setProductsList(formatted);
+                    })));
                 }
             } catch (err) {
                 console.error('Erro ao buscar produtos:', err);
@@ -184,19 +167,7 @@ const ProductGrid = ({ searchTerm = '' }) => {
         fetchProducts();
     }, []);
 
-    let filtered = activeTab === 'Todos'
-        ? productsList
-        : productsList.filter(c => c.category && c.category.toLowerCase().includes(activeTab.toLowerCase()));
-
-    if (searchTerm.trim()) {
-        const term = searchTerm.toLowerCase();
-        filtered = filtered.filter(p =>
-            p.name.toLowerCase().includes(term) ||
-            p.description.toLowerCase().includes(term)
-        );
-    }
-
-    // Quantidade e sabor escolhidos direto no cartão (obrigatórios quando o produto tem).
+    // Quantidade e sabor marcados no cartão seguem para a página do produto.
     const flavors = useFlavors();
     const [choices, setChoices] = useState({});
     const choiceOf = item => {
@@ -208,249 +179,124 @@ const ProductGrid = ({ searchTerm = '' }) => {
         const complete = (!options.hasSizes || size) && (!options.hasFlavors || flavor);
         return { options, flavorIds, size, flavor, complete, price: complete ? variantPrice({ ...item, price: item.rawPrice }, size, flavor) : null };
     };
-    const choose = (id, changes) => {
-        setChoices(current => ({ ...current, [id]: { ...current[id], ...changes } }));
-    };
-
-    // "Comprar" abre a página do produto, já com a escolha feita no cartão.
+    const choose = (id, changes) => setChoices(current => ({ ...current, [id]: { ...current[id], ...changes } }));
     const openProduct = item => {
         const selected = choiceOf(item);
         navigate(`/produto/${item.id}`, { state: { product: item, size: selected.size || null, flavor: selected.flavor || null } });
     };
 
+    const withGoal = productsList.map(item => ({ ...item, goal: goalOf(item) }));
+    const counts = Object.fromEntries(GOALS.map(item => [item.id, withGoal.filter(product => product.goal === item.id).length]));
+    const term = searchTerm.trim().toLowerCase();
+    const searching = term.length > 0;
+    const visible = withGoal.filter(item => (goal === 'todos' || item.goal === goal)
+        && (!searching || item.name.toLowerCase().includes(term) || item.description.toLowerCase().includes(term)));
+    const available = visible.filter(item => item.price);
+    const soon = visible.filter(item => !item.price);
+    const showAvailable = searching || expanded.available ? available : available.slice(0, AVAILABLE_LIMIT);
+    const showSoon = searching || expanded.soon ? soon : soon.slice(0, SOON_LIMIT);
+
+    const pickGoal = id => {
+        setGoal(id);
+        setExpanded({ available: false, soon: false });
+    };
+    const toggle = key => {
+        const closing = expanded[key];
+        setExpanded(current => ({ ...current, [key]: !current[key] }));
+        if (closing) sectionRef.current?.querySelector(`[data-part="${key}"]`)?.scrollIntoView({ block: 'start' });
+    };
+    const goalName = goal === 'todos' ? '' : goalLabel(goal);
+
     return (
-        <section id="produtos" className="store-section products-section">
+        <section id="produtos" className="store-section products-section vt" ref={sectionRef}>
             <div className="container">
-                <div className="store-section-header">
-                    <div className="store-badge">
-                        <ShoppingBag size={14} />
-                        <span>Produtos da Loja</span>
-                    </div>
-                    <h2>Nossos Produtos em <span className="highlight-blue">Destaque</span></h2>
-                    <p>Confira as informações e os preços de cada item. Para fórmulas individualizadas, envie sua prescrição para análise e orçamento da equipe farmacêutica.</p>
+                <div className="store-section-header vt-header">
+                    <div className="store-badge"><ShoppingBag size={14} /><span>Produtos da loja</span></div>
+                    <h2>O que você procura?</h2>
+                    <p>Escolha um objetivo para ver os produtos indicados. Para uma fórmula sob medida, <Link to="/receita">envie sua receita para orçamento</Link>.</p>
                 </div>
 
-                {/* Filter Pills com scroll horizontal suave no mobile */}
-                <div className="filter-bar-wrapper">
-                    <div className="filter-bar">
-                        {categories.map((cat) => (
-                            <button
-                                key={cat}
-                                className={`filter-pill ${activeTab === cat ? 'filter-pill--active' : ''}`}
-                                onClick={() => setActiveTab(cat)}
-                            >
-                                {cat}
-                            </button>
-                        ))}
-                    </div>
+                <div className="vt-goals" role="group" aria-label="Filtrar por objetivo">
+                    {[{ id: 'todos', label: 'Todos' }, ...GOALS].map(item => {
+                        const Icon = GOAL_ICONS[item.id];
+                        const total = item.id === 'todos' ? withGoal.length : counts[item.id];
+                        return <button key={item.id} type="button" className={`vt-goal${goal === item.id ? ' is-on' : ''}`} aria-pressed={goal === item.id} onClick={() => pickGoal(item.id)}>
+                            <span className="vt-goal-icon"><Icon size={20} aria-hidden="true" /></span>
+                            <span className="vt-goal-text"><strong>{item.label}</strong><small>{plural(total, 'produto', 'produtos')}</small></span>
+                        </button>;
+                    })}
                 </div>
 
-                {/* Grid */}
-                <div className="products-grid">
-                    {filtered.map((item) => (
-                        <div key={item.id} className="store-card product-card">
-                            <div className="product-img-box">
-                                <div className="product-img-inner">
-                                    <img
-                                        src={item.image_url}
-                                        alt={item.name}
-                                        className="product-img"
-                                        onError={(e) => { e.target.style.display = 'none'; }}
-                                    />
-                                </div>
-                            </div>
+                {searching && <p className="vt-search-note" role="status">{visible.length ? `${plural(visible.length, 'resultado', 'resultados')} para “${searchTerm.trim()}”${goalName ? ` em ${goalName}` : ''}.` : `Nenhum produto encontrado para “${searchTerm.trim()}”${goalName ? ` em ${goalName}` : ''}.`}</p>}
 
-                            <div className="product-info">
-                                <Link to={`/produto/${item.id}`} state={{ product: item }} className="product-name-link"><h3>{item.name}</h3></Link>
-                                <p>{item.description}</p>
-                            </div>
-
-                            {(() => {
+                {(available.length > 0 || !searching) && <div className="vt-part" data-part="available">
+                    <div className="vt-part-head">
+                        <h3>Disponíveis para comprar</h3>
+                        {available.length > 0 && <span>{plural(available.length, 'produto', 'produtos')}</span>}
+                    </div>
+                    {available.length === 0 ? <p className="vt-empty">{goalName ? `Ainda não há produtos de ${goalName.toLowerCase()} à venda no site.` : 'Ainda não há produtos à venda no site.'} {soon.length > 0 && 'Veja abaixo os que chegam em breve.'}</p> :
+                        <div className="vt-grid">
+                            {showAvailable.map(item => {
                                 const selected = choiceOf(item);
                                 const withChoice = requiresChoice(item);
-                                const sizeLabel = selected.options.availableSizes.length > 1 || selected.options.flavorPrice > 0;
-                                return <div className="product-footer">
-                                    {withChoice && item.price && <div className="product-chips">
-                                        {selected.options.hasSizes && <div className="product-chip-row" role="radiogroup" aria-label={`Quantidade de ${item.name}`}>
-                                            {selected.options.availableSizes.map(size => <button type="button" key={size.id} role="radio" aria-checked={selected.size === size.id} className={`product-chip${selected.size === size.id ? ' is-on' : ''}`} onClick={() => choose(item.id, { size: size.id })}>{size.label}</button>)}
+                                const fromLabel = withChoice && (selected.options.availableSizes.length > 1 || selected.options.flavorPrice > 0);
+                                return <article key={item.id} className="vt-card">
+                                    <Link to={`/produto/${item.id}`} state={{ product: item }} className="vt-card-photo" tabIndex={-1} aria-hidden="true">
+                                        <img src={item.image_url} alt="" loading="lazy" onError={event => { event.currentTarget.style.visibility = 'hidden'; }} />
+                                    </Link>
+                                    <div className="vt-card-body">
+                                        <Link to={`/produto/${item.id}`} state={{ product: item }} className="vt-card-name"><h4>{item.name}</h4></Link>
+                                        {item.description && <p className="vt-card-desc">{item.description}</p>}
+                                        {withChoice && <div className="vt-chips">
+                                            {selected.options.hasSizes && <div className="vt-chip-row" role="radiogroup" aria-label={`Quantidade de ${item.name}`}>
+                                                {selected.options.availableSizes.map(size => <button type="button" key={size.id} role="radio" aria-checked={selected.size === size.id} className={`vt-chip${selected.size === size.id ? ' is-on' : ''}`} onClick={() => choose(item.id, { size: size.id })}>{size.label}</button>)}
+                                            </div>}
+                                            {selected.options.hasFlavors && <div className="vt-chip-row" role="radiogroup" aria-label={`Sabor de ${item.name}`}>
+                                                {selected.flavorIds.map(id => <button type="button" key={id} role="radio" aria-checked={selected.flavor === id} className={`vt-chip${selected.flavor === id ? ' is-on' : ''}`} onClick={() => choose(item.id, { flavor: id })}>
+                                                    <i style={{ background: flavorColors[id] || '#94a3b8' }} aria-hidden="true" />{id === NATURAL_FLAVOR ? 'Natural' : flavorName(flavors, id)}
+                                                </button>)}
+                                            </div>}
                                         </div>}
-                                        {selected.options.hasFlavors && <div className="product-chip-row" role="radiogroup" aria-label={`Sabor de ${item.name}`}>
-                                            {selected.flavorIds.map(id => <button type="button" key={id} role="radio" aria-checked={selected.flavor === id} className={`product-chip product-chip--flavor${selected.flavor === id ? ' is-on' : ''}`} onClick={() => choose(item.id, { flavor: id })}>
-                                                <i style={{ background: flavorColors[id] || '#94a3b8' }} aria-hidden="true" />{id === NATURAL_FLAVOR ? 'Natural' : flavorName(flavors, id)}
-                                            </button>)}
-                                        </div>}
-                                    </div>}
-                                    <div className="product-price-row">
-                                        <div className="product-price">
-                                            {!item.price ? <span className="price-small">Preço não informado</span>
-                                                : selected.price ? <><span className="price-small">Preço por unidade</span><strong>{money(selected.price)}</strong></>
-                                                    : <><span className="price-small">{withChoice && sizeLabel ? 'A partir de' : 'Preço por unidade'}</span><strong>R$ {item.price}</strong></>}
+                                        <div className="vt-card-buy">
+                                            <p className="vt-price">
+                                                <small>{selected.price ? 'Preço' : fromLabel ? 'A partir de' : 'Preço'}</small>
+                                                <strong>{selected.price ? money(selected.price) : `R$ ${item.price}`}</strong>
+                                            </p>
+                                            <button type="button" className="vt-buy" onClick={() => openProduct(item)} aria-label={`Comprar ${item.name}`}><ShoppingBag size={16} aria-hidden="true" /><span>Comprar</span></button>
                                         </div>
                                     </div>
-                                    {item.price ? <div className="product-card-actions product-card-actions--single">
-                                        <button onClick={() => openProduct(item)} className="btn-buy-now"><ShoppingBag size={16} /><span>Comprar</span></button>
-                                    </div> : <div className="product-card-actions product-card-actions--single">
-                                        <button disabled className="btn-buy-now"><Zap size={16} /><span>Em breve</span></button>
-                                    </div>}
-                                </div>;
-                            })()}
+                                </article>;
+                            })}
+                        </div>}
+                    {!searching && available.length > AVAILABLE_LIMIT && <button type="button" className="vt-more" onClick={() => toggle('available')} aria-expanded={expanded.available}>
+                        {expanded.available ? 'Mostrar menos' : `Ver todos os ${available.length} produtos`}<ChevronDown size={17} aria-hidden="true" />
+                    </button>}
+                </div>}
+
+                {soon.length > 0 && <div className="vt-part vt-soon" data-part="soon">
+                    <div className="vt-part-head">
+                        <div>
+                            <h3>Em breve no site</h3>
+                            <p>Ainda sem venda pelo site. Quer algum deles agora? Peça pelo WhatsApp.</p>
                         </div>
-                    ))}
-                </div>
-
-                {filtered.length === 0 && (
-                    <p style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-                        Nenhum produto encontrado para "{searchTerm || activeTab}".
-                    </p>
-                )}
+                        <span>{plural(soon.length, 'produto', 'produtos')}</span>
+                    </div>
+                    <ul className="vt-soon-list">
+                        {showSoon.map(item => <li key={item.id} className="vt-soon-item">
+                            <Link to={`/produto/${item.id}`} state={{ product: item }} className="vt-soon-link">
+                                <span className="vt-soon-photo"><img src={item.image_url} alt="" loading="lazy" onError={event => { event.currentTarget.style.visibility = 'hidden'; }} /></span>
+                                <span className="vt-soon-text"><strong>{item.name}</strong><small>{goalLabel(item.goal)}</small></span>
+                            </Link>
+                            <a className="vt-soon-wa" href={getWhatsAppUrl(`Olá! Tenho interesse em ${item.name}. Vocês têm disponível?`)} target="_blank" rel="noopener noreferrer" aria-label={`Pedir ${item.name} pelo WhatsApp`}>
+                                <MessageCircle size={17} aria-hidden="true" /><span>Pedir</span>
+                            </a>
+                        </li>)}
+                    </ul>
+                    {!searching && soon.length > SOON_LIMIT && <button type="button" className="vt-more" onClick={() => toggle('soon')} aria-expanded={expanded.soon}>
+                        {expanded.soon ? 'Mostrar menos' : `Ver mais ${soon.length - SOON_LIMIT} produtos em breve`}<ChevronDown size={17} aria-hidden="true" />
+                    </button>}
+                </div>}
             </div>
-
-            <style>{`
-                .filter-bar-wrapper {
-                    width: 100%;
-                    overflow-x: auto;
-                    -webkit-overflow-scrolling: touch;
-                    scrollbar-width: none;
-                    margin-bottom: 36px;
-                }
-                .filter-bar-wrapper::-webkit-scrollbar { display: none; }
-
-                .filter-bar {
-                    display: flex;
-                    flex-wrap: wrap;
-                    justify-content: center;
-                    gap: 8px;
-                    min-width: min-content;
-                }
-
-                .filter-pill {
-                    background: rgba(255,255,255,0.04);
-                    border: 1px solid var(--border-subtle);
-                    color: var(--text-dim);
-                    padding: 8px 18px;
-                    border-radius: var(--radius-full);
-                    font-size: 0.84rem;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: var(--transition);
-                    white-space: nowrap;
-                }
-                .filter-pill:hover { border-color: var(--brand-blue); color: #fff; }
-                .filter-pill--active {
-                    background: var(--brand-blue);
-                    border-color: var(--brand-blue);
-                    color: #07090e !important;
-                    font-weight: 700;
-                }
-
-                .products-grid {
-                    display: grid;
-                    grid-template-columns: repeat(3, 1fr);
-                    gap: 22px;
-                }
-
-                .product-card {
-                    display: flex;
-                    flex-direction: column;
-                    overflow: hidden;
-                    position: relative;
-                }
-                
-                .product-img-box {
-                    position: relative;
-                    height: 255px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 8px 12px;
-                    background: #ffffff;
-                    border-bottom: 1px solid var(--border-subtle);
-                }
-
-                .product-img-inner {
-                    width: 100%;
-                    height: 100%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                .product-img {
-                    max-width: 100%;
-                    max-height: 100%;
-                    width: auto;
-                    height: auto;
-                    object-fit: contain;
-                    display: block;
-                }
-
-                .product-info {
-                    flex: 1;
-                    padding: 18px 20px 12px;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 6px;
-                }
-                .product-info h3 { font-size: 1.05rem; font-weight: 700; }
-                .product-name-link:hover h3 { color: var(--brand-blue); }
-                .product-info p { font-size: 0.84rem; color: var(--text-dim); line-height: 1.5; margin: 0; }
-
-                .product-footer {
-                    display: flex;
-                    flex-direction: column;
-                    padding: 16px 20px 18px;
-                    border-top: 1px solid var(--border-subtle);
-                    gap: 14px;
-                }
-                .product-price-row { display:flex; align-items:flex-end; min-height:27px; }
-                .product-price { display: flex; flex-direction: column; }
-                .price-small { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
-                .product-price strong { font-size: 1.15rem; font-family: var(--font-heading); }
-
-                .product-card-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
-                .product-card-actions--single { grid-template-columns:1fr; }
-                .product-chips { display:grid; gap:7px; }
-                .product-chip-row { display:flex; flex-wrap:wrap; gap:5px; }
-                .product-chip { display:inline-flex; align-items:center; gap:5px; min-height:28px; padding:3px 10px; border-radius:999px; border:1px solid var(--border-subtle); background:transparent; color:var(--text-dim); font:inherit; font-size:.72rem; font-weight:600; line-height:1; cursor:pointer; transition:border-color .15s, background .15s, color .15s; }
-                .product-chip:hover { border-color:var(--border-blue); color:var(--text-main); }
-                .product-chip.is-on { border-color:var(--brand-blue); background:rgba(34,199,232,.14); color:#fff; }
-                .product-chip:focus-visible { outline:2px solid var(--brand-blue); outline-offset:1px; }
-                .product-chip i { width:8px; height:8px; border-radius:50%; flex:none; box-shadow:0 0 0 1px rgba(255,255,255,.18); }
-                .product-option-error { margin:0; font-size:.74rem; font-weight:600; color:#fb923c; }
-                .product-card-actions button:disabled { opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
-                .btn-add-cart, .btn-buy-now { min-height:44px; display:flex; align-items:center; justify-content:center; gap:7px; border-radius:9px; font-size:.78rem; font-weight:800; transition:var(--transition); cursor:pointer; }
-                .btn-add-cart { background:rgba(34,199,232,.07); color:var(--brand-blue); border:1px solid var(--border-blue); }
-                .btn-add-cart:hover { color:var(--brand-blue-light); border-color:var(--brand-blue); background:rgba(34,199,232,.14); transform:translateY(-1px); }
-                .btn-buy-now { background:var(--brand-green); color:var(--action-ink); border:1px solid var(--brand-green); box-shadow:var(--shadow-btn-green); }
-                .btn-buy-now:hover { background:var(--brand-green-hover); border-color:var(--brand-green-hover); transform:translateY(-1px); }
-
-                @media (max-width: 960px) {
-                    .products-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
-                }
-
-                @media (max-width: 640px) {
-                    .filter-bar {
-                        flex-wrap: nowrap;
-                        justify-content: flex-start;
-                        padding: 0 4px;
-                    }
-                    .products-grid {
-                        grid-template-columns: 1fr;
-                        gap: 16px;
-                    }
-                    .product-img-box {
-                        height: 200px;
-                        padding: 12px;
-                    }
-                    .product-info {
-                        padding: 14px 16px 10px;
-                    }
-                    .product-footer {
-                        padding: 12px 16px;
-                    }
-                    .product-footer { padding:14px 16px 16px; }
-                }
-            `}</style>
         </section>
     );
 };

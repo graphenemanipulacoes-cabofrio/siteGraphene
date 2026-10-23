@@ -200,3 +200,17 @@
 }
 @media (prefers-reduced-motion:reduce){.free-ship-bar span,.purchase-details summary svg{transition:none}}
 @media(max-width:700px){.purchase-heading{flex-wrap:wrap}.purchase-heading>span{white-space:normal}}
+
+/* Veja também (página do produto) */
+.purchase-related{margin-top:64px;padding-top:28px;border-top:1px solid var(--purchase-line)}
+.purchase-related h2{font-size:1.25rem!important;margin-bottom:18px!important}
+.purchase-related ul{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0;padding:0;list-style:none}
+.purchase-related a{display:flex;flex-direction:column;gap:8px;height:100%;padding:12px 12px 14px;background:#fff;border:1px solid var(--purchase-line);border-radius:12px;transition:border-color .2s,box-shadow .2s}
+.purchase-related a:hover{border-color:#9fc4c0;box-shadow:0 8px 20px #182c3310}
+.purchase-related a:focus-visible{outline:2px solid var(--purchase-green);outline-offset:2px}
+.purchase-related-photo{display:grid;place-items:center;aspect-ratio:1/.8;background:#fff;border-radius:8px;margin-bottom:4px}
+.purchase-related-photo img{width:82%;height:82%;object-fit:contain}
+.purchase-related strong{font-size:.88rem;line-height:1.35;font-weight:650}
+.purchase-related small{margin-top:auto;font-size:.8rem;color:var(--purchase-muted)}
+.purchase-related small b{font-size:.95rem;color:var(--purchase-ink)}
+@media(max-width:860px){.purchase-related ul{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.purchase-related{margin-top:44px}}

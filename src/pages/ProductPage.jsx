@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { supabase } from '../lib/supabaseClient';
 import StoreLayout from '../components/StoreLayout';
 import { ShippingEstimator } from '../components/ShippingEstimator';
+import RelatedProducts from '../components/RelatedProducts';
 import { useStore } from '../context/StoreContext';
 import { money } from '../utils/commerce';
 import { resolveProductImage } from '../utils/productImages';
@@ -147,6 +148,7 @@ export default function ProductPage() {
                     </div>
                 </div>
             </div>}
+        {product && <RelatedProducts product={product} />}
     </div>
         {product && purchasable && <div className="purchase-sticky" aria-hidden={false}>
             <div><small>{price ? `${units}× ${sizeLabel || ''}${flavor ? ` · ${flavorName(catalog, flavor)}` : ''}` : 'A partir de'}</small><strong>{price ? money(price * units) : money(lowest)}</strong></div>
