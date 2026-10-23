@@ -38,17 +38,19 @@ export class CheckoutError extends Error {
 
 const connectionFailure = error => ['FunctionsFetchError', 'FunctionsRelayError', 'AuthRetryableFetchError', 'TypeError'].includes(error?.name);
 
-async function currentSession() {
+async function currentSession(expectedUserId) {
     try {
         const { data, error } = await supabase.auth.getSession();
         if (error) throw new CheckoutError(connectionFailure(error) ? 'network_error' : 'authentication_required');
         let session = data?.session;
         if (!session?.access_token) throw new CheckoutError('authentication_required', 401);
+        if (expectedUserId && session.user?.id !== expectedUserId) throw new CheckoutError('authentication_required', 401);
         if (session.expires_at && session.expires_at * 1000 - Date.now() < 60_000) {
             const refreshed = await supabase.auth.refreshSession();
             if (refreshed.error) throw new CheckoutError(connectionFailure(refreshed.error) ? 'network_error' : 'authentication_required');
             session = refreshed.data?.session;
             if (!session?.access_token) throw new CheckoutError('authentication_required', 401);
+            if (expectedUserId && session.user?.id !== expectedUserId) throw new CheckoutError('authentication_required', 401);
         }
         return session;
     } catch (error) {
@@ -80,9 +82,9 @@ async function invocationFailure(data, error) {
 
 // One request per attempt. The caller owns checkoutKey and must retain it on retry.
 // This helper does not clear the cart, sign out, generate keys or retry a payment.
-export async function prepareCheckout(body) {
+export async function prepareCheckout(body, { expectedUserId } = {}) {
     if (!uuidPattern.test(body?.checkoutKey || '')) throw new CheckoutError('invalid_cart', 400);
-    const session = await currentSession();
+    const session = await currentSession(expectedUserId);
     let result;
     try {
         result = await supabase.functions.invoke('create-checkout', {

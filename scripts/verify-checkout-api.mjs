@@ -5,6 +5,8 @@ import { createContext, SourceTextModule, SyntheticModule } from 'node:vm';
 
 const orderId = '12345678-1234-4234-8234-123456789abc';
 const checkoutKey = '87654321-4321-4321-8321-cba987654321';
+const customerId = 'abcdef12-1234-4234-8234-123456789abc';
+const otherCustomerId = 'bbbbbbbb-1234-4234-8234-123456789abc';
 const valid = { orderId, paymentUrl: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=mock' };
 const body = { checkoutKey, items: [{ productId: '1', quantity: 1 }] };
 const calls = [];
@@ -27,8 +29,8 @@ const { prepareCheckout, CheckoutError } = source.namespace;
 const reset = () => {
     calls.length = 0;
     state = {
-        session: { data: { session: { access_token: 'mock-user-token', expires_at: Math.floor(Date.now() / 1000) + 3600 } }, error: null },
-        refresh: { data: { session: { access_token: 'mock-refreshed-token', expires_at: Math.floor(Date.now() / 1000) + 3600 } }, error: null },
+        session: { data: { session: { access_token: 'mock-user-token', user: { id: customerId }, expires_at: Math.floor(Date.now() / 1000) + 3600 } }, error: null },
+        refresh: { data: { session: { access_token: 'mock-refreshed-token', user: { id: customerId }, expires_at: Math.floor(Date.now() / 1000) + 3600 } }, error: null },
         result: { data: valid, error: null },
     };
 };
@@ -75,5 +77,16 @@ for (const paymentUrl of ['http://www.mercadopago.com.br/pay', 'https://mercadop
 }
 reset(); state.result = { data: { ...valid, orderId: 'secret' }, error: null }; await rejects('invalid_payment_response');
 reset(); await assert.rejects(prepareCheckout({}), error => error.code === 'invalid_cart'); assert.equal(calls.length, 0);
+
+reset(); await prepareCheckout(body, { expectedUserId: customerId });
+assert.equal(calls.filter(call => typeof call === 'object').length, 1);
+reset(); state.session.data.session.user.id = otherCustomerId;
+await assert.rejects(prepareCheckout(body, { expectedUserId: customerId }), error => error.code === 'authentication_required');
+assert.equal(calls.filter(call => typeof call === 'object').length, 0, 'A different signed-in account must not receive the previous customer form');
+assert.ok(!calls.includes('refreshSession'));
+reset(); state.session.data.session.expires_at = 1; state.refresh.data.session.user.id = otherCustomerId;
+await assert.rejects(prepareCheckout(body, { expectedUserId: customerId }), error => error.code === 'authentication_required');
+assert.equal(calls.filter(call => typeof call === 'object').length, 0, 'Refresh cannot switch the checkout owner');
+assert.equal(calls.filter(call => call === 'refreshSession').length, 1);
 
 console.log('Checkout API: refresh, safe errors, stable checkout key, single invocation and Mercado Pago URL validation passed (mocked).');

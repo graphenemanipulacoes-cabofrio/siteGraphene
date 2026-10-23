@@ -93,7 +93,7 @@ function CustomerCheckout() {
             }
             if (attempt.current?.fingerprint !== fingerprint || !/^[0-9a-f-]{36}$/i.test(attempt.current?.key || '')) attempt.current = { fingerprint, key: crypto.randomUUID() };
             try { sessionStorage.setItem(attemptStorageKey, JSON.stringify(attempt.current)); } catch { /* Retained in memory until navigation. */ }
-            const data = await prepareCheckout({ ...body, checkoutKey: attempt.current.key });
+            const data = await prepareCheckout({ ...body, checkoutKey: attempt.current.key }, { expectedUserId: customer.id });
             // Read the actual order through the customer's RLS-protected access.
             const { data: order, error: orderError } = await supabase.from('orders')
                 .select('id,subtotal,discount_amount,discount_code,shipping_amount,shipping_address,total,order_items(product_id,product_name,unit_price,quantity,variant)')

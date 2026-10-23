@@ -8,6 +8,11 @@ import { money } from '../utils/commerce';
 import '../styles/purchase.css';
 
 export default function PaymentReturnPage() {
+    const { customer } = useStore();
+    return <CustomerPaymentReturn key={customer?.id || 'guest'} />;
+}
+
+function CustomerPaymentReturn() {
     const [params] = useSearchParams();
     const { customer, settleCart } = useStore();
     const [order, setOrder] = useState(null);
