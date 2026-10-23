@@ -7,6 +7,7 @@ import { useStore } from '../context/StoreContext';
 import { supabase } from '../lib/supabaseClient';
 import { money, validCpf } from '../utils/commerce';
 import { isAdminPreview } from '../utils/adminPreview';
+import { variantText } from '../utils/productOptions';
 import '../styles/purchase.css';
 
 const messages = {
@@ -15,6 +16,7 @@ const messages = {
     invalid_cart: 'Revise as quantidades no carrinho. O limite é de 20 unidades por produto.',
     invalid_shipping: 'Confira os dados de entrega.',
     invalid_or_unpriced_product: 'Um dos produtos não tem preço para compra. Revise o carrinho.',
+    invalid_variant: 'Um produto do carrinho precisa da escolha de quantidade ou sabor. Remova-o e adicione de novo pela página do produto.',
     unable_to_create_order: 'Não foi possível validar o pedido. Revise os produtos e tente novamente.',
     invalid_coupon: 'Este cupom não está disponível. Confira o código ou continue sem ele.',
     coupon_minimum_not_reached: 'O valor mínimo para usar este cupom não foi atingido.',
@@ -62,7 +64,7 @@ export default function CheckoutPage() {
             }
             if (sessionError || !session?.access_token) throw new Error(messages.authentication_required);
             const body = {
-                items: cart.map(item => ({ productId: item.id, quantity: item.quantity })),
+                items: cart.map(item => ({ productId: item.id, quantity: item.quantity, size: item.size || undefined, flavor: item.flavor || undefined })),
                 shipping: { ...form, cpf: undefined, address: `${form.address.trim()}, ${form.neighborhood.trim()} — ${form.city.trim()}/${form.state}` },
                 payerDocument: form.cpf.replace(/\D/g, ''), couponCode: couponCode.trim().toUpperCase(),
             };
@@ -136,7 +138,7 @@ export default function CheckoutPage() {
                 </form>}
             </div>
             <aside className="purchase-card purchase-summary"><div className="purchase-section-title"><h2>Resumo do pedido</h2><Link to="/carrinho" className="purchase-text-link">Editar</Link></div>
-                <div className="purchase-mini-items">{summaryItems.map(item => <div className="purchase-mini-item" key={item.id}><span><strong>{item.name}</strong><small>{item.quantity} × {money(item.price)}</small></span><b>{money(item.quantity * item.price)}</b></div>)}</div>
+                <div className="purchase-mini-items">{summaryItems.map((item, index) => <div className="purchase-mini-item" key={item.key || `${item.id}-${index}`}><span><strong>{item.name}</strong>{item.key && variantText(item) && <small>{variantText(item)}</small>}<small>{item.quantity} × {money(item.price)}</small></span><b>{money(item.quantity * item.price)}</b></div>)}</div>
                 <div className="purchase-amount"><span>Produtos</span><strong>{money(review?.subtotal ?? subtotal)}</strong></div>
                 {review && <><div className="purchase-amount"><span>Entrega</span><strong>{money(review.shipping_amount)}</strong></div>{Number(review.discount_amount) > 0 && <div className="purchase-amount purchase-discount"><span>Cupom {review.discount_code}</span><strong>− {money(review.discount_amount)}</strong></div>}</>}
                 <div className="purchase-amount purchase-total"><span>{review ? 'Total do pedido' : 'Subtotal'}</span><strong>{money(amount)}</strong></div>

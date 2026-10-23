@@ -33,7 +33,9 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const checkoutKey = clean(body.checkoutKey, 36);
     const couponCode = clean(body.couponCode, 40).toUpperCase();
-    const items = Array.isArray(body.items) ? body.items.map((item: Record<string, unknown>) => ({ product_id: Number(item.productId), quantity: Number(item.quantity) })) : [];
+    // Quantidade (apresentação) e sabor escolhidos; o preço vem sempre do cadastro, no banco.
+    const variantId = (value: unknown) => /^[a-z0-9-]{1,40}$/.test(String(value ?? '')) ? String(value) : null;
+    const items = Array.isArray(body.items) ? body.items.map((item: Record<string, unknown>) => ({ product_id: Number(item.productId), quantity: Number(item.quantity), size: variantId(item.size), flavor: variantId(item.flavor) })) : [];
     if (!uuidPattern.test(checkoutKey) || !items.length || items.length > 50 || items.some(item => !Number.isSafeInteger(item.product_id) || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 20)) return json({ error: 'invalid_cart' }, 400, origin);
 
     const shipping = {
@@ -45,13 +47,16 @@ Deno.serve(async (req: Request) => {
     if (customerDocument.length !== 11) return json({ error: 'invalid_document' }, 400, origin);
 
     const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false, autoRefreshToken: false } });
-    const { data: order, error: orderError } = await admin.rpc('create_checkout_order', {
+    // Transição: o site antigo ainda não manda quantidade/sabor e usa o cálculo antigo.
+    // Retirar quando o site com as variações estiver no ar.
+    const withVariants = items.some((item: { size: string | null; flavor: string | null }) => item.size || item.flavor);
+    const { data: order, error: orderError } = await admin.rpc(withVariants ? 'create_checkout_order_v2' : 'create_checkout_order', {
       p_customer_id: user.id, p_customer_email: user.email, p_checkout_key: checkoutKey, p_items: items, p_shipping_address: shipping,
       p_coupon_code: couponCode || null,
     });
     if (orderError || !order) {
       const reason = String(orderError?.message || '');
-      const knownError = ['invalid_cart', 'invalid_shipping_address', 'invalid_or_unpriced_product', 'invalid_coupon', 'coupon_minimum_not_reached']
+      const knownError = ['invalid_cart', 'invalid_shipping_address', 'invalid_or_unpriced_product', 'invalid_variant', 'invalid_coupon', 'coupon_minimum_not_reached']
         .find(code => reason.includes(code));
       console.error('checkout_order_failed', { code: orderError?.code, reason: knownError || 'database_error' });
       return json({ error: knownError || 'unable_to_create_order' }, 422, origin);

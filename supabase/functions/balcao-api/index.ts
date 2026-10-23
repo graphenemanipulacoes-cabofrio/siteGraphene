@@ -4,15 +4,45 @@ import { adminUsernamePattern, hashPassword, hashToken, newToken, normalizeUsern
 
 const text = (value: unknown, limit = 120) => typeof value === 'string' ? value.trim().slice(0, limit) : '';
 const accountFields = 'id,username,display_name,role,is_active,created_at,updated_at';
-const orderFields = 'id,customer_email,customer_document,shipping_address,subtotal,shipping_amount,total,discount_code,discount_amount,status,payment_status,payment_reference,payment_method,paid_at,carrier,tracking_code,invoice_number,invoice_url,admin_notes,shipped_at,delivered_at,created_at,updated_at,order_items(id,product_id,product_name,unit_price,quantity)';
+const orderFields = 'id,customer_email,customer_document,shipping_address,subtotal,shipping_amount,total,discount_code,discount_amount,status,payment_status,payment_reference,payment_method,paid_at,carrier,tracking_code,invoice_number,invoice_url,admin_notes,shipped_at,delivered_at,created_at,updated_at,order_items(id,product_id,product_name,unit_price,quantity,variant)';
 const requestFields = 'id,created_at,nome_cliente,whatsapp,status,observacoes';
 const adminActions = new Set(['list_accounts', 'save_account', 'revoke_account', 'delete_account']);
 const counterActions = new Set(['session', 'logout', 'summary', 'list_orders', 'order_detail', 'list_requests', 'request_detail']);
 // Cadastro de produtos: só contas do tipo farmacêutico (e administradores).
-const productActions = new Set(['products_list', 'product_save', 'product_delete', 'products_reorder', 'product_image_upload']);
+const productActions = new Set(['products_list', 'product_save', 'product_delete', 'products_reorder', 'product_image_upload', 'flavor_save', 'flavor_delete']);
 const roles = new Set(['balcao', 'farmaceutico']);
 const productImageTypes: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
 const productImagePattern = /^(?:https:\/\/\S+|\/assets\/products\/[a-z0-9_-]+\.(?:png|jpe?g|webp))$/;
+// Quantidades e sabores do produto (migração 202610230001). O preço de cada
+// quantidade fica aqui; o pedido é calculado no banco a partir deste cadastro.
+const slugify = (value: string) => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+const moneyValue = (value: unknown) => {
+  if (value === '' || value === null || value === undefined) return null;
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount >= 0 && amount <= 1_000_000 ? Math.round(amount * 100) / 100 : NaN;
+};
+type ProductOptions = { sizes: { id: string; label: string; price: number | null }[]; flavors: string[]; natural: boolean; flavor_price: number };
+function cleanOptions(raw: unknown, flavorIds: Set<string>): ProductOptions | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const input = raw as Record<string, unknown>;
+  const sizesIn = Array.isArray(input.sizes) ? input.sizes : [];
+  if (sizesIn.length > 12) return null;
+  const sizes: ProductOptions['sizes'] = [];
+  for (const item of sizesIn) {
+    if (!item || typeof item !== 'object') return null;
+    const label = text((item as Record<string, unknown>).label, 40);
+    const id = slugify(label);
+    const price = moneyValue((item as Record<string, unknown>).price);
+    if (!label || id.length < 1 || sizes.some(size => size.id === id) || Number.isNaN(price)) return null;
+    sizes.push({ id, label, price: price && price > 0 ? price : null });
+  }
+  const flavorsIn = Array.isArray(input.flavors) ? input.flavors : [];
+  if (flavorsIn.length > 60) return null;
+  const flavors = [...new Set(flavorsIn.filter((flavor): flavor is string => typeof flavor === 'string' && flavorIds.has(flavor)))];
+  const flavorPrice = moneyValue(input.flavor_price);
+  if (Number.isNaN(flavorPrice)) return null;
+  return { sizes, flavors, natural: input.natural === true, flavor_price: flavorPrice || 0 };
+}
 // Administradores entram em qualquer área da equipe com o login do painel admin.
 // O token é o mesmo formato do painel (43 caracteres); o da equipe tem 64.
 const adminTokenPattern = /^[A-Za-z0-9_-]{43}$/;
@@ -159,6 +189,31 @@ Deno.serve(async (req: Request) => {
         }
         return json({ ok: true }, 200, origin);
       }
+      // Catálogo de sabores: vale para todos os produtos; cada produto ativa os seus.
+      if (action === 'flavor_save') {
+        const name = text(body.name, 40);
+        const id = slugify(name);
+        if (!name || id.length < 2 || id === 'natural') return json({ error: 'invalid_flavor' }, 400, origin);
+        const { data: last } = await admin.from('sabores').select('display_order').order('display_order', { ascending: false }).limit(1).maybeSingle();
+        const { data, error } = await admin.from('sabores').insert({ id, name, display_order: Number(last?.display_order ?? -1) + 1 }).select('id,name,display_order').single();
+        if (error) return json({ error: error.code === '23505' ? 'flavor_exists' : 'unable_to_save_flavor' }, error.code === '23505' ? 409 : 500, origin);
+        return json({ flavor: data }, 200, origin);
+      }
+      if (action === 'flavor_delete') {
+        const id = text(body.id, 40);
+        if (!/^[a-z0-9-]{2,40}$/.test(id)) return json({ error: 'invalid_flavor' }, 400, origin);
+        // Tira o sabor de todos os produtos antes de apagar do catálogo.
+        const { data: withFlavor, error: listError } = await admin.from('produtos').select('id,options').contains('options', { flavors: [id] });
+        if (listError) return json({ error: 'unable_to_save_flavor' }, 500, origin);
+        for (const product of withFlavor || []) {
+          const options = { ...(product.options || {}), flavors: (product.options?.flavors || []).filter((flavor: string) => flavor !== id) };
+          const { error } = await admin.from('produtos').update({ options }).eq('id', product.id);
+          if (error) return json({ error: 'unable_to_save_flavor' }, 500, origin);
+        }
+        const { error } = await admin.from('sabores').delete().eq('id', id);
+        if (error) return json({ error: 'unable_to_save_flavor' }, 500, origin);
+        return json({ ok: true, products: (withFlavor || []).length }, 200, origin);
+      }
       const productId = body.id === null || body.id === undefined || body.id === '' ? null : Number(body.id);
       if (productId !== null && (!Number.isSafeInteger(productId) || productId < 1)) return json({ error: 'invalid_product' }, 400, origin);
       if (action === 'product_delete') {
@@ -173,6 +228,18 @@ Deno.serve(async (req: Request) => {
       const price = body.price === '' || body.price === null || body.price === undefined ? 0 : Number(body.price);
       if (!name || !Number.isFinite(price) || price < 0 || price > 1_000_000 || (imageUrl && !productImagePattern.test(imageUrl))) return json({ error: 'invalid_product' }, 400, origin);
       const values: Record<string, unknown> = { name, description, image_url: imageUrl, price: Math.round(price * 100) / 100 };
+      if (body.options !== undefined) {
+        const { data: catalog, error: catalogError } = await admin.from('sabores').select('id');
+        if (catalogError) return json({ error: 'unable_to_save_product' }, 500, origin);
+        const options = cleanOptions(body.options, new Set((catalog || []).map(flavor => flavor.id)));
+        if (!options) return json({ error: 'invalid_product' }, 400, origin);
+        values.options = options;
+        // Com quantidades, o preço da vitrine é o menor preço preenchido ("a partir de").
+        if (options.sizes.length) {
+          const prices = options.sizes.map(size => size.price).filter((value): value is number => Boolean(value));
+          values.price = prices.length ? Math.min(...prices) : 0;
+        }
+      }
       if (productId === null) {
         // Produto novo entra no fim da vitrine.
         const { data: last } = await admin.from('produtos').select('display_order').order('display_order', { ascending: false, nullsFirst: false }).limit(1).maybeSingle();

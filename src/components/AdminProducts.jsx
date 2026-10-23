@@ -20,6 +20,19 @@ import {
 import SortableProductCard from './SortableProductCard';
 import { adminProductsApi } from '../lib/productsApi';
 import { resolveProductImage } from '../utils/productImages';
+import { loadFlavors } from '../utils/productOptions';
+import ProductOptionsEditor from './ProductOptionsEditor';
+
+const emptyOptions = { sizes: [], flavors: [], natural: false, flavorPrice: '' };
+const optionsFromProduct = product => {
+    const raw = product?.options || {};
+    return {
+        sizes: (Array.isArray(raw.sizes) ? raw.sizes : []).map(size => ({ label: size.label || '', price: size.price ?? '' })),
+        flavors: Array.isArray(raw.flavors) ? raw.flavors : [],
+        natural: raw.natural === true,
+        flavorPrice: Number(raw.flavor_price) > 0 ? raw.flavor_price : '',
+    };
+};
 
 // `api` define o caminho até o servidor: admin (padrão) ou farmacêutico.
 const AdminProducts = ({ api = adminProductsApi }) => {
@@ -36,6 +49,8 @@ const AdminProducts = ({ api = adminProductsApi }) => {
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [options, setOptions] = useState(emptyOptions);
+    const [catalog, setCatalog] = useState([]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -50,7 +65,27 @@ const AdminProducts = ({ api = adminProductsApi }) => {
 
     useEffect(() => {
         fetchProducts();
+        loadFlavors(true).then(setCatalog).catch(() => toast.error('Não foi possível carregar a lista de sabores.'));
     }, []);
+
+    // Catálogo de sabores: vale para todos os produtos.
+    const handleAddFlavor = async name => {
+        try {
+            const flavor = await api.addFlavor(name);
+            setCatalog(current => [...current, flavor]);
+            toast.success(`Sabor "${flavor.name}" incluído na lista.`);
+            return flavor;
+        } catch (error) { toast.error(error.message); return null; }
+    };
+    const handleRemoveFlavor = async id => {
+        try {
+            await api.removeFlavor(id);
+            setCatalog(current => current.filter(flavor => flavor.id !== id));
+            setProducts(current => current.map(product => ({ ...product, options: { ...(product.options || {}), flavors: (product.options?.flavors || []).filter(flavor => flavor !== id) } })));
+            toast.success('Sabor excluído de todos os produtos.');
+            return true;
+        } catch (error) { toast.error(error.message); return false; }
+    };
 
     const fetchProducts = async () => {
         try {
@@ -111,11 +146,13 @@ const AdminProducts = ({ api = adminProductsApi }) => {
             setDescription(product.description || '');
             setPrice(product.price || '');
             setImagePreview(product.image_url);
+            setOptions(optionsFromProduct(product));
         } else {
             setName('');
             setDescription('');
             setPrice('');
             setImagePreview(null);
+            setOptions(emptyOptions);
         }
         setImageFile(null);
         setIsModalOpen(true);
@@ -144,6 +181,9 @@ const AdminProducts = ({ api = adminProductsApi }) => {
 
     const handleSave = async (e) => {
         e.preventDefault();
+        const sizes = options.sizes.filter(size => size.label.trim()).map(size => ({ label: size.label.trim(), price: size.price === '' || size.price === null ? null : Number(size.price) }));
+        const labels = sizes.map(size => size.label.toLowerCase());
+        if (new Set(labels).size !== labels.length) { toast.error('Há quantidades repetidas. Use um nome diferente para cada uma.'); return; }
         setUploading(true);
 
         try {
@@ -155,6 +195,7 @@ const AdminProducts = ({ api = adminProductsApi }) => {
                 description,
                 price: !price ? 0 : Number(price),
                 image_url: imageUrl,
+                options: { sizes, flavors: options.flavors, natural: options.natural, flavor_price: options.flavorPrice === '' ? 0 : Number(options.flavorPrice) },
             });
             if (!savedProduct) throw new Error('Não foi possível salvar o produto');
             setProducts(prev => editingProduct
@@ -266,7 +307,7 @@ const AdminProducts = ({ api = adminProductsApi }) => {
                 }}>
                     <div style={{
                         width: '100%',
-                        maxWidth: '560px',
+                        maxWidth: '720px',
                         padding: 'clamp(1.25rem, 4vw, 2rem)',
                         background: 'var(--bg-dark-secondary)',
                         border: '1px solid var(--border-dark)',
@@ -334,7 +375,9 @@ const AdminProducts = ({ api = adminProductsApi }) => {
                                 />
                             </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <ProductOptionsEditor value={options} onChange={setOptions} catalog={catalog} onAddFlavor={handleAddFlavor} onRemoveFlavor={handleRemoveFlavor} />
+
+                            {options.sizes.length === 0 && <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 <label style={{ fontSize: '0.9rem', opacity: 0.8 }}>Preço (R$) - Opcional</label>
                                 <div style={{ display: 'flex', gap: '10px' }}>
                                     <input
@@ -350,7 +393,7 @@ const AdminProducts = ({ api = adminProductsApi }) => {
                                     </Button>
                                 </div>
                                 <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>Deixe em branco ou clique na lixeira para ocultar o preço.</span>
-                            </div>
+                            </div>}
 
                             <Button type="submit" variant="primary" style={{ marginTop: '0.35rem', justifyContent: 'center' }} disabled={uploading}>
                                 {uploading ? 'Salvando...' : 'Salvar Produto'}

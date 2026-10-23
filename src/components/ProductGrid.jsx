@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient.ts';
-import { ShoppingBag, Zap } from 'lucide-react';
+import { ShoppingBag, SlidersHorizontal, Zap } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { toast } from 'sonner';
 import { resolveProductImage } from '../utils/productImages';
+import { productOptions, requiresChoice } from '../utils/productOptions';
 
 const categories = ['Todos', 'Performance & Força', 'Longevidade & Saúde', 'Sono & Bem-Estar', 'Metabolismo & Queima', 'Beleza & Pele'];
 
@@ -163,6 +164,7 @@ const ProductGrid = ({ searchTerm = '' }) => {
                         name: item.name,
                         description: item.description,
                         price: item.price && parseFloat(item.price) > 0 ? parseFloat(item.price).toFixed(2).replace('.', ',') : null,
+                        options: item.options || {},
                         image_url: resolveProductImage(item)
                     }));
                     setProductsList(formatted);
@@ -245,16 +247,21 @@ const ProductGrid = ({ searchTerm = '' }) => {
                                     <div className="product-price">
                                         {item.price ? (
                                             <>
-                                                <span className="price-small">Preço por unidade</span>
+                                                <span className="price-small">{productOptions(item).availableSizes.length > 1 || productOptions(item).flavorPrice > 0 ? 'A partir de' : 'Preço por unidade'}</span>
                                                 <strong>R$ {item.price}</strong>
                                             </>
                                         ) : <span className="price-small">Preço não informado</span>}
                                     </div>
                                 </div>
-                                <div className="product-card-actions">
+                                {/* Com quantidade ou sabor para escolher, a compra continua na página do produto. */}
+                                {requiresChoice(item) ? <div className="product-card-actions product-card-actions--single">
+                                    {item.price
+                                        ? <Link to={`/produto/${item.id}`} className="btn-buy-now"><SlidersHorizontal size={16} /><span>Escolher quantidade{productOptions(item).hasFlavors ? ' e sabor' : ''}</span></Link>
+                                        : <button disabled className="btn-buy-now"><Zap size={16} /><span>Em breve</span></button>}
+                                </div> : <div className="product-card-actions">
                                     <button disabled={!item.price} onClick={() => startPurchase(item, '/carrinho', 'cart')} className="btn-add-cart"><ShoppingBag size={16} /><span>Adicionar ao carrinho</span></button>
                                     <button disabled={!item.price} onClick={() => startPurchase(item, '/checkout', 'checkout')} className="btn-buy-now"><Zap size={16} /><span>Comprar agora</span></button>
-                                </div>
+                                </div>}
                             </div>
                         </div>
                     ))}
@@ -370,6 +377,8 @@ const ProductGrid = ({ searchTerm = '' }) => {
                 .product-price strong { font-size: 1.15rem; font-family: var(--font-heading); }
 
                 .product-card-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+                .product-card-actions--single { grid-template-columns:1fr; }
+                .product-card-actions--single .btn-buy-now { text-decoration:none; }
                 .btn-add-cart, .btn-buy-now { min-height:44px; display:flex; align-items:center; justify-content:center; gap:7px; border-radius:9px; font-size:.78rem; font-weight:800; transition:var(--transition); cursor:pointer; }
                 .btn-add-cart { background:rgba(34,199,232,.07); color:var(--brand-blue); border:1px solid var(--border-blue); }
                 .btn-add-cart:hover { color:var(--brand-blue-light); border-color:var(--brand-blue); background:rgba(34,199,232,.14); transform:translateY(-1px); }

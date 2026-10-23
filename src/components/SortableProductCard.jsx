@@ -50,9 +50,17 @@ const SortableProductCard = ({ product, handleOpenModal, handleDelete }) => {
                     <p style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginBottom: '0.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', userSelect: 'none' }}>
                         {product.description}
                     </p>
+                    {(product.options?.sizes?.length > 0 || product.options?.flavors?.length > 0 || product.options?.natural) && (
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', marginBottom: '0.35rem', userSelect: 'none' }}>
+                            {[
+                                product.options?.sizes?.length ? `${product.options.sizes.filter(size => Number(size.price) > 0).length}/${product.options.sizes.length} quantidades com preço` : null,
+                                (product.options?.flavors?.length || 0) + (product.options?.natural ? 1 : 0) ? `${(product.options?.flavors?.length || 0) + (product.options?.natural ? 1 : 0)} sabores` : null,
+                            ].filter(Boolean).join(' · ')}
+                        </p>
+                    )}
                     {Number(product.price) > 0 ? (
                         <p style={{ fontWeight: 'bold', fontSize: '1.1rem', userSelect: 'none', color: 'var(--primary)' }}>
-                            R$ {parseFloat(product.price).toFixed(2).replace('.', ',')}
+                            {product.options?.sizes?.filter(size => Number(size.price) > 0).length > 1 ? 'A partir de ' : ''}R$ {parseFloat(product.price).toFixed(2).replace('.', ',')}
                         </p>
                     ) : (
                         <p style={{ fontSize: '0.9rem', color: 'var(--text-light)', fontStyle: 'italic', userSelect: 'none' }}>

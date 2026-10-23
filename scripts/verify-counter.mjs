@@ -27,6 +27,7 @@ class Query {
   select(columns, options) { this.columns = columns; this.options = options; return this; }
   eq(key, value) { this.filters.push(['eq', key, value]); return this; }
   ilike(key, value) { this.filters.push(['ilike', key, value]); return this; }
+  contains(key, value) { this.filters.push(['contains', key, value]); return this; }
   gt(key, value) { this.filters.push(['gt', key, value]); return this; }
   gte(key, value) { this.filters.push(['gte', key, value]); return this; }
   lte(key, value) { this.filters.push(['lte', key, value]); return this; }
@@ -49,6 +50,9 @@ class Query {
     if (this.table === 'admins' && this.isSingle) return { data: state.adminRecord, error: null };
     if (this.table === 'orders') return { data: [], error: null, count: 0 };
     if (this.table === 'solicitacoes' && this.isSingle) return { data: null, error: null };
+    if (this.table === 'sabores' && this.isSingle) return { data: { id: this.value?.id || 'morango', name: this.value?.name || 'Morango', display_order: 3 }, error: null };
+    if (this.table === 'sabores') return { data: [{ id: 'morango' }, { id: 'chocolate' }], error: null };
+    if (this.table === 'produtos' && this.filters.some(item => item[0] === 'contains')) return { data: [{ id: 7, options: { sizes: [], flavors: ['chocolate', 'morango'], natural: true } }], error: null };
     if (this.table === 'produtos' && this.isSingle) return { data: { id: 7, display_order: 5, name: 'Produto teste' }, error: null };
     if (this.table === 'produtos' && this.operation === 'delete') return { data: [{ id: 7 }], error: null };
     return { data: [], error: null, count: 0 };
@@ -156,6 +160,31 @@ assert.equal(created.status, 200);
 assert.equal(calls.filter(call => call.table === 'produtos' && call.operation === 'insert').at(-1).value.display_order, 6);
 assert.equal((await send({ action: 'product_save', sessionToken: 'a'.repeat(64), id: 7, name: 'Teste', imageUrl: 'https://project.supabase.co/storage/v1/object/public/receitas/products/x.png' })).status, 200);
 assert.equal((await send({ action: 'product_save', sessionToken: 'a'.repeat(64), id: 'abc', name: 'Teste' })).status, 400);
+// Quantidades e sabores: preço por quantidade, sabores só do catálogo, preço da vitrine = menor preço.
+const lastProductWrite = () => calls.filter(call => call.table === 'produtos' && ['insert', 'update'].includes(call.operation)).at(-1).value;
+assert.equal((await send({ action: 'product_save', sessionToken: 'a'.repeat(64), id: 7, name: 'Creatina', options: { sizes: [{ label: '200 g', price: 59.9 }, { label: '200 G', price: 60 }] } })).status, 400);
+assert.equal((await send({ action: 'product_save', sessionToken: 'a'.repeat(64), id: 7, name: 'Creatina', options: { sizes: [{ label: '200 g', price: -1 }] } })).status, 400);
+assert.equal((await send({ action: 'product_save', sessionToken: 'a'.repeat(64), id: 7, name: 'Creatina', options: 'x' })).status, 400);
+assert.equal((await send({ action: 'product_save', sessionToken: 'a'.repeat(64), id: 7, name: 'Creatina', price: 1, options: { sizes: [{ label: '150 g', price: '' }, { label: '200 g', price: '59.9' }, { label: '300 g', price: 89.9 }], flavors: ['morango', 'inventado', 'morango'], natural: true, flavor_price: '10' } })).status, 200);
+const savedOptions = lastProductWrite();
+assert.equal(savedOptions.price, 59.9);
+assert.equal(JSON.stringify(savedOptions.options), JSON.stringify({ sizes: [{ id: '150-g', label: '150 g', price: null }, { id: '200-g', label: '200 g', price: 59.9 }, { id: '300-g', label: '300 g', price: 89.9 }], flavors: ['morango'], natural: true, flavor_price: 10 }));
+assert.equal((await send({ action: 'product_save', sessionToken: 'a'.repeat(64), id: 7, name: 'Sem opções', price: 12 })).status, 200);
+assert.equal(lastProductWrite().options, undefined);
+assert.equal(lastProductWrite().price, 12);
+assert.equal((await send({ action: 'flavor_save', sessionToken: 'a'.repeat(64), name: 'Natural' })).status, 400);
+assert.equal((await send({ action: 'flavor_save', sessionToken: 'a'.repeat(64), name: ' ' })).status, 400);
+const newFlavor = await send({ action: 'flavor_save', sessionToken: 'a'.repeat(64), name: 'Açaí com Guaraná' });
+assert.equal(newFlavor.status, 200);
+assert.equal(calls.filter(call => call.table === 'sabores' && call.operation === 'insert').at(-1).value.id, 'acai-com-guarana');
+assert.equal((await send({ action: 'flavor_delete', sessionToken: 'a'.repeat(64), id: '../x' })).status, 400);
+const flavorRemoval = await send({ action: 'flavor_delete', sessionToken: 'a'.repeat(64), id: 'chocolate' });
+assert.equal(flavorRemoval.status, 200);
+assert.equal(JSON.stringify(calls.filter(call => call.table === 'produtos' && call.operation === 'update').at(-1).value.options.flavors), JSON.stringify(['morango']));
+assert.equal(calls.filter(call => call.table === 'sabores' && call.operation === 'delete').at(-1).filters[0][2], 'chocolate');
+state.session.counter_accounts.role = 'balcao';
+assert.equal((await send({ action: 'flavor_save', sessionToken: 'a'.repeat(64), name: 'Coco' })).status, 403);
+state.session.counter_accounts.role = 'farmaceutico';
 assert.equal((await send({ action: 'products_reorder', sessionToken: 'a'.repeat(64), ids: [3, 3] })).status, 400);
 assert.equal((await send({ action: 'products_reorder', sessionToken: 'a'.repeat(64), ids: [3, 1, 2] })).status, 200);
 assert.equal((await send({ action: 'product_delete', sessionToken: 'a'.repeat(64), id: 7 })).status, 200);
@@ -252,4 +281,10 @@ const migration = readFileSync('supabase/migrations/202610080001_counter_portal.
 assert.match(migration, /revoke all on public\.counter_accounts, public\.counter_sessions, public\.counter_login_limits from public, anon, authenticated/);
 assert.match(migration, /auth_version = auth_version \+ 1/);
 assert.equal(/expires_at/.test(migration), false);
-console.log('Counter checks passed: admin login rate limit and strong admin passwords, admin access to staff areas, staff roles (balcão/farmacêutico), pharmacist product actions, account deletion, password hashing, persistent-session storage, server authorization, account revocation, rate limiting, pagination, preparation filter, read-only access and safe document links. SQL checks are structural; production integration requires deployment.');
+console.log('Counter checks passed: product sizes/flavors, admin login rate limit and strong admin passwords, admin access to staff areas, staff roles (balcão/farmacêutico), pharmacist product actions, account deletion, password hashing, persistent-session storage, server authorization, account revocation, rate limiting, pagination, preparation filter, read-only access and safe document links. SQL checks are structural; production integration requires deployment.');
+const checkout = readFileSync('supabase/functions/create-checkout/index.ts', 'utf8');
+assert.match(checkout, /withVariants \? 'create_checkout_order_v2' : 'create_checkout_order'/);
+assert.match(checkout, /size: variantId\(item\.size\), flavor: variantId\(item\.flavor\)/);
+const variations = readFileSync('supabase/migrations/202610230001_variacoes_produtos.sql', 'utf8');
+assert.match(variations, /raise exception 'invalid_variant'/);
+assert.match(variations, /grant execute on function public\.create_checkout_order_v2\(uuid, text, uuid, jsonb, jsonb, text\) to service_role/);

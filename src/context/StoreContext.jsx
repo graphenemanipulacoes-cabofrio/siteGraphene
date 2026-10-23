@@ -2,6 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'sonner';
+import { productOptions, variantKey } from '../utils/productOptions';
 
 const StoreContext = createContext(null);
 const CART_KEY = 'graphene_cart';
@@ -9,7 +10,8 @@ const CART_KEY = 'graphene_cart';
 const readCart = () => {
     try {
         const saved = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
-        return Array.isArray(saved) ? saved.filter(item => item && item.id && Number.isInteger(item.quantity) && item.quantity > 0).map(item => ({ ...item, id: String(item.id), quantity: Math.min(item.quantity, 20) })) : [];
+        // Cada linha é um produto + quantidade + sabor (key). Carrinhos antigos não tinham key.
+        return Array.isArray(saved) ? saved.filter(item => item && item.id && Number.isInteger(item.quantity) && item.quantity > 0).map(item => ({ ...item, id: String(item.id), key: item.key || variantKey(item.id, item.size, item.flavor), quantity: Math.min(item.quantity, 20) })) : [];
     } catch {
         return [];
     }
@@ -39,25 +41,36 @@ export const StoreProvider = ({ children }) => {
         return () => subscription.subscription.unsubscribe();
     }, []);
 
-    const addItem = useCallback((product) => {
-        const parsedPrice = Number(String(product.price ?? '').replace(',', '.'));
+    // choice = { size, sizeLabel, flavor, flavorLabel, price } quando o produto tem opções.
+    const addItem = useCallback((product, choice = {}) => {
+        const options = productOptions(product);
+        if ((options.hasSizes && !choice.size) || (options.hasFlavors && !choice.flavor)) {
+            toast.error('Escolha a quantidade e o sabor antes de continuar.'); return false;
+        }
+        const parsedPrice = Number(String(choice.price ?? product.price ?? '').replace(',', '.'));
         const price = Number.isFinite(parsedPrice) && parsedPrice > 0 ? parsedPrice : null;
 
         if (!price) { toast.error('Este produto ainda não tem um preço para compra.'); return false; }
-        if (cart.some(item => item.id === String(product.id) && item.quantity >= 20)) {
+        const key = variantKey(product.id, choice.size, choice.flavor);
+        if (cart.some(item => item.key === key && item.quantity >= 20)) {
             toast.info('Limite de 20 unidades por produto.'); return false;
         }
 
         setCart(current => {
-            const existing = current.find(item => item.id === String(product.id));
+            const existing = current.find(item => item.key === key);
             if (existing) {
-                return current.map(item => item.id === existing.id ? { ...item, price, quantity: Math.min(item.quantity + 1, 20) } : item);
+                return current.map(item => item.key === key ? { ...item, price, quantity: Math.min(item.quantity + 1, 20) } : item);
             }
             return [...current, {
+                key,
                 id: String(product.id),
                 name: product.name,
                 description: product.description || '',
                 image_url: product.image_url,
+                size: choice.size || null,
+                sizeLabel: choice.sizeLabel || null,
+                flavor: choice.flavor || null,
+                flavorLabel: choice.flavorLabel || null,
                 price,
                 quantity: 1,
             }];
@@ -65,14 +78,14 @@ export const StoreProvider = ({ children }) => {
         return true;
     }, [cart]);
 
-    const updateQuantity = useCallback((id, quantity) => {
+    const updateQuantity = useCallback((key, quantity) => {
         setCart(current => current.flatMap(item => {
-            if (item.id !== id) return [item];
+            if (item.key !== key) return [item];
             return quantity > 0 && Number.isInteger(quantity) ? [{ ...item, quantity: Math.min(quantity, 20) }] : [];
         }));
     }, []);
 
-    const removeItem = useCallback((id) => setCart(current => current.filter(item => item.id !== id)), []);
+    const removeItem = useCallback((key) => setCart(current => current.filter(item => item.key !== key)), []);
     const clearCart = useCallback(() => setCart([]), []);
     const settleCart = useCallback((orderId, items) => {
         if (settledOrders.current.has(orderId)) return;
@@ -83,7 +96,7 @@ export const StoreProvider = ({ children }) => {
         } catch { /* Keep an in-memory guard if storage is unavailable. */ }
         settledOrders.current.add(orderId);
         setCart(current => current.flatMap(item => {
-            const purchased = items.find(p => String(p.product_id) === item.id);
+            const purchased = items.find(p => variantKey(p.product_id, p.variant?.size, p.variant?.flavor) === item.key);
             const quantity = item.quantity - Number(purchased?.quantity || 0);
             return quantity > 0 ? [{ ...item, quantity }] : [];
         }));

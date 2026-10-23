@@ -1,0 +1,35 @@
+/* Editor de quantidades e sabores (modal de produto do admin e do farmacêutico, fundo escuro). */
+.poe{display:grid;gap:14px}
+.poe-section{display:grid;gap:12px;padding:16px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.025)}
+.poe-head{display:grid;gap:4px}
+.poe-head h3{display:flex;align-items:baseline;gap:10px;margin:0;font-size:1rem;font-weight:700;color:#fff}
+.poe-head h3 span{font-size:.78rem;font-weight:600;color:var(--brand-blue,#22c7e8)}
+.poe-head p,.poe-note{margin:0;font-size:.8rem;line-height:1.5;color:rgba(255,255,255,.6)}
+.poe input{min-height:42px;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#fff;font:inherit;font-size:.9rem;outline:none;width:100%}
+.poe input:focus{border-color:var(--brand-blue,#22c7e8);box-shadow:0 0 0 3px rgba(34,199,232,.16)}
+.poe-sizes{display:grid;gap:8px}
+.poe-size{display:grid;grid-template-columns:minmax(0,1fr) 150px 42px;gap:8px;align-items:center}
+.poe-money{display:flex;align-items:center;gap:0;position:relative}
+.poe-money>span{position:absolute;left:12px;font-size:.82rem;color:rgba(255,255,255,.5);pointer-events:none}
+.poe-money input{padding-left:36px}
+.poe-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:8px;border:1px solid rgba(239,68,68,.28);background:rgba(239,68,68,.08);color:#f87171;cursor:pointer}
+.poe-icon:disabled{opacity:.5;cursor:not-allowed}
+.poe-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.poe-chip-button{display:inline-flex;align-items:center;gap:6px;min-height:38px;padding:7px 13px;border-radius:8px;border:1px solid var(--brand-blue,#22c7e8);background:rgba(34,199,232,.1);color:#fff;font:inherit;font-size:.84rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.poe-chip-button:disabled{opacity:.5;cursor:not-allowed}
+.poe-preset{min-height:38px;padding:7px 11px;border-radius:8px;border:1px dashed rgba(255,255,255,.22);background:transparent;color:rgba(255,255,255,.75);font:inherit;font-size:.8rem;cursor:pointer}
+.poe-preset:hover{border-color:rgba(255,255,255,.45);color:#fff}
+.poe-flavors{display:flex;flex-wrap:wrap;gap:7px}
+.poe-flavor{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:transparent;color:rgba(255,255,255,.62);font:inherit;font-size:.84rem;cursor:pointer}
+.poe-flavor:hover{border-color:rgba(255,255,255,.4);color:#fff}
+.poe-flavor.is-on{border-color:#34d399;background:rgba(52,211,153,.13);color:#fff;font-weight:700}
+.poe-flavor.is-on svg{color:#34d399}
+.poe-extra{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:10px;align-items:center;font-size:.82rem;color:rgba(255,255,255,.75)}
+.poe-manage-toggle{justify-self:start;display:inline-flex;align-items:center;gap:7px;padding:6px 0;border:0;background:none;color:var(--brand-blue,#22c7e8);font:inherit;font-size:.84rem;font-weight:700;cursor:pointer}
+.poe-manage{display:grid;gap:10px;padding:12px;border-radius:10px;background:rgba(0,0,0,.18)}
+.poe-new{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.poe-catalog{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.poe-catalog li{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:3px 3px 3px 11px;border:1px solid rgba(255,255,255,.1);border-radius:8px;font-size:.84rem;color:#fff}
+.poe-catalog .poe-icon{width:32px;height:32px}
+.poe :focus-visible{outline:2px solid var(--brand-blue,#22c7e8);outline-offset:2px}
+@media (max-width:560px){.poe-size{grid-template-columns:minmax(0,1fr) 112px 42px}.poe-extra{grid-template-columns:1fr}.poe-new{grid-template-columns:1fr}}

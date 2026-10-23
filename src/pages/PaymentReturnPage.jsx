@@ -21,7 +21,7 @@ export default function PaymentReturnPage() {
         let attempts = 0;
         const check = async () => {
             const { data, error } = await supabase.from('orders')
-                .select('id,total,payment_status,order_items(product_id,quantity)').eq('id', orderId).maybeSingle();
+                .select('id,total,payment_status,order_items(product_id,quantity,variant)').eq('id', orderId).maybeSingle();
             if (!active) return;
             setUnavailable(Boolean(error || !data));
             if (data) {
