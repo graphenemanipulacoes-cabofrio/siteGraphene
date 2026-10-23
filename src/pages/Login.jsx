@@ -27,8 +27,11 @@ const Login = () => {
             });
 
             if (error) {
-                console.error('Admin login function error:', error);
-                toast.error('Não foi possível conectar ao servidor de login. Tente novamente em instantes.');
+                // Senha errada (401) e bloqueio por tentativas (429) chegam como erro da função.
+                const status = error.context?.status;
+                if (status === 401) toast.error('Usuário ou senha inválidos.');
+                else if (status === 429) toast.error('Muitas tentativas erradas. Por segurança, aguarde 15 minutos e tente de novo.');
+                else toast.error('Não foi possível conectar ao servidor de login. Tente novamente em instantes.');
             } else if (!data?.token) {
                 toast.error(data?.error === 'invalid_credentials' ? 'Usuário ou senha inválidos.' : 'Não foi possível concluir o login.');
             } else {

@@ -30,6 +30,7 @@ class Query {
   gt(key, value) { this.filters.push(['gt', key, value]); return this; }
   gte(key, value) { this.filters.push(['gte', key, value]); return this; }
   lte(key, value) { this.filters.push(['lte', key, value]); return this; }
+  lt(key, value) { this.filters.push(['lt', key, value]); return this; }
   is(key, value) { this.filters.push(['is', key, value]); return this; }
   in(key, value) { this.filters.push(['in', key, value]); return this; }
   or(value) { this.filters.push(['or', value]); return this; }
@@ -178,9 +179,20 @@ assert.equal((await send({ action: 'login', username: 'thales', password: 'errad
 assert.equal((await send({ action: 'login', username: 'th*', password: 'curta1' })).status, 401);
 assert.equal((await send({ action: 'login', username: 'th_les', password: 'curta1' })).status, 401);
 assert.equal(calls.filter(call => call.table === 'admins').at(-1).filters.find(item => item[0] === 'ilike')[2], 'th\\_les');
+// Senhas antigas (SHA-256 ou texto puro) viram PBKDF2 no primeiro login certo.
+const upgradedHash = () => calls.filter(call => call.table === 'admins' && call.operation === 'update').at(-1)?.value.password;
+assert.match(upgradedHash(), /^pbkdf2-sha256\$600000\$/);
+assert.equal(await security.verifyPassword('curta1', upgradedHash()), true);
 state.adminRecord = { id: 2, username: 'legado', password: 'senha-antiga' };
 assert.equal((await send({ action: 'login', username: 'legado', password: 'senha-antiga' })).status, 200);
-assert.equal(calls.filter(call => call.table === 'admins' && call.operation === 'update').at(-1).value.password, await sha('senha-antiga'));
+assert.equal(await security.verifyPassword('senha-antiga', upgradedHash()), true);
+const updatesBefore = calls.filter(call => call.table === 'admins' && call.operation === 'update').length;
+state.adminRecord = { id: 3, username: 'forte', password: await security.hashPassword('senha forte do admin') };
+assert.equal((await send({ action: 'login', username: 'forte', password: 'senha forte do admin' })).status, 200);
+assert.equal((await send({ action: 'login', username: 'forte', password: 'senha errada do admin' })).status, 401);
+assert.equal(calls.filter(call => call.table === 'admins' && call.operation === 'update').length, updatesBefore);
+const noRecord = await security.verifyAdminPassword('qualquer', null);
+assert.equal(noRecord.valid, false); assert.equal(noRecord.upgrade, false);
 state.adminRecord = null;
 const adminToken = 'c'.repeat(43);
 assert.equal((await send({ action: 'session', sessionToken: adminToken })).status, 401);
@@ -194,6 +206,42 @@ assert.equal((await send({ action: 'products_list', sessionToken: 'c'.repeat(42)
 assert.equal((await send({ action: 'logout', sessionToken: adminToken })).status, 200);
 assert.equal(calls.filter(call => call.table === 'admin_sessions').at(-1).operation, 'delete');
 state.adminSession = null;
+// Login do painel admin (admin-login): limite de tentativas no servidor e senha forte.
+let adminLoginHandler;
+const adminContext = createContext({ Number, Array, Set, Math, Date, String, btoa, crypto: webcrypto, TextEncoder, Uint8Array, URL, Request, Response, console, Deno: { env: { get: name => name === 'SITE_URL' ? 'https://www.graphenemanipulacoes.com.br' : 'https://project.supabase.co' }, serve: fn => { adminLoginHandler = fn; } } });
+const adminSecurity = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/_shared/counter-security.ts', 'utf8')), { context: adminContext });
+const adminHttp = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/_shared/http.ts', 'utf8')), { context: adminContext });
+const adminClient = new SyntheticModule(['createClient'], function() { this.setExport('createClient', () => client); }, { context: adminContext });
+const adminLoginModule = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/admin-login/index.ts', 'utf8')), { context: adminContext });
+await adminLoginModule.link(specifier => specifier.includes('supabase-js') ? adminClient : specifier.includes('counter-security') ? adminSecurity : adminHttp);
+await adminLoginModule.evaluate();
+const panelLogin = async (body, origin = 'https://www.graphenemanipulacoes.com.br') => {
+  const response = await adminLoginHandler(new Request('https://project.supabase.co/functions/v1/admin-login', { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: JSON.stringify(body) }));
+  return { status: response.status, data: await response.json() };
+};
+assert.equal((await panelLogin({ username: 'thales', password: 'curta1' }, 'https://attacker.example')).status, 403);
+state.rateAllowed = false;
+assert.equal((await panelLogin({ username: 'thales', password: 'curta1' })).status, 429);
+assert.equal(rpcCalls.at(-1).name, 'counter_take_login_attempt');
+assert.equal(rpcCalls.at(-1).body.p_keys[1], 'user:' + await sha('thales'));
+state.rateAllowed = true;
+state.adminRecord = null;
+assert.equal((await panelLogin({ username: 'thales', password: 'curta1' })).status, 401);
+state.adminRecord = { id: 1, username: 'Thales', password: await sha('curta1') };
+assert.equal((await panelLogin({ username: 'thales', password: 'errada' })).status, 401);
+assert.equal((await panelLogin({ username: 'th*', password: 'curta1' })).status, 401);
+assert.equal((await panelLogin({ username: 'outro', password: 'curta1' })).status, 401);
+const panelSession = await panelLogin({ username: ' THALES ', password: ' curta1 ' });
+assert.equal(panelSession.status, 200);
+assert.match(panelSession.data.token, /^[A-Za-z0-9_-]{43}$/);
+assert.equal(panelSession.data.user, 'Thales');
+assert.equal(await security.verifyPassword('curta1', upgradedHash()), true);
+assert.equal(calls.filter(call => call.table === 'admin_sessions' && call.operation === 'insert').at(-1).value.token_hash, await sha(panelSession.data.token));
+assert.equal(calls.filter(call => call.table === 'counter_login_limits' && call.operation === 'delete').at(-1).filters[0][2], 'user:' + await sha('thales'));
+state.adminRecord = null;
+const adminOrders = readFileSync('supabase/functions/admin-orders/index.ts', 'utf8');
+assert.match(adminOrders, /const passwordHash = await hashAdminPassword\(password\);/);
+assert.match(adminOrders, /iterations: 600_000/);
 const equipe = readFileSync('supabase/migrations/202610220001_equipe_farmaceutico.sql', 'utf8');
 assert.match(equipe, /check \(role in \('balcao', 'farmaceutico'\)\)/);
 assert.match(equipe, /revoke all on function public\.counter_manage_account\(text,uuid,text,text,text,boolean,text,text\) from public, anon, authenticated/);
@@ -204,4 +252,4 @@ const migration = readFileSync('supabase/migrations/202610080001_counter_portal.
 assert.match(migration, /revoke all on public\.counter_accounts, public\.counter_sessions, public\.counter_login_limits from public, anon, authenticated/);
 assert.match(migration, /auth_version = auth_version \+ 1/);
 assert.equal(/expires_at/.test(migration), false);
-console.log('Counter checks passed: admin access to staff areas, staff roles (balcão/farmacêutico), pharmacist product actions, account deletion, password hashing, persistent-session storage, server authorization, account revocation, rate limiting, pagination, preparation filter, read-only access and safe document links. SQL checks are structural; production integration requires deployment.');
+console.log('Counter checks passed: admin login rate limit and strong admin passwords, admin access to staff areas, staff roles (balcão/farmacêutico), pharmacist product actions, account deletion, password hashing, persistent-session storage, server authorization, account revocation, rate limiting, pagination, preparation filter, read-only access and safe document links. SQL checks are structural; production integration requires deployment.');

@@ -23,6 +23,27 @@ export const verifyPassword = async (password: string, stored: string) => {
   return difference === 0;
 };
 
+// Senhas dos administradores: formato forte (PBKDF2 com sal) ou os formatos
+// antigos (SHA-256 sem sal ou texto puro), convertidos no primeiro login certo.
+export const dummyPasswordHash = 'pbkdf2-sha256$600000$' + '0'.repeat(32) + '$' + '0'.repeat(64);
+const sameText = (a: string, b: string) => {
+  if (a.length !== b.length) return false;
+  let difference = 0;
+  for (let index = 0; index < a.length; index++) difference |= a.charCodeAt(index) ^ b.charCodeAt(index);
+  return difference === 0;
+};
+export const verifyAdminPassword = async (password: string, stored: string | null | undefined) => {
+  // Sem cadastro: mesmo custo de uma senha forte, para não revelar se o usuário existe.
+  if (!stored || stored.startsWith('pbkdf2-sha256$')) {
+    const valid = await verifyPassword(password, stored || dummyPasswordHash);
+    return { valid: Boolean(stored) && valid, upgrade: false };
+  }
+  if (/^[a-f0-9]{64}$/i.test(stored)) return { valid: sameText(await hashToken(password), stored.toLowerCase()), upgrade: true };
+  return { valid: sameText(password, stored), upgrade: true };
+};
+// Busca o admin pelo nome sem diferenciar maiúsculas; curingas digitados não valem.
+export const adminUsernamePattern = (username: string) => username.replace(/[\\%_]/g, '\\$&');
+
 export const orderStatuses = ['awaiting_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'];
 export const paymentStatuses = ['pending', 'paid', 'failed', 'refunded'];
 export const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

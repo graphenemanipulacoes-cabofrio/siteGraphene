@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { allowedOrigin, json } from '../_shared/http.ts';
-import { hashPassword, hashToken, newToken, normalizeUsername, validUsername, validPassword, verifyPassword, orderStatuses, paymentStatuses, uuidPattern, requestIdPattern, prescriptionReferences, prescriptionLocation } from '../_shared/counter-security.ts';
+import { adminUsernamePattern, hashPassword, hashToken, newToken, normalizeUsername, validUsername, validPassword, verifyAdminPassword, verifyPassword, orderStatuses, paymentStatuses, uuidPattern, requestIdPattern, prescriptionReferences, prescriptionLocation } from '../_shared/counter-security.ts';
 
 const text = (value: unknown, limit = 120) => typeof value === 'string' ? value.trim().slice(0, limit) : '';
 const accountFields = 'id,username,display_name,role,is_active,created_at,updated_at';
@@ -16,25 +16,20 @@ const productImagePattern = /^(?:https:\/\/\S+|\/assets\/products\/[a-z0-9_-]+\.
 // Administradores entram em qualquer área da equipe com o login do painel admin.
 // O token é o mesmo formato do painel (43 caracteres); o da equipe tem 64.
 const adminTokenPattern = /^[A-Za-z0-9_-]{43}$/;
-const safeEqual = (a: string, b: string) => {
-  if (a.length !== b.length) return false;
-  let difference = 0;
-  for (let index = 0; index < a.length; index++) difference |= a.charCodeAt(index) ^ b.charCodeAt(index);
-  return difference === 0;
-};
 const newAdminToken = () => btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
-// Mesma regra da função admin-login (tabela admins, senha em SHA-256).
-async function verifyAdmin(db: ReturnType<typeof createClient>, rawUsername: unknown, rawPassword: unknown) {
+// Mesma regra da função admin-login (tabela admins).
+// deno-lint-ignore no-explicit-any
+async function verifyAdmin(db: any, rawUsername: unknown, rawPassword: unknown) {
   const username = typeof rawUsername === 'string' ? rawUsername.trim().slice(0, 80) : '';
   const password = typeof rawPassword === 'string' ? rawPassword.trim().slice(0, 200) : '';
   if (!username || !password || username.includes('*')) return null;
-  const { data: record } = await db.from('admins').select('id,username,password').ilike('username', username.replace(/[\\%_]/g, '\\$&')).maybeSingle();
-  if (!record?.password || String(record.username).toLowerCase() !== username.toLowerCase()) return null;
-  const stored = String(record.password);
-  const storedIsHash = /^[a-f0-9]{64}$/i.test(stored);
-  if (!(storedIsHash ? safeEqual(await hashToken(password), stored.toLowerCase()) : safeEqual(password, stored))) return null;
-  if (!storedIsHash) await db.from('admins').update({ password: await hashToken(password) }).eq('id', record.id);
-  return String(record.username);
+  const { data: record } = await db.from('admins').select('id,username,password').ilike('username', adminUsernamePattern(username)).maybeSingle();
+  const match = record && String(record.username).toLowerCase() === username.toLowerCase() ? record : null;
+  const { valid, upgrade } = await verifyAdminPassword(password, match?.password);
+  if (!match || !valid) return null;
+  // Senhas antigas passam para o formato forte assim que o admin entra.
+  if (upgrade) await db.from('admins').update({ password: await hashPassword(password) }).eq('id', match.id);
+  return String(match.username);
 }
 
 Deno.serve(async (req: Request) => {

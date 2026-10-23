@@ -20,6 +20,13 @@ const encoder = new TextEncoder();
 const hex = (buffer: ArrayBuffer) => [...new Uint8Array(buffer)].map(byte => byte.toString(16).padStart(2, '0')).join('');
 const sha256 = async (value: string) => hex(await crypto.subtle.digest('SHA-256', encoder.encode(value)));
 const clean = (value: unknown, max: number) => typeof value === 'string' ? value.trim().slice(0, max) : '';
+// Senha de admin no formato forte (PBKDF2 com sal), o mesmo das contas da equipe.
+const hashAdminPassword = async (password: string) => {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 600_000, hash: 'SHA-256' }, key, 256);
+  return `pbkdf2-sha256$600000$${hex(salt.buffer)}$${hex(bits)}`;
+};
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const requestIdPattern = /^\d{1,18}$/;
 // intake/: current form. legacy/: first-form files moved from the public bucket in Oct/2026.
@@ -384,7 +391,7 @@ Deno.serve(async (req: Request) => {
       const username = clean(body.username, 80);
       const password = clean(body.password, 200);
       if (!/^[a-zA-Z0-9._-]{3,80}$/.test(username) || password.length < 10) return json({ error: 'invalid_admin' }, 400, origin);
-      const passwordHash = await sha256(password);
+      const passwordHash = await hashAdminPassword(password);
       const { error } = await admin.from('admins').insert({ username, password: passwordHash });
       if (error) return json({ error: error.code === '23505' ? 'admin_exists' : 'unable_to_add_admin' }, 409, origin);
       return json({ ok: true }, 200, origin);
