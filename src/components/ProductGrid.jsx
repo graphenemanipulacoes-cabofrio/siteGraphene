@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient.ts';
-import { ShoppingBag, SlidersHorizontal, Zap } from 'lucide-react';
+import { ShoppingBag, Zap } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { toast } from 'sonner';
 import { resolveProductImage } from '../utils/productImages';
-import { productOptions, requiresChoice } from '../utils/productOptions';
+import { NATURAL_FLAVOR, flavorName, productOptions, requiresChoice, useFlavors, variantPrice } from '../utils/productOptions';
+import { money } from '../utils/commerce';
 
 const categories = ['Todos', 'Performance & Força', 'Longevidade & Saúde', 'Sono & Bem-Estar', 'Metabolismo & Queima', 'Beleza & Pele'];
 
@@ -164,6 +165,7 @@ const ProductGrid = ({ searchTerm = '' }) => {
                         name: item.name,
                         description: item.description,
                         price: item.price && parseFloat(item.price) > 0 ? parseFloat(item.price).toFixed(2).replace('.', ',') : null,
+                        rawPrice: Number(item.price) || 0,
                         options: item.options || {},
                         image_url: resolveProductImage(item)
                     }));
@@ -189,10 +191,37 @@ const ProductGrid = ({ searchTerm = '' }) => {
         );
     }
 
+    // Quantidade e sabor escolhidos direto no cartão (obrigatórios quando o produto tem).
+    const flavors = useFlavors();
+    const [choices, setChoices] = useState({});
+    const [missing, setMissing] = useState({});
+    const choiceOf = item => {
+        const options = productOptions(item);
+        const chosen = choices[item.id] || {};
+        const flavorIds = [...(options.natural ? [NATURAL_FLAVOR] : []), ...options.flavors.filter(id => !flavors.length || flavors.some(flavor => flavor.id === id))];
+        const size = chosen.size || (options.availableSizes.length === 1 ? options.availableSizes[0].id : '');
+        const flavor = chosen.flavor || (flavorIds.length === 1 ? flavorIds[0] : '');
+        const complete = (!options.hasSizes || size) && (!options.hasFlavors || flavor);
+        return { options, flavorIds, size, flavor, complete, price: complete ? variantPrice({ ...item, price: item.rawPrice }, size, flavor) : null };
+    };
+    const choose = (id, changes) => {
+        setChoices(current => ({ ...current, [id]: { ...current[id], ...changes } }));
+        setMissing(current => ({ ...current, [id]: false }));
+    };
+
     const startPurchase = (product, destination, intent) => {
-        if (!addItem(product)) return;
+        let choice = {};
+        if (requiresChoice(product)) {
+            const selected = choiceOf(product);
+            if (!selected.complete) { setMissing(current => ({ ...current, [product.id]: true })); return; }
+            choice = {
+                size: selected.size || null, sizeLabel: selected.options.availableSizes.find(size => size.id === selected.size)?.label || null,
+                flavor: selected.flavor || null, flavorLabel: selected.flavor ? flavorName(flavors, selected.flavor) : null, price: selected.price,
+            };
+        }
+        if (!addItem(product, choice)) return;
         if (intent === 'checkout') navigate(destination);
-        else toast.success('Adicionado ao carrinho', { description: product.name, duration: 2500 });
+        else toast.success('Adicionado ao carrinho', { description: [product.name, choice.sizeLabel, choice.flavorLabel].filter(Boolean).join(' · '), duration: 2500 });
     };
 
     return (
@@ -242,27 +271,44 @@ const ProductGrid = ({ searchTerm = '' }) => {
                                 <p>{item.description}</p>
                             </div>
 
-                            <div className="product-footer">
-                                <div className="product-price-row">
-                                    <div className="product-price">
-                                        {item.price ? (
-                                            <>
-                                                <span className="price-small">{productOptions(item).availableSizes.length > 1 || productOptions(item).flavorPrice > 0 ? 'A partir de' : 'Preço por unidade'}</span>
-                                                <strong>R$ {item.price}</strong>
-                                            </>
-                                        ) : <span className="price-small">Preço não informado</span>}
+                            {(() => {
+                                const selected = choiceOf(item);
+                                const withChoice = requiresChoice(item);
+                                const sizeLabel = selected.options.availableSizes.length > 1 || selected.options.flavorPrice > 0;
+                                const showMissing = missing[item.id];
+                                return <div className="product-footer">
+                                    {withChoice && item.price && <div className={`product-options${showMissing ? ' is-missing' : ''}`}>
+                                        {selected.options.hasSizes && <label className="product-option">
+                                            <span>Quantidade</span>
+                                            <select value={selected.size} aria-invalid={showMissing && !selected.size ? true : undefined} onChange={event => choose(item.id, { size: event.target.value })}>
+                                                {!selected.size && <option value="" disabled>Escolha</option>}
+                                                {selected.options.availableSizes.map(size => <option key={size.id} value={size.id}>{size.label}</option>)}
+                                            </select>
+                                        </label>}
+                                        {selected.options.hasFlavors && <label className="product-option">
+                                            <span>Sabor</span>
+                                            <select value={selected.flavor} aria-invalid={showMissing && !selected.flavor ? true : undefined} onChange={event => choose(item.id, { flavor: event.target.value })}>
+                                                {!selected.flavor && <option value="" disabled>Escolha</option>}
+                                                {selected.flavorIds.map(id => <option key={id} value={id}>{flavorName(flavors, id)}</option>)}
+                                            </select>
+                                        </label>}
+                                        {showMissing && <p className="product-option-error" role="alert">Escolha {[!selected.size && selected.options.hasSizes && 'a quantidade', !selected.flavor && selected.options.hasFlavors && 'o sabor'].filter(Boolean).join(' e ')} para continuar.</p>}
+                                    </div>}
+                                    <div className="product-price-row">
+                                        <div className="product-price">
+                                            {!item.price ? <span className="price-small">Preço não informado</span>
+                                                : selected.price ? <><span className="price-small">Preço por unidade</span><strong>{money(selected.price)}</strong></>
+                                                    : <><span className="price-small">{withChoice && sizeLabel ? 'A partir de' : 'Preço por unidade'}</span><strong>R$ {item.price}</strong></>}
+                                        </div>
                                     </div>
-                                </div>
-                                {/* Com quantidade ou sabor para escolher, a compra continua na página do produto. */}
-                                {requiresChoice(item) ? <div className="product-card-actions product-card-actions--single">
-                                    {item.price
-                                        ? <Link to={`/produto/${item.id}`} className="btn-buy-now"><SlidersHorizontal size={16} /><span>Escolher quantidade{productOptions(item).hasFlavors ? ' e sabor' : ''}</span></Link>
-                                        : <button disabled className="btn-buy-now"><Zap size={16} /><span>Em breve</span></button>}
-                                </div> : <div className="product-card-actions">
-                                    <button disabled={!item.price} onClick={() => startPurchase(item, '/carrinho', 'cart')} className="btn-add-cart"><ShoppingBag size={16} /><span>Adicionar ao carrinho</span></button>
-                                    <button disabled={!item.price} onClick={() => startPurchase(item, '/checkout', 'checkout')} className="btn-buy-now"><Zap size={16} /><span>Comprar agora</span></button>
-                                </div>}
-                            </div>
+                                    {item.price ? <div className="product-card-actions">
+                                        <button onClick={() => startPurchase(item, '/carrinho', 'cart')} className="btn-add-cart"><ShoppingBag size={16} /><span>Adicionar ao carrinho</span></button>
+                                        <button onClick={() => startPurchase(item, '/checkout', 'checkout')} className="btn-buy-now"><Zap size={16} /><span>Comprar agora</span></button>
+                                    </div> : <div className="product-card-actions product-card-actions--single">
+                                        <button disabled className="btn-buy-now"><Zap size={16} /><span>Em breve</span></button>
+                                    </div>}
+                                </div>;
+                            })()}
                         </div>
                     ))}
                 </div>
@@ -378,7 +424,16 @@ const ProductGrid = ({ searchTerm = '' }) => {
 
                 .product-card-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
                 .product-card-actions--single { grid-template-columns:1fr; }
-                .product-card-actions--single .btn-buy-now { text-decoration:none; }
+                .product-options { display:grid; grid-template-columns:repeat(auto-fit, minmax(118px, 1fr)); gap:8px; }
+                .product-option { display:grid; gap:5px; min-width:0; }
+                .product-option span { font-size:.68rem; font-weight:700; letter-spacing:.02em; color:var(--text-muted); }
+                .product-option select { width:100%; min-height:40px; padding:8px 30px 8px 10px; border-radius:8px; border:1px solid var(--border-subtle); background:rgba(255,255,255,.04) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center; color:var(--text-main); font:inherit; font-size:.8rem; appearance:none; cursor:pointer; text-overflow:ellipsis; }
+                .product-option select:hover { border-color:var(--border-blue); }
+                .product-option select:focus-visible { outline:2px solid var(--brand-blue); outline-offset:1px; }
+                .product-option select option { background:#0f1b26; color:#fff; }
+                .product-option select[aria-invalid] { border-color:#f97316; }
+                .product-option-error { grid-column:1 / -1; margin:0; font-size:.76rem; font-weight:600; color:#fb923c; }
+                .product-card-actions button:disabled { opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
                 .btn-add-cart, .btn-buy-now { min-height:44px; display:flex; align-items:center; justify-content:center; gap:7px; border-radius:9px; font-size:.78rem; font-weight:800; transition:var(--transition); cursor:pointer; }
                 .btn-add-cart { background:rgba(34,199,232,.07); color:var(--brand-blue); border:1px solid var(--border-blue); }
                 .btn-add-cart:hover { color:var(--brand-blue-light); border-color:var(--brand-blue); background:rgba(34,199,232,.14); transform:translateY(-1px); }
