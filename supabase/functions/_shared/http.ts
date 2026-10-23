@@ -10,6 +10,7 @@ export const json = (body: unknown, status = 200, origin?: string) => new Respon
 
 export const allowedOrigin = (requestOrigin: string | null) => {
   const siteUrl = Deno.env.get('SITE_URL') || '';
-  const localOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
-  return requestOrigin && (requestOrigin === siteUrl || localOrigins.includes(requestOrigin)) ? requestOrigin : null;
+  // Testes no computador: localhost em qualquer porta (npm run dev / preview).
+  const local = /^http:\/\/(localhost|127\.0\.0\.1):\d{2,5}$/.test(requestOrigin || '');
+  return requestOrigin && (requestOrigin === siteUrl || local) ? requestOrigin : null;
 };

@@ -12,8 +12,9 @@ const json = (body: unknown, status = 200, origin?: string) => new Response(stat
 
 const allowedOrigin = (requestOrigin: string | null) => {
   const siteUrl = Deno.env.get('SITE_URL') || '';
-  const localOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
-  return requestOrigin && (requestOrigin === siteUrl || localOrigins.includes(requestOrigin)) ? requestOrigin : null;
+  // Testes no computador: localhost em qualquer porta (npm run dev / preview).
+  const local = /^http:\/\/(localhost|127\.0\.0\.1):\d{2,5}$/.test(requestOrigin || '');
+  return requestOrigin && (requestOrigin === siteUrl || local) ? requestOrigin : null;
 };
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
