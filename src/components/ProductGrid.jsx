@@ -143,6 +143,14 @@ const defaultProducts = [
     }
 ];
 
+// Bolinha de cor de cada sabor no cartão (sabores novos usam cinza).
+const flavorColors = {
+    natural: '#f1f5f9', laranja: '#fb923c', limao: '#a3e635', morango: '#f43f5e', uva: '#8b5cf6',
+    'frutas-vermelhas': '#be123c', maracuja: '#facc15', abacaxi: '#fde047', tangerina: '#f97316',
+    melancia: '#fb7185', cereja: '#dc2626', pessego: '#fdba74', baunilha: '#fef3c7', chocolate: '#92400e',
+    coco: '#e7e5e4', menta: '#5eead4', 'tutti-frutti': '#f472b6',
+};
+
 const ProductGrid = ({ searchTerm = '' }) => {
     const [activeTab, setActiveTab] = useState('Todos');
     const [productsList, setProductsList] = useState(defaultProducts);
@@ -277,22 +285,16 @@ const ProductGrid = ({ searchTerm = '' }) => {
                                 const sizeLabel = selected.options.availableSizes.length > 1 || selected.options.flavorPrice > 0;
                                 const showMissing = missing[item.id];
                                 return <div className="product-footer">
-                                    {withChoice && item.price && <div className={`product-options${showMissing ? ' is-missing' : ''}`}>
-                                        {selected.options.hasSizes && <label className="product-option">
-                                            <span>Quantidade</span>
-                                            <select value={selected.size} aria-invalid={showMissing && !selected.size ? true : undefined} onChange={event => choose(item.id, { size: event.target.value })}>
-                                                {!selected.size && <option value="" disabled>Escolha</option>}
-                                                {selected.options.availableSizes.map(size => <option key={size.id} value={size.id}>{size.label}</option>)}
-                                            </select>
-                                        </label>}
-                                        {selected.options.hasFlavors && <label className="product-option">
-                                            <span>Sabor</span>
-                                            <select value={selected.flavor} aria-invalid={showMissing && !selected.flavor ? true : undefined} onChange={event => choose(item.id, { flavor: event.target.value })}>
-                                                {!selected.flavor && <option value="" disabled>Escolha</option>}
-                                                {selected.flavorIds.map(id => <option key={id} value={id}>{flavorName(flavors, id)}</option>)}
-                                            </select>
-                                        </label>}
-                                        {showMissing && <p className="product-option-error" role="alert">Escolha {[!selected.size && selected.options.hasSizes && 'a quantidade', !selected.flavor && selected.options.hasFlavors && 'o sabor'].filter(Boolean).join(' e ')} para continuar.</p>}
+                                    {withChoice && item.price && <div className={`product-chips${showMissing ? ' is-missing' : ''}`}>
+                                        {selected.options.hasSizes && <div className="product-chip-row" role="radiogroup" aria-label={`Quantidade de ${item.name}`}>
+                                            {selected.options.availableSizes.map(size => <button type="button" key={size.id} role="radio" aria-checked={selected.size === size.id} className={`product-chip${selected.size === size.id ? ' is-on' : ''}`} onClick={() => choose(item.id, { size: size.id })}>{size.label}</button>)}
+                                        </div>}
+                                        {selected.options.hasFlavors && <div className="product-chip-row" role="radiogroup" aria-label={`Sabor de ${item.name}`}>
+                                            {selected.flavorIds.map(id => <button type="button" key={id} role="radio" aria-checked={selected.flavor === id} className={`product-chip product-chip--flavor${selected.flavor === id ? ' is-on' : ''}`} onClick={() => choose(item.id, { flavor: id })}>
+                                                <i style={{ background: flavorColors[id] || '#94a3b8' }} aria-hidden="true" />{id === NATURAL_FLAVOR ? 'Natural' : flavorName(flavors, id)}
+                                            </button>)}
+                                        </div>}
+                                        {showMissing && <p className="product-option-error" role="alert">Toque para escolher {[!selected.size && selected.options.hasSizes && 'a quantidade', !selected.flavor && selected.options.hasFlavors && 'o sabor'].filter(Boolean).join(' e ')}.</p>}
                                     </div>}
                                     <div className="product-price-row">
                                         <div className="product-price">
@@ -424,15 +426,15 @@ const ProductGrid = ({ searchTerm = '' }) => {
 
                 .product-card-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
                 .product-card-actions--single { grid-template-columns:1fr; }
-                .product-options { display:grid; grid-template-columns:repeat(auto-fit, minmax(118px, 1fr)); gap:8px; }
-                .product-option { display:grid; gap:5px; min-width:0; }
-                .product-option span { font-size:.68rem; font-weight:700; letter-spacing:.02em; color:var(--text-muted); }
-                .product-option select { width:100%; min-height:40px; padding:8px 30px 8px 10px; border-radius:8px; border:1px solid var(--border-subtle); background:rgba(255,255,255,.04) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center; color:var(--text-main); font:inherit; font-size:.8rem; appearance:none; cursor:pointer; text-overflow:ellipsis; }
-                .product-option select:hover { border-color:var(--border-blue); }
-                .product-option select:focus-visible { outline:2px solid var(--brand-blue); outline-offset:1px; }
-                .product-option select option { background:#0f1b26; color:#fff; }
-                .product-option select[aria-invalid] { border-color:#f97316; }
-                .product-option-error { grid-column:1 / -1; margin:0; font-size:.76rem; font-weight:600; color:#fb923c; }
+                .product-chips { display:grid; gap:7px; }
+                .product-chip-row { display:flex; flex-wrap:wrap; gap:5px; }
+                .product-chip { display:inline-flex; align-items:center; gap:5px; min-height:28px; padding:3px 10px; border-radius:999px; border:1px solid var(--border-subtle); background:transparent; color:var(--text-dim); font:inherit; font-size:.72rem; font-weight:600; line-height:1; cursor:pointer; transition:border-color .15s, background .15s, color .15s; }
+                .product-chip:hover { border-color:var(--border-blue); color:var(--text-main); }
+                .product-chip.is-on { border-color:var(--brand-blue); background:rgba(34,199,232,.14); color:#fff; }
+                .product-chip:focus-visible { outline:2px solid var(--brand-blue); outline-offset:1px; }
+                .product-chip i { width:8px; height:8px; border-radius:50%; flex:none; box-shadow:0 0 0 1px rgba(255,255,255,.18); }
+                .product-chips.is-missing .product-chip:not(.is-on) { border-color:rgba(249,115,22,.55); }
+                .product-option-error { margin:0; font-size:.74rem; font-weight:600; color:#fb923c; }
                 .product-card-actions button:disabled { opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
                 .btn-add-cart, .btn-buy-now { min-height:44px; display:flex; align-items:center; justify-content:center; gap:7px; border-radius:9px; font-size:.78rem; font-weight:800; transition:var(--transition); cursor:pointer; }
                 .btn-add-cart { background:rgba(34,199,232,.07); color:var(--brand-blue); border:1px solid var(--border-blue); }
