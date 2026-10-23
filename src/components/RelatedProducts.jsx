@@ -22,7 +22,7 @@ export default function RelatedProducts({ product }) {
     const priced = item => Number(item.price) > 0;
     const others = all.filter(item => String(item.id) !== String(product.id));
     const sameGoal = others.filter(item => goalOf(item) === goal);
-    // Mesmo objetivo à venda, depois outros à venda, depois do mesmo objetivo que chegam em breve.
+    // Mesmo objetivo com preço, depois outros com preço, depois do mesmo objetivo sem valor cadastrado.
     const picks = [...sameGoal.filter(priced), ...others.filter(item => priced(item) && goalOf(item) !== goal), ...sameGoal.filter(item => !priced(item))].slice(0, 4);
     if (!picks.length) return null;
 
@@ -36,7 +36,7 @@ export default function RelatedProducts({ product }) {
                     <Link to={`/produto/${item.id}`}>
                         <span className="purchase-related-photo"><img src={resolveProductImage(item)} alt="" loading="lazy" /></span>
                         <strong>{item.name}</strong>
-                        <small>{priced(item) ? <>{from ? 'A partir de ' : ''}<b>{money(item.price)}</b></> : 'Em breve'}</small>
+                        <small>{priced(item) ? <>{from ? 'A partir de ' : ''}<b>{money(item.price)}</b></> : 'Consulte o valor'}</small>
                     </Link>
                 </li>;
             })}

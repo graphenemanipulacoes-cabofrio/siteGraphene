@@ -72,6 +72,7 @@ export default function ProductPage() {
     const medical = /orienta[cç][aã]o m[eé]dica|prescri/i.test(product?.description || '');
 
     const buy = checkout => {
+        if (!purchasable) return;
         if (missingSize || missingFlavor) {
             setTried(true);
             document.querySelector('.purchase-options.is-missing, .purchase-options')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -89,7 +90,7 @@ export default function ProductPage() {
     };
 
     const missingNow = tried && (missingSize || missingFlavor);
-    const priceLabel = !purchasable ? 'Em breve' : price ? money(price) : `A partir de ${money(lowest)}`;
+    const priceLabel = !purchasable ? 'Consulte o valor' : price ? money(price) : `A partir de ${money(lowest)}`;
 
     return <StoreLayout><section className="purchase-page product-page"><div className="purchase-container">
         <Link to="/#produtos" className="purchase-back"><ArrowLeft size={16} /> Continuar comprando</Link>
@@ -122,7 +123,7 @@ export default function ProductPage() {
                         {price && units > 1 && <p className="purchase-buybox-total">Total: <strong>{money(price * units)}</strong></p>}
                         {missingNow && <p className="purchase-option-error" role="alert">Escolha {[missingSize && 'a quantidade', missingFlavor && 'o sabor'].filter(Boolean).join(' e ')} para continuar.</p>}
                         <div className="purchase-product-actions">
-                            <button className="purchase-primary" disabled={!purchasable} onClick={() => buy(true)}>{purchasable ? 'Comprar' : 'Em breve'} {purchasable && <ArrowRight size={18} />}</button>
+                            {purchasable ? <button className="purchase-primary" onClick={() => buy(true)}>Comprar <ArrowRight size={18} /></button> : <a className="purchase-primary" href={`${WHATSAPP_URL}?text=${encodeURIComponent(`Olá! Gostaria de consultar o valor de ${product.name}.`)}`} target="_blank" rel="noreferrer">Consultar valor <MessageCircle size={18} /></a>}
                             {purchasable && <button className="purchase-secondary" onClick={() => buy(false)}><ShoppingBag size={18} /> Adicionar ao carrinho e continuar comprando</button>}
                         </div>
                         {Number(config?.free_min) > 0 && purchasable && <p className="purchase-free-note">Frete grátis em compras a partir de {money(config.free_min)}.</p>}

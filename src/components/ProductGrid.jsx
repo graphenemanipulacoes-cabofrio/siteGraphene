@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient.ts';
-import { ShoppingBag, LayoutGrid, Dumbbell, Moon, Sparkles, Flame, HeartPulse, MessageCircle, ChevronDown } from 'lucide-react';
+import { ShoppingBag, ChevronDown, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getWhatsAppUrl } from '../config';
 import { resolveProductImage } from '../utils/productImages';
 import { NATURAL_FLAVOR, flavorName, productOptions, requiresChoice, useFlavors, variantPrice } from '../utils/productOptions';
 import { GOALS, goalLabel, goalOf } from '../utils/productGoals';
 import { money } from '../utils/commerce';
+import ProductRail from './ProductRail';
 import '../styles/vitrine.css';
 
 // Produtos de reserva caso o banco não responda.
@@ -126,15 +126,13 @@ const flavorColors = {
     coco: '#e7e5e4', menta: '#5eead4', 'tutti-frutti': '#f472b6',
 };
 
-const GOAL_ICONS = { todos: LayoutGrid, treino: Dumbbell, sono: Moon, pele: Sparkles, emagrecimento: Flame, saude: HeartPulse };
-const AVAILABLE_LIMIT = 8;
-const SOON_LIMIT = 6;
+const INITIAL_LIMIT = 8;
 
 const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
 
 const ProductGrid = ({ searchTerm = '' }) => {
     const [goal, setGoal] = useState('todos');
-    const [expanded, setExpanded] = useState({ available: false, soon: false });
+    const [expanded, setExpanded] = useState(false);
     const [productsList, setProductsList] = useState(defaultProducts);
     const navigate = useNavigate();
     const sectionRef = useRef(null);
@@ -186,60 +184,55 @@ const ProductGrid = ({ searchTerm = '' }) => {
     };
 
     const withGoal = productsList.map(item => ({ ...item, goal: goalOf(item) }));
-    const counts = Object.fromEntries(GOALS.map(item => [item.id, withGoal.filter(product => product.goal === item.id).length]));
     const term = searchTerm.trim().toLowerCase();
     const searching = term.length > 0;
     const visible = withGoal.filter(item => (goal === 'todos' || item.goal === goal)
         && (!searching || item.name.toLowerCase().includes(term) || item.description.toLowerCase().includes(term)));
-    const available = visible.filter(item => item.price);
-    const soon = visible.filter(item => !item.price);
-    const showAvailable = searching || expanded.available ? available : available.slice(0, AVAILABLE_LIMIT);
-    const showSoon = searching || expanded.soon ? soon : soon.slice(0, SOON_LIMIT);
+    const allProducts = goal === 'todos';
+    const shownProducts = allProducts || searching || expanded ? visible : visible.slice(0, INITIAL_LIMIT);
+    const ProductLayout = allProducts ? ProductRail : 'div';
 
     const pickGoal = id => {
         setGoal(id);
-        setExpanded({ available: false, soon: false });
+        setExpanded(false);
     };
-    const toggle = key => {
-        const closing = expanded[key];
-        setExpanded(current => ({ ...current, [key]: !current[key] }));
-        if (closing) sectionRef.current?.querySelector(`[data-part="${key}"]`)?.scrollIntoView({ block: 'start' });
+    const toggle = () => {
+        setExpanded(current => !current);
+        if (expanded) sectionRef.current?.querySelector('[data-part="catalog"]')?.scrollIntoView({ block: 'start' });
     };
     const goalName = goal === 'todos' ? '' : goalLabel(goal);
 
     return (
-        <section id="produtos" className="store-section products-section vt" ref={sectionRef}>
+        <section id="produtos" className="store-section products-section vt" ref={sectionRef} aria-labelledby="store-products-title">
             <div className="container">
-                <div className="store-section-header vt-header">
-                    <div className="store-badge"><ShoppingBag size={14} /><span>Produtos da loja</span></div>
-                    <h2>O que você procura?</h2>
-                    <p>Escolha um objetivo para ver os produtos indicados. Para uma fórmula sob medida, <Link to="/receita">envie sua receita para orçamento</Link>.</p>
-                </div>
+                <header className="vt-header">
+                    <div>
+                        <span className="vt-eyebrow">A seleção Graphène</span>
+                        <h2 id="store-products-title">Cuidado em cada escolha.</h2>
+                    </div>
+                    <p>Conheça nossa linha e encontre as apresentações para a sua rotina.</p>
+                </header>
 
                 <div className="vt-goals" role="group" aria-label="Filtrar por objetivo">
-                    {[{ id: 'todos', label: 'Todos' }, ...GOALS].map(item => {
-                        const Icon = GOAL_ICONS[item.id];
-                        const total = item.id === 'todos' ? withGoal.length : counts[item.id];
-                        return <button key={item.id} type="button" className={`vt-goal${goal === item.id ? ' is-on' : ''}`} aria-pressed={goal === item.id} onClick={() => pickGoal(item.id)}>
-                            <span className="vt-goal-icon"><Icon size={20} aria-hidden="true" /></span>
-                            <span className="vt-goal-text"><strong>{item.label}</strong><small>{plural(total, 'produto', 'produtos')}</small></span>
-                        </button>;
-                    })}
+                    {[{ id: 'todos', label: 'Todos os produtos' }, ...GOALS].map(item =>
+                        <button key={item.id} type="button" className={`vt-goal${goal === item.id ? ' is-on' : ''}`} aria-pressed={goal === item.id} onClick={() => pickGoal(item.id)}>{item.label}</button>
+                    )}
                 </div>
 
                 {searching && <p className="vt-search-note" role="status">{visible.length ? `${plural(visible.length, 'resultado', 'resultados')} para “${searchTerm.trim()}”${goalName ? ` em ${goalName}` : ''}.` : `Nenhum produto encontrado para “${searchTerm.trim()}”${goalName ? ` em ${goalName}` : ''}.`}</p>}
 
-                {(available.length > 0 || !searching) && <div className="vt-part" data-part="available">
-                    <div className="vt-part-head">
-                        <h3>Disponíveis para comprar</h3>
-                        {available.length > 0 && <span>{plural(available.length, 'produto', 'produtos')}</span>}
-                    </div>
-                    {available.length === 0 ? <p className="vt-empty">{goalName ? `Ainda não há produtos de ${goalName.toLowerCase()} à venda no site.` : 'Ainda não há produtos à venda no site.'} {soon.length > 0 && 'Veja abaixo os que chegam em breve.'}</p> :
-                        <div className="vt-grid">
-                            {showAvailable.map(item => {
+                {(visible.length > 0 || !searching) && <div className="vt-part" data-part="catalog">
+                    <h3 className="vt-sr-only">{goalName ? `${goalName}: produtos` : 'Produtos da loja'}</h3>
+                    {visible.length === 0 ? <p className="vt-empty">{goalName ? `Nenhum produto encontrado em ${goalName.toLowerCase()}.` : 'Nenhum produto encontrado.'}</p> :
+                        <ProductLayout className="vt-grid" {...(allProducts ? { id: 'vt-products-rail', label: 'Todos os produtos', resetKey: term } : {})}>
+                            {shownProducts.map(item => {
                                 const selected = choiceOf(item);
                                 const withChoice = requiresChoice(item);
-                                const fromLabel = withChoice && (selected.options.availableSizes.length > 1 || selected.options.flavorPrice > 0);
+                                const lowestPrice = selected.options.hasSizes
+                                    ? (selected.options.availableSizes.length ? Math.min(...selected.options.availableSizes.map(size => size.price)) : 0)
+                                    : Number(item.rawPrice) || 0;
+                                const hasPrice = lowestPrice > 0;
+                                const fromLabel = hasPrice && withChoice && (selected.options.availableSizes.length > 1 || selected.options.flavorPrice > 0);
                                 return <article key={item.id} className="vt-card">
                                     <Link to={`/produto/${item.id}`} state={{ product: item }} className="vt-card-photo" tabIndex={-1} aria-hidden="true">
                                         <img src={item.image_url} alt="" loading="lazy" onError={event => { event.currentTarget.style.visibility = 'hidden'; }} />
@@ -247,7 +240,7 @@ const ProductGrid = ({ searchTerm = '' }) => {
                                     <div className="vt-card-body">
                                         <Link to={`/produto/${item.id}`} state={{ product: item }} className="vt-card-name"><h4>{item.name}</h4></Link>
                                         {item.description && <p className="vt-card-desc">{item.description}</p>}
-                                        {withChoice && <div className="vt-chips">
+                                        {withChoice && hasPrice && <div className="vt-chips">
                                             {selected.options.hasSizes && <div className="vt-chip-row" role="radiogroup" aria-label={`Quantidade de ${item.name}`}>
                                                 {selected.options.availableSizes.map(size => <button type="button" key={size.id} role="radio" aria-checked={selected.size === size.id} className={`vt-chip${selected.size === size.id ? ' is-on' : ''}`} onClick={() => choose(item.id, { size: size.id })}>{size.label}</button>)}
                                             </div>}
@@ -258,44 +251,25 @@ const ProductGrid = ({ searchTerm = '' }) => {
                                             </div>}
                                         </div>}
                                         <div className="vt-card-buy">
-                                            <p className="vt-price">
-                                                <small>{selected.price ? 'Preço' : fromLabel ? 'A partir de' : 'Preço'}</small>
-                                                <strong>{selected.price ? money(selected.price) : `R$ ${item.price}`}</strong>
+                                            <p className={`vt-price${hasPrice ? '' : ' vt-price-unset'}`}>
+                                                {!selected.price && fromLabel && <small>A partir de</small>}
+                                                <strong>{hasPrice ? money(selected.price || lowestPrice) : 'Consulte o valor'}</strong>
                                             </p>
-                                            <button type="button" className="vt-buy" onClick={() => openProduct(item)} aria-label={`Comprar ${item.name}`}><ShoppingBag size={16} aria-hidden="true" /><span>Comprar</span></button>
+                                            <button type="button" className="vt-buy" onClick={() => openProduct(item)} aria-label={`${hasPrice ? 'Comprar' : 'Ver produto'} ${item.name}`}>{hasPrice && <ShoppingBag size={16} aria-hidden="true" />}<span>{hasPrice ? 'Comprar' : 'Ver produto'}</span></button>
                                         </div>
                                     </div>
                                 </article>;
                             })}
-                        </div>}
-                    {!searching && available.length > AVAILABLE_LIMIT && <button type="button" className="vt-more" onClick={() => toggle('available')} aria-expanded={expanded.available}>
-                        {expanded.available ? 'Mostrar menos' : `Ver todos os ${available.length} produtos`}<ChevronDown size={17} aria-hidden="true" />
+                        </ProductLayout>}
+                    {!allProducts && !searching && visible.length > INITIAL_LIMIT && <button type="button" className="vt-more" onClick={toggle} aria-expanded={expanded}>
+                        {expanded ? 'Mostrar menos' : `Ver todos os ${visible.length} produtos`}<ChevronDown size={17} aria-hidden="true" />
                     </button>}
                 </div>}
 
-                {soon.length > 0 && <div className="vt-part vt-soon" data-part="soon">
-                    <div className="vt-part-head">
-                        <div>
-                            <h3>Em breve no site</h3>
-                            <p>Ainda sem venda pelo site. Quer algum deles agora? Peça pelo WhatsApp.</p>
-                        </div>
-                        <span>{plural(soon.length, 'produto', 'produtos')}</span>
-                    </div>
-                    <ul className="vt-soon-list">
-                        {showSoon.map(item => <li key={item.id} className="vt-soon-item">
-                            <Link to={`/produto/${item.id}`} state={{ product: item }} className="vt-soon-link">
-                                <span className="vt-soon-photo"><img src={item.image_url} alt="" loading="lazy" onError={event => { event.currentTarget.style.visibility = 'hidden'; }} /></span>
-                                <span className="vt-soon-text"><strong>{item.name}</strong><small>{goalLabel(item.goal)}</small></span>
-                            </Link>
-                            <a className="vt-soon-wa" href={getWhatsAppUrl(`Olá! Tenho interesse em ${item.name}. Vocês têm disponível?`)} target="_blank" rel="noopener noreferrer" aria-label={`Pedir ${item.name} pelo WhatsApp`}>
-                                <MessageCircle size={17} aria-hidden="true" /><span>Pedir</span>
-                            </a>
-                        </li>)}
-                    </ul>
-                    {!searching && soon.length > SOON_LIMIT && <button type="button" className="vt-more" onClick={() => toggle('soon')} aria-expanded={expanded.soon}>
-                        {expanded.soon ? 'Mostrar menos' : `Ver mais ${soon.length - SOON_LIMIT} produtos em breve`}<ChevronDown size={17} aria-hidden="true" />
-                    </button>}
-                </div>}
+                <div className="vt-prescription">
+                    <p>Um cuidado mais individualizado?</p>
+                    <Link to="/receita">Solicite um orçamento para a sua fórmula <ArrowRight size={16} aria-hidden="true" /></Link>
+                </div>
             </div>
         </section>
     );
