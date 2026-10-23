@@ -10,6 +10,7 @@ const adminActions = new Set(['list_accounts', 'save_account', 'revoke_account',
 const counterActions = new Set(['session', 'logout', 'summary', 'list_orders', 'order_detail', 'list_requests', 'request_detail']);
 // Cadastro de produtos: só contas do tipo farmacêutico (e administradores).
 const productActions = new Set(['products_list', 'product_save', 'product_delete', 'products_reorder', 'product_image_upload', 'flavor_save', 'flavor_delete']);
+const materialActions = new Set(['materials_list', 'material_save', 'material_delete', 'material_image_upload']);
 const roles = new Set(['balcao', 'farmaceutico']);
 // Regras de frete (painel admin > Frete e entrega): só administradores alteram.
 const settingsActions = new Set(['shipping_save']);
@@ -163,7 +164,7 @@ Deno.serve(async (req: Request) => {
       return json({ token: adminToken, expiresAt, user: { username: adminUsername, displayName: adminUsername, role: 'admin' } }, 200, origin);
     }
 
-    if (!counterActions.has(action) && !productActions.has(action) && !settingsActions.has(action)) return json({ error: 'invalid_action' }, 400, origin);
+    if (!counterActions.has(action) && !productActions.has(action) && !materialActions.has(action) && !settingsActions.has(action)) return json({ error: 'invalid_action' }, 400, origin);
     const token = text(body.sessionToken, 100);
     const isAdmin = adminTokenPattern.test(token);
     if (!isAdmin && !/^[a-f0-9]{64}$/.test(token)) return json({ error: 'unauthorized' }, 401, origin);
@@ -188,6 +189,58 @@ Deno.serve(async (req: Request) => {
     }
     await admin.from(isAdmin ? 'admin_sessions' : 'counter_sessions').update({ last_used_at: new Date().toISOString() }).eq('token_hash', tokenHash);
     if (action === 'session') return json({ user: { username: account.username, displayName: account.display_name, role: account.role } }, 200, origin);
+    if (materialActions.has(action)) {
+      if (account.role !== 'farmaceutico' && account.role !== 'admin') return json({ error: 'forbidden' }, 403, origin);
+      if (action === 'materials_list') {
+        const { data, error } = await admin.from('materias_primas').select('*').order('display_order').order('name').limit(1000);
+        return error ? json({ error: 'unable_to_load_data' }, 500, origin) : json({ materials: data || [] }, 200, origin);
+      }
+      if (action === 'material_image_upload') {
+        const extension = text(body.extension, 5).toLowerCase();
+        if (!productImageTypes[extension]) return json({ error: 'invalid_image_type' }, 400, origin);
+        const path = `products/material_${Date.now()}_${crypto.randomUUID()}.${extension}`;
+        const { data, error } = await admin.storage.from('receitas').createSignedUploadUrl(path);
+        return error || !data?.token ? json({ error: 'unable_to_prepare_upload' }, 500, origin)
+          : json({ path: data.path, token: data.token, contentType: productImageTypes[extension] }, 200, origin);
+      }
+      const id = body.id === undefined || body.id === null || body.id === '' ? null : Number(body.id);
+      if (id !== null && (!Number.isSafeInteger(id) || id < 1)) return json({ error: 'invalid_material' }, 400, origin);
+      if (action === 'material_delete') {
+        if (!id) return json({ error: 'invalid_material' }, 400, origin);
+        const { data, error } = await admin.from('materias_primas').delete().eq('id', id).select('id');
+        return error ? json({ error: 'unable_to_save_material' }, 500, origin)
+          : data?.length ? json({ ok: true }, 200, origin) : json({ error: 'not_found' }, 404, origin);
+      }
+      const material = body.material;
+      if (!material || typeof material !== 'object' || Array.isArray(material)) return json({ error: 'invalid_material' }, 400, origin);
+      const name = text(material.name, 180);
+      const category = text(material.category, 100);
+      const tags = Array.isArray(material.tags) ? material.tags : [];
+      const imageUrl = text(material.image_url, 1200) || null;
+      let validImage = imageUrl === null;
+      if (imageUrl) {
+        try {
+          const url = new URL(imageUrl);
+          validImage = url.origin === new URL(Deno.env.get('SUPABASE_URL')!).origin && !url.search && !url.hash
+            && /^\/storage\/v1\/object\/public\/receitas\/products\/material_[0-9]+_[0-9a-f-]+\.(jpg|jpeg|png|webp)$/.test(url.pathname);
+        } catch { /* Only this catalogue's uploaded images can be attached. */ }
+      }
+      if (!name || !category || !validImage || tags.length > 8 || tags.some((tag: unknown) => typeof tag !== 'string' || !tag.trim() || tag.length > 60)) return json({ error: 'invalid_material' }, 400, origin);
+      const values: Record<string, unknown> = {
+        name, category, lab: text(material.lab, 180), headline: text(material.headline, 300),
+        description: text(material.description, 4000), tags: [...new Set(tags.map((tag: string) => tag.trim()))],
+        image_url: imageUrl, updated_at: new Date().toISOString(),
+      };
+      if (id === null) {
+        const { data: last } = await admin.from('materias_primas').select('display_order').order('display_order', { ascending: false }).limit(1).maybeSingle();
+        values.display_order = Number(last?.display_order ?? -1) + 1;
+      }
+      const { data, error } = id === null
+        ? await admin.from('materias_primas').insert(values).select('*').single()
+        : await admin.from('materias_primas').update(values).eq('id', id).select('*').maybeSingle();
+      return error ? json({ error: 'unable_to_save_material' }, 500, origin)
+        : data ? json({ material: data }, 200, origin) : json({ error: 'not_found' }, 404, origin);
+    }
     if (settingsActions.has(action)) {
       if (account.role !== 'admin') return json({ error: 'forbidden' }, 403, origin);
       const { data: config, error: configError } = await admin.from('loja_config').select('frete').eq('id', 1).maybeSingle();

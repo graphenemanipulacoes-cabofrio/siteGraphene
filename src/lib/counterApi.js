@@ -15,6 +15,8 @@ export const counterErrors = {
     invalid_shipping: 'Confira os valores: preço entre R$ 0 e R$ 1.000 e prazo mínimo menor ou igual ao máximo.',
     unable_to_save_settings: 'Não foi possível salvar as regras de frete. Tente de novo.',
     invalid_flavor: 'Digite um nome de sabor com pelo menos 2 letras.',
+    invalid_material: 'Confira o nome, categoria, imagem e os marcadores (até 8, com no máximo 60 caracteres cada).',
+    unable_to_save_material: 'Não foi possível salvar a matéria-prima. Tente novamente.',
     flavor_exists: 'Esse sabor já está na lista.',
     unable_to_save_flavor: 'Não foi possível salvar o sabor. Tente de novo.',
     invalid_image_type: 'Use uma imagem JPG, PNG ou WEBP.',

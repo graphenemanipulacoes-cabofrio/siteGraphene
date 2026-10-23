@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { ArrowLeft, LoaderCircle, LockKeyhole, LogOut, Monitor, LayoutGrid, ShieldCheck } from 'lucide-react';
 import AdminProducts from '../components/AdminProducts';
+import AdminMaterials from '../components/AdminMaterials';
+import { materialsApi } from '../lib/materialsApi';
 import { counterRequest } from '../lib/counterApi';
 import { pharmacistProductsApi } from '../lib/productsApi';
 import { PHARMACIST_SESSION_KEY, adminStaffSession, clearStaffSession, readStaffSession, staffRoleLabels } from '../utils/counter';
@@ -20,6 +22,7 @@ export default function FarmaceuticoPage() {
     const [credentials, setCredentials] = useState({ username: '', password: '' });
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState('');
+    const [view, setView] = useState('products');
 
     const revoke = useCallback(text => {
         clearStaffSession(PHARMACIST_SESSION_KEY); setSession(null); setMessage(text || '');
@@ -51,6 +54,7 @@ export default function FarmaceuticoPage() {
     }, [revoke]);
 
     const api = useMemo(() => session?.token ? pharmacistProductsApi(session.token, revoke) : null, [session?.token, revoke]);
+    const materialApi = useMemo(() => session?.token ? materialsApi(session.token, revoke) : null, [session?.token, revoke]);
 
     const login = async event => {
         event.preventDefault(); setBusy(true); setMessage('');
@@ -95,7 +99,7 @@ export default function FarmaceuticoPage() {
             <header className="staff-bar">
                 <div className="staff-bar-left">
                     <img src="/assets/logo.png" alt="Graphène" />
-                    <div className="staff-bar-title"><strong>Produtos da loja</strong><span>{session.user?.displayName || session.user?.username} · {(staffRoleLabels[session.user?.role] || 'Farmacêutico').toLowerCase()}</span></div>
+                    <div className="staff-bar-title"><strong>Catálogo da Graphène</strong><span>{session.user?.displayName || session.user?.username} · {(staffRoleLabels[session.user?.role] || 'Farmacêutico').toLowerCase()}</span></div>
                 </div>
                 <div className="staff-bar-actions">
                     {session.user?.role === 'admin' && <Link className="staff-btn" to="/admin"><ShieldCheck size={16} aria-hidden="true" /> Administração</Link>}
@@ -104,8 +108,9 @@ export default function FarmaceuticoPage() {
                     <button type="button" className="staff-btn" onClick={logout} disabled={busy}><LogOut size={16} aria-hidden="true" /> Sair</button>
                 </div>
             </header>
-            <p className="staff-lead">Cadastre e revise os produtos: foto, nome, descrição e preço. As alterações aparecem no site assim que você salva. Arraste os cartões para mudar a ordem da vitrine e clique em "Salvar ordem".</p>
-            {api && <AdminProducts api={api} />}
+            <nav className="staff-catalog-tabs" aria-label="Catálogos"><button className={`staff-btn ${view === 'products' ? 'primary' : ''}`} aria-pressed={view === 'products'} onClick={() => setView('products')}>Produtos</button><button className={`staff-btn ${view === 'materials' ? 'primary' : ''}`} aria-pressed={view === 'materials'} onClick={() => setView('materials')}>Matérias-primas</button></nav>
+            <p className="staff-lead">{view === 'products' ? 'Cadastre e revise os produtos: foto, nome, descrição e preço. Arraste os cartões e clique em “Salvar ordem” para organizar a vitrine.' : 'Cadastre e revise matérias-primas, fornecedores, categorias, descrições e imagens. As alterações aparecem na página pública após salvar.'}</p>
+            {view === 'products' ? api && <AdminProducts api={api} /> : materialApi && <AdminMaterials api={materialApi} />}
         </div>
     </main>;
 }

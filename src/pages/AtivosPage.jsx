@@ -1,126 +1,29 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import FloatingWhatsApp from '../components/FloatingWhatsApp';
 import { getWhatsAppUrl } from '../config';
 import { ShieldCheck, Sparkles, MessageCircle, FileUp, Award, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { listPublicMaterials } from '../lib/materialsApi';
+import MaterialThumbnail from '../components/MaterialThumbnail';
+import '../styles/materials.css';
 
-const activesList = [
-    {
-        id: 'ormona',
-        name: 'Ormona®',
-        lab: 'Ages Bioactive Compounds',
-        category: 'Compostos bioativos',
-        headline: 'Matéria-prima da Ages Bioactive Compounds',
-        description: 'Conheça as informações técnicas disponibilizadas pelo fornecedor. A adequação a uma fórmula individualizada depende de avaliação profissional.',
-        tags: ['Ages Bioactive', 'Informações técnicas', 'Uso individualizado']
-    },
-    {
-        id: 'terasen',
-        name: 'Terasen®',
-        lab: 'Ages Bioactive Compounds',
-        category: 'Extratos vegetais',
-        headline: 'Bioativos de origem vegetal',
-        description: 'Matéria-prima apresentada pela Ages Bioactive Compounds. Nossa equipe pode orientar sobre documentação, composição e disponibilidade.',
-        tags: ['Origem vegetal', 'Ages Bioactive', 'Documentação técnica']
-    },
-    {
-        id: 'chronic',
-        name: 'Chronic®',
-        lab: 'Ages Bioactive Compounds',
-        category: 'Extratos vegetais',
-        headline: 'Extrato vegetal padronizado',
-        description: 'Matéria-prima derivada de Bixa orellana. Consulte nossa equipe sobre suas características técnicas e critérios de utilização.',
-        tags: ['Bixa orellana', 'Extrato vegetal', 'Ages Bioactive']
-    },
-    {
-        id: 'glisodin',
-        name: 'GliSODin®',
-        lab: 'Lemma Supply',
-        category: 'Compostos bioativos',
-        headline: 'Composição à base de SOD e gliadina',
-        description: 'Conheça a composição e a documentação técnica dessa matéria-prima apresentada pela Lemma Supply.',
-        tags: ['SOD', 'Gliadina', 'Lemma Supply']
-    },
-    {
-        id: 'mitburn',
-        name: 'Mitburn®',
-        lab: 'Biodiversité',
-        category: 'Extratos vegetais',
-        headline: 'Matéria-prima de origem vegetal',
-        description: 'Ingrediente apresentado pela Biodiversité. Nossa equipe pode informar características, documentação e disponibilidade.',
-        tags: ['Origem vegetal', 'Biodiversité', 'Consulta técnica']
-    },
-    {
-        id: 'zembrin',
-        name: 'Zembrin®',
-        lab: 'Lemma Supply',
-        category: 'Extratos vegetais',
-        headline: 'Extrato botânico padronizado',
-        description: 'Matéria-prima de Sceletium tortuosum apresentada pela Lemma Supply. Consulte a equipe farmacêutica sobre informações técnicas.',
-        tags: ['Sceletium tortuosum', 'Extrato botânico', 'Lemma Supply']
-    },
-    {
-        id: 'exsynutriment',
-        name: 'Exsynutriment®',
-        lab: 'AQIA • Biotec',
-        category: 'Compostos bioativos',
-        headline: 'Composto de silício orgânico',
-        description: 'Conheça a apresentação e a documentação técnica dessa matéria-prima fornecida pela AQIA Biotec.',
-        tags: ['Silício orgânico', 'AQIA Biotec', 'Consulta técnica']
-    },
-    {
-        id: 'drenow-c',
-        name: 'Drenow C®',
-        lab: 'Florien',
-        category: 'Compostos bioativos',
-        headline: 'Composição com vitamina C e bioflavonoides',
-        description: 'Matéria-prima apresentada pela Florien. Peça informações sobre composição, documentação e disponibilidade.',
-        tags: ['Vitamina C', 'Bioflavonoides', 'Florien']
-    },
-    {
-        id: 'akkermat',
-        name: 'Akkermat®',
-        lab: 'Florien',
-        category: 'Compostos bioativos',
-        headline: 'Matéria-prima em apresentação beadlets',
-        description: 'Ingrediente apresentado pela Florien. Nossa equipe pode esclarecer as especificações técnicas fornecidas pelo fabricante.',
-        tags: ['Beadlets', 'Florien', 'Documentação técnica']
-    },
-    {
-        id: 'bio-arct',
-        name: 'Bio-Arct®',
-        lab: 'AQIA • Biotec',
-        category: 'Compostos bioativos',
-        headline: 'Matéria-prima de origem marinha',
-        description: 'Conheça a composição e as informações técnicas desse ingrediente apresentado pela AQIA Biotec.',
-        tags: ['Origem marinha', 'AQIA Biotec', 'Consulta técnica']
-    },
-    {
-        id: 'glycoxil',
-        name: 'Glycoxil®',
-        lab: 'AQIA • Biotec',
-        category: 'Compostos bioativos',
-        headline: 'Ingrediente com documentação do fornecedor',
-        description: 'Matéria-prima apresentada pela AQIA Biotec. Consulte a equipe para informações sobre composição e critérios de uso.',
-        tags: ['AQIA Biotec', 'Informações técnicas', 'Uso individualizado']
-    },
-    {
-        id: 'phytgen',
-        name: 'PhyTgen®',
-        lab: 'Lemma Supply',
-        category: 'Compostos bioativos',
-        headline: 'Associação de fucoxantina e óleo de romã',
-        description: 'Conheça as características técnicas dessa matéria-prima apresentada pela Lemma Supply. Uso em fórmula sujeito à avaliação profissional.',
-        tags: ['Fucoxantina', 'Óleo de romã', 'Lemma Supply']
-    }
-];
-
-const categories = ['Todos', 'Extratos vegetais', 'Compostos bioativos'];
 
 const AtivosPage = () => {
     const [selectedCategory, setSelectedCategory] = useState('Todos');
+    const [activesList, setActivesList] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [refresh, setRefresh] = useState(0);
+    useEffect(() => {
+        let active = true;
+        listPublicMaterials().then(data => { if (active) { setActivesList(data); setError(''); } })
+            .catch(failure => { if (active) setError(failure.message); })
+            .finally(() => { if (active) setLoading(false); });
+        return () => { active = false; };
+    }, [refresh]);
+    const categories = ['Todos', ...new Set(activesList.map(item => item.category))];
 
     const filteredActives = selectedCategory === 'Todos'
         ? activesList
@@ -184,13 +87,14 @@ const AtivosPage = () => {
                         </div>
 
                         {/* Grid de Ativos */}
+                        {loading && <p role="status">Carregando matérias-primas…</p>}
+                        {error && <div className="rm-error" role="alert">{error} <button className="rm-btn" onClick={() => { setLoading(true); setRefresh(current => current + 1); }}>Tentar novamente</button></div>}
+                        {!loading && !error && !filteredActives.length && <p>{activesList.length ? 'Nenhuma matéria-prima nesta categoria. Selecione outra categoria acima.' : 'Consulte nossa equipe sobre as matérias-primas disponíveis.'}</p>}
                         <div className="actives-grid">
                             {filteredActives.map((active) => (
                                 <div key={active.id} className="store-card active-card">
                                     <div className="active-card-top">
-                                        <div className="active-seal-box" aria-hidden="true">
-                                            <Sparkles size={28} color="var(--brand-blue)" />
-                                        </div>
+                                        <MaterialThumbnail src={active.image_url} name={active.name} className="active-seal-box" />
                                         <div className="active-header-info">
                                             <span className="active-lab-tag">{active.lab}</span>
                                             <h2 className="active-title">{active.name}</h2>

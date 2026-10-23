@@ -11,7 +11,7 @@ Página: `/balcaographene`. Acesso operacional para consulta de pedidos e solici
 
 Não existe senha padrão no código. As senhas da equipe são verificadas no servidor e armazenadas com PBKDF2-HMAC-SHA256, sal individual e 600.000 iterações; nunca são devolvidas ao navegador.
 
-O perfil **Farmacêutico** também acessa o balcão e tem uma área própria em `/farmaceutico` para cadastrar e revisar produtos. As duas contas são gerenciadas no mesmo formulário do admin; nenhuma delas permite entrar na administração. A página `/colaboradores` reúne os acessos da equipe.
+O perfil **Farmacêutico** também acessa o balcão e tem uma área própria em `/farmaceutico` para cadastrar e revisar produtos e matérias-primas, incluindo adicionar, substituir ou remover imagens. As duas contas são gerenciadas no mesmo formulário do admin; nenhuma delas permite entrar na administração. A página `/colaboradores` reúne os acessos da equipe.
 
 ## Uso
 

@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { Toaster, toast } from 'sonner';
 import AdminProducts from '../components/AdminProducts';
+import AdminMaterials from '../components/AdminMaterials';
 import AdminOrders from '../components/AdminOrders';
 import AdminFinance from '../components/AdminFinance';
 import AdminPartners from '../components/AdminPartners';
@@ -331,6 +332,10 @@ const Admin = () => {
                     <Package size={22} />
                     <span>Produtos</span>
                 </div>
+                <button type="button" className={`nav-item ${view === 'materials' ? 'active' : ''}`} style={{ background: 'none', border: 0, font: 'inherit' }} aria-pressed={view === 'materials'} onClick={() => setView('materials')}>
+                    <FlaskConical size={22} />
+                    <span>Matérias-primas</span>
+                </button>
                 <div className={`nav-item ${view === 'shipping' ? 'active' : ''}`} onClick={() => setView('shipping')}>
                     <Truck size={22} />
                     <span>Frete</span>
@@ -400,6 +405,9 @@ const Admin = () => {
                     >
                         <Package size={18} /> Produtos
                     </Button>
+                    <Button variant="ghost" className={`admin-nav-link ${view === 'materials' ? 'active' : ''}`} onClick={() => { setView('materials'); setExpandedId(null); }}>
+                        <FlaskConical size={18} /> Matérias-primas
+                    </Button>
                     <Button
                         variant="ghost"
                         className={`admin-nav-link ${view === 'shipping' ? 'active' : ''}`}
@@ -446,7 +454,7 @@ const Admin = () => {
                         )}
                         <span className="admin-eyebrow">CENTRAL DE OPERAÇÕES</span>
                         <h1 className="admin-page-title">
-                            {view === 'active' ? 'Solicitações' : view === 'orders' ? 'Pedidos e Entregas' : view === 'counter' ? 'Acessos da Equipe' : view === 'finance' ? 'Central Financeira' : view === 'products' ? 'Gerenciar Produtos' : view === 'shipping' ? 'Frete e entrega' : view === 'admins' ? 'Gerenciar Admins' : view === 'partners' ? 'Parceiros' : 'Lixeira'}
+                            {view === 'active' ? 'Solicitações' : view === 'orders' ? 'Pedidos e Entregas' : view === 'counter' ? 'Acessos da Equipe' : view === 'finance' ? 'Central Financeira' : view === 'products' ? 'Gerenciar Produtos' : view === 'materials' ? 'Gerenciar Matérias-primas' : view === 'shipping' ? 'Frete e entrega' : view === 'admins' ? 'Gerenciar Admins' : view === 'partners' ? 'Parceiros' : 'Lixeira'}
                         </h1>
                         <p className="admin-page-copy">{view === 'orders' ? 'Acompanhe pagamentos, separação e envios em um só lugar.' : view === 'finance' ? 'Controle vendas, taxas, comissões, cupons e repasses em uma única área.' : view === 'partners' ? 'Analise inscrições, ative cupons e acompanhe o acesso dos parceiros.' : view === 'active' ? 'Receitas e solicitações recebidas pelos canais da Graphène.' : 'Gerencie os dados operacionais da Graphène com segurança.'}</p>
                     </div>
@@ -476,6 +484,8 @@ const Admin = () => {
                     <AdminFinance onUnauthorized={handleLogout} />
                 ) : view === 'products' ? (
                     <AdminProducts />
+                ) : view === 'materials' ? (
+                    <AdminMaterials />
                 ) : view === 'shipping' ? (
                     <AdminShipping onUnauthorized={handleLogout} />
                 ) : view === 'partners' ? (

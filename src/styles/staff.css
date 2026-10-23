@@ -79,6 +79,7 @@
 .staff-bar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .staff-root .staff-lead { color: var(--text-dim); font-size: 15px; line-height: 1.6; margin-bottom: 26px; max-width: 760px; }
 .staff-spin { animation: staff-spin 1s linear infinite; }
+.staff-catalog-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
 @keyframes staff-spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 720px) {

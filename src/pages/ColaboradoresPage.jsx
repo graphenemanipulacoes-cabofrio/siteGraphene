@@ -10,8 +10,8 @@ const doors = [
         text: 'Pedidos, produtos, financeiro, parceiros e os acessos de toda a equipe: criar, trocar senha e excluir usuários.',
     },
     {
-        to: '/farmaceutico', icon: FlaskConical, title: 'Farmacêutico', tag: 'Produtos',
-        text: 'Cadastro e revisão dos produtos da loja: foto, nome, descrição e preço.',
+        to: '/farmaceutico', icon: FlaskConical, title: 'Farmacêutico', tag: 'Catálogos',
+        text: 'Cadastro e revisão de produtos e matérias-primas, com gestão de imagens e informações técnicas.',
     },
     {
         to: '/balcaographene', icon: Monitor, title: 'Balcão', tag: 'Pedidos',

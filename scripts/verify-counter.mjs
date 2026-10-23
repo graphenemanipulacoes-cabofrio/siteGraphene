@@ -44,6 +44,9 @@ class Query {
   single() { this.isSingle = true; return this; }
   limit() { return this; }
   result() {
+    if (this.table === 'materias_primas' && this.operation === 'delete') return { data: [{ id: 5 }], error: null };
+    if (this.table === 'materias_primas' && this.isSingle) return { data: { id: 5, display_order: 11, ...this.value }, error: null };
+    if (this.table === 'materias_primas') return { data: [{ id: 5, name: 'Matéria-prima de teste', category: 'Categoria teste' }], error: null };
     if (this.table === 'counter_sessions' && this.isSingle) return { data: state.session, error: null };
     if (this.table === 'counter_accounts' && this.isSingle) return { data: state.account, error: null };
     if (this.table === 'admin_sessions' && this.isSingle) return { data: state.adminSession, error: null };
@@ -150,9 +153,35 @@ assert.equal(pharmacistLogin.data.user.role, 'farmaceutico');
 state.account = null;
 state.session.counter_accounts.role = 'balcao';
 assert.equal((await send({ action: 'products_list', sessionToken: 'a'.repeat(64) })).status, 403);
+for (const action of ['materials_list', 'material_save', 'material_delete', 'material_image_upload']) {
+  assert.equal((await send({ action, sessionToken: 'a'.repeat(64) })).status, 403, `Balcão cannot ${action}`);
+  assert.equal((await send({ action })).status, 401, `Anonymous cannot ${action}`);
+}
 assert.equal((await send({ action: 'product_save', sessionToken: 'a'.repeat(64), name: 'X' })).status, 403);
 state.session.counter_accounts.role = 'farmaceutico';
 assert.equal((await send({ action: 'products_list', sessionToken: 'a'.repeat(64) })).status, 200);
+const materialFixture = { name: 'Matéria-prima de teste', lab: 'Fornecedor de teste', category: 'Categoria teste', headline: 'Informação técnica', description: 'Descrição sintética', tags: ['Teste'], image_url: null };
+assert.equal((await send({ action: 'materials_list', sessionToken: 'a'.repeat(64) })).data.materials.length, 1);
+const materialSave = body => send({ action: 'material_save', sessionToken: 'a'.repeat(64), material: materialFixture, ...body });
+assert.equal((await materialSave({})).status, 200);
+assert.equal(calls.filter(call => call.table === 'materias_primas' && call.operation === 'insert').at(-1).value.display_order, 12);
+assert.equal((await materialSave({ id: 5 })).status, 200);
+assert.equal((await materialSave({ id: '../bad' })).status, 400);
+assert.equal((await materialSave({ material: { ...materialFixture, name: '' } })).status, 400);
+assert.equal((await materialSave({ material: { ...materialFixture, category: '' } })).status, 400);
+assert.equal((await materialSave({ material: { ...materialFixture, tags: Array(9).fill('Tag') } })).status, 400);
+for (const image_url of ['javascript:alert(1)', 'https://attacker.example/x.png', 'https://project.supabase.co/storage/v1/object/public/receitas/legacy-recipe.png']) {
+  assert.equal((await materialSave({ material: { ...materialFixture, image_url } })).status, 400);
+}
+assert.equal((await send({ action: 'material_image_upload', sessionToken: 'a'.repeat(64), extension: 'svg' })).status, 400);
+const materialUpload = await send({ action: 'material_image_upload', sessionToken: 'a'.repeat(64), extension: 'webp' });
+assert.equal(materialUpload.status, 200);
+assert.match(materialUpload.data.path, /^products\/material_[0-9]+_[0-9a-f-]+\.webp$/);
+assert.equal((await materialSave({ id: 5, material: { ...materialFixture, image_url: `https://project.supabase.co/storage/v1/object/public/receitas/${materialUpload.data.path}` } })).status, 200);
+assert.equal((await materialSave({ id: 5, material: { ...materialFixture, image_url: null } })).status, 200);
+assert.equal(calls.filter(call => call.table === 'materias_primas' && call.operation === 'update').at(-1).value.image_url, null);
+assert.equal((await send({ action: 'material_delete', id: 5, sessionToken: 'a'.repeat(64) })).status, 200);
+assert.equal((await send({ action: 'material_delete', sessionToken: 'a'.repeat(64) })).status, 400);
 assert.equal((await send({ action: 'product_save', sessionToken: 'a'.repeat(64), name: 'Teste', imageUrl: 'javascript:alert(1)' })).status, 400);
 assert.equal((await send({ action: 'product_save', sessionToken: 'a'.repeat(64), name: 'Teste', price: -1 })).status, 400);
 assert.equal((await send({ action: 'product_save', sessionToken: 'a'.repeat(64), name: '', price: 10 })).status, 400);
@@ -231,6 +260,9 @@ const adminSessionCheck = await send({ action: 'session', sessionToken: adminTok
 assert.equal(adminSessionCheck.status, 200);
 assert.equal(adminSessionCheck.data.user.role, 'admin');
 assert.equal((await send({ action: 'products_list', sessionToken: adminToken })).status, 200);
+assert.equal((await send({ action: 'materials_list', sessionToken: adminToken }, {}, 'https://site-graphene.vercel.app')).status, 200);
+assert.equal((await send({ action: 'material_save', material: materialFixture, sessionToken: adminToken })).status, 200);
+assert.equal((await send({ action: 'material_delete', id: 5, sessionToken: adminToken })).status, 200);
 assert.equal((await send({ action: 'list_orders', sessionToken: adminToken })).status, 200);
 assert.equal((await send({ action: 'products_list', sessionToken: 'c'.repeat(42) })).status, 401);
 assert.equal((await send({ action: 'logout', sessionToken: adminToken })).status, 200);
