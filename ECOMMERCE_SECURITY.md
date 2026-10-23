@@ -10,7 +10,7 @@
 - O carrinho autenticado é salvo por conta em `customer_carts`; a leitura usa RLS e as alterações passam por `customer_cart_sync`, que usa `auth.uid()` e recibos de operações idempotentes. O cache por conta no navegador preserva alterações sem conexão; não determina preços cobrados.
 - A criação do pedido é transacional e usa chave de idempotência para evitar duplicidade.
 - Tokens do Mercado Pago ficam somente nos secrets das Edge Functions.
-- O checkout aceita somente as origens oficiais com e sem `www`, a origem configurada em `SITE_URL` e localhost para desenvolvimento. Não há liberação genérica de origens.
+- O checkout aceita somente as origens oficiais com e sem `www`, a publicação estável desta mesma loja em `https://site-graphene.vercel.app`, a origem configurada em `SITE_URL` e localhost para desenvolvimento. Não aceita outros projetos/subdomínios Vercel. O pagamento retorna à mesma origem HTTPS que iniciou a compra para preservar a sessão.
 - Novas tentativas reaproveitam o pedido e a URL de pagamento já salva; pedidos concluídos não recebem outra preferência. Falhas recebem uma referência de diagnóstico, sem expor CPF, endereço ou credenciais nos logs da aplicação.
 - O webhook valida a assinatura HMAC, consulta o pagamento no Mercado Pago e compara o valor antes de marcar como pago.
 - A aplicação recebe cabeçalhos contra MIME sniffing, clickjacking e permissões desnecessárias.

@@ -109,7 +109,7 @@ const providerCalls = () => calls.filter(call => call.kind === 'provider');
 const rpcCalls = () => calls.filter(call => call.kind === 'rpc');
 
 // Regression: configured URL with slash/path must not reject mobile preflight.
-for (const requestOrigin of [origin, 'https://graphenemanipulacoes.com.br', 'http://127.0.0.1:5173', 'http://localhost:4173']) {
+for (const requestOrigin of [origin, 'https://graphenemanipulacoes.com.br', 'https://site-graphene.vercel.app', 'http://127.0.0.1:5173', 'http://localhost:4173']) {
     reset();
     const { response } = await invoke({ method: 'OPTIONS', requestOrigin, authenticated: false });
     assert.equal(response.status, 204, `Allowed preflight: ${requestOrigin}`);
@@ -120,7 +120,7 @@ for (const requestOrigin of [origin, 'https://graphenemanipulacoes.com.br', 'htt
     assert.match(response.headers.get('Vary'), /Origin/i);
     assert.equal(calls.length, 0, 'OPTIONS must not authenticate, query or create payments');
 }
-for (const requestOrigin of ['https://evil.example', 'https://graphenemanipulacoes.com.br.evil.example', 'http://graphenemanipulacoes.com.br', null]) {
+for (const requestOrigin of ['https://evil.example', 'https://graphenemanipulacoes.com.br.evil.example', 'https://another-store.vercel.app', 'https://site-graphene.vercel.app.evil.example', 'http://site-graphene.vercel.app', 'http://graphenemanipulacoes.com.br', null]) {
     reset(); const { response } = await invoke({ method: 'OPTIONS', requestOrigin, authenticated: false });
     assert.equal(response.status, 403, `Disallowed preflight: ${requestOrigin}`);
     assert.notEqual(response.headers.get('Access-Control-Allow-Origin'), '*');
@@ -146,6 +146,22 @@ assert.equal(preference.external_reference, orderId);
 assert.equal(preference.back_urls.success, `${origin}/pedido/retorno?status=success`, 'Canonical URL must not contain //pedido');
 assert.equal(preference.notification_url, 'https://mock-project.supabase.co/functions/v1/payment-webhook');
 assert.ok(providerCalls()[0].options.signal, 'Provider request must have a finite timeout');
+
+// Actual regression: customers were buying at the stable Vercel URL. The
+// preflight and POST must accept it, and payment must return to the same origin.
+for (const requestOrigin of ['https://site-graphene.vercel.app', 'https://graphenemanipulacoes.com.br']) {
+    reset();
+    result = await invoke({ requestOrigin });
+    assert.equal(result.response.status, 200, JSON.stringify(result.payload));
+    assert.equal(result.response.headers.get('Access-Control-Allow-Origin'), requestOrigin);
+    for (const status of ['success', 'pending', 'failure']) {
+        assert.equal(providerCalls()[0].payload.back_urls[status], `${requestOrigin}/pedido/retorno?status=${status}`);
+    }
+}
+reset();
+result = await invoke({ requestOrigin: 'http://127.0.0.1:5173' });
+assert.equal(result.response.status, 200);
+assert.equal(providerCalls()[0].payload.back_urls.success, `${origin}/pedido/retorno?status=success`, 'Development must not redirect payments to plain HTTP');
 
 reset(); state.order.discount = 10; state.order.total = 109.9;
 result = await invoke(); assert.equal(result.response.status, 200, JSON.stringify(result.payload));

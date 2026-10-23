@@ -49,5 +49,5 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - Senhas do admin usam SHA-256 sem sal (o balcão já usa PBKDF2).
 - Proteção contra senhas vazadas no login de clientes exige o plano Pro do Supabase.
 - A função `migrar-receitas-antigas` está desativada (responde 410) e pode ser excluída no painel do Supabase.
-- O conector do Supabase está disponível. Em 23/10/2026, a migração de carrinho foi aplicada em duas partes (`customer_cart_storage`, `customer_cart_sync`) após erro de confirmação no arquivo completo; `checkout_retry` e a função `create-checkout` v12 também foram publicados. Não repetir migrações antigas sem conferir o schema atual.
+- O conector do Supabase está disponível. Em 23/10/2026, a migração de carrinho foi aplicada em duas partes (`customer_cart_storage`, `customer_cart_sync`) após erro de confirmação no arquivo completo; `checkout_retry` também foi aplicada. `create-checkout` v13 aceita os domínios oficiais e a publicação estável `https://site-graphene.vercel.app`, com retorno para a mesma origem HTTPS (preserva sessão). Nunca liberar `*.vercel.app` genericamente. Não repetir migrações antigas sem conferir o schema atual.
 - Itens de negócio (alvará, Google Ads, frete, trocas): `PENDENCIAS_GOOGLE_E_SITE.md`.

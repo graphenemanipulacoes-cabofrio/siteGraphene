@@ -11,9 +11,9 @@ const json = (body: unknown, status = 200, origin?: string) => new Response(stat
 });
 
 const allowedOrigin = (requestOrigin: string | null) => {
-  // Both official addresses are the same storefront. Never allow arbitrary
-  // subdomains or reflect an unknown Origin (mobile links can omit "www").
-  const trusted = new Set(['https://www.graphenemanipulacoes.com.br', 'https://graphenemanipulacoes.com.br']);
+  // Exact public origins of this same storefront, including its stable Vercel
+  // address. Never allow every *.vercel.app deployment or unknown subdomains.
+  const trusted = new Set(['https://www.graphenemanipulacoes.com.br', 'https://graphenemanipulacoes.com.br', 'https://site-graphene.vercel.app']);
   try { trusted.add(new URL(Deno.env.get('SITE_URL') || '').origin); } catch { /* Fail closed for invalid configuration. */ }
   const local = /^http:\/\/(localhost|127\.0\.0\.1):\d{2,5}$/.test(requestOrigin || '');
   return requestOrigin && (trusted.has(requestOrigin) || local) ? requestOrigin : null;
@@ -40,7 +40,9 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
     const configuredSite = new URL(Deno.env.get('SITE_URL') || 'https://www.graphenemanipulacoes.com.br');
-    const siteUrl = configuredSite.origin;
+    // Auth storage is origin-scoped. Return to the same trusted HTTPS store
+    // that started checkout, so Vercel/apex customers do not lose their session.
+    const siteUrl = origin.startsWith('https://') ? origin : configuredSite.origin;
     if (!accessToken || configuredSite.protocol !== 'https:') return fail('payment_provider_not_configured', 503);
     stage = 'authentication';
     const authHeader = req.headers.get('Authorization') || '';
