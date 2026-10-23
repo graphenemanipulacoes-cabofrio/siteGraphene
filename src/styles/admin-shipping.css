@@ -1,0 +1,28 @@
+/* Painel admin > Frete e entrega (tema escuro do painel). */
+.ship-admin{display:grid;gap:18px;max-width:900px}
+.ship-admin-loading{display:flex;align-items:center;gap:10px;color:#9fb0c2;padding:24px}
+.ship-admin-head{display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px;align-items:start;padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid rgba(203,213,225,.09)}
+.ship-admin-head>svg{color:var(--brand-blue,#22c7e8);margin-top:2px}
+.ship-admin-head strong{display:block;font-family:var(--font-heading);font-size:1rem;color:#fff}
+.ship-admin-head span{display:block;margin-top:3px;font-size:.8rem;color:#8fa2b7;line-height:1.5}
+.ship-admin input{width:100%;min-height:42px;padding:9px 11px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff;font:inherit;font-size:.92rem;outline:none}
+.ship-admin input:focus{border-color:var(--brand-blue,#22c7e8);box-shadow:0 0 0 3px rgba(34,199,232,.15)}
+.ship-admin-money{position:relative;display:block}
+.ship-admin-money i{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-style:normal;font-size:.8rem;color:#8fa2b7;pointer-events:none}
+.ship-admin-money input{padding-left:34px}
+.ship-admin-field{display:grid;gap:7px;max-width:320px;font-size:.84rem;color:#c9d6e3;font-weight:600}
+.ship-admin-note{margin:12px 0 0;font-size:.8rem;color:#8fa2b7;line-height:1.55}
+.ship-admin-table{display:grid;gap:8px}
+.ship-admin-row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) 110px 110px;gap:10px;align-items:center}
+.ship-admin-row.is-head span{font-size:.72rem;font-weight:700;color:#8fa2b7}
+.ship-admin-zone strong{display:block;font-size:.88rem;color:#fff}
+.ship-admin-zone small{display:block;font-size:.72rem;color:#7f91a7;line-height:1.4}
+.ship-admin-actions{display:flex;justify-content:flex-end}
+.ship-admin-save{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:0 20px;border-radius:10px;border:1px solid var(--brand-green,#10b981);background:var(--brand-green,#10b981);color:var(--action-ink,#04121a);font:inherit;font-weight:800;cursor:pointer}
+.ship-admin-save:disabled{opacity:.6;cursor:not-allowed}
+@media(max-width:700px){
+  .ship-admin-row{grid-template-columns:1fr 1fr;padding:12px 0;border-bottom:1px solid rgba(203,213,225,.08)}
+  .ship-admin-row.is-head{display:none}
+  .ship-admin-zone{grid-column:1 / -1}
+  .ship-admin-actions{justify-content:stretch}.ship-admin-save{width:100%;justify-content:center}
+}

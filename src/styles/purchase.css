@@ -115,3 +115,88 @@
 .purchase-option-error{margin-top:8px;font-size:.78rem!important;color:#b42318!important;font-weight:600}
 .purchase-variant{font-size:.78rem!important;color:var(--purchase-ink)!important;font-weight:600;margin:2px 0 0}
 @media (prefers-reduced-motion:reduce){.purchase-option{transition:none}}
+
+/* ===== Fluxo de compra: produto, frete, carrinho e revisão ===== */
+.product-page .purchase-product{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:56px}
+.product-page .purchase-product-photo{position:sticky;top:110px}
+.purchase-product-panel{display:grid;gap:0}
+.purchase-product-panel>h1{margin-bottom:12px}
+.purchase-description{margin:0}
+.purchase-medical{margin-top:12px!important;padding:10px 12px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412!important;font-size:.8rem!important}
+.purchase-options legend{font-size:.9rem}
+.purchase-buybox{display:grid;gap:14px;margin-top:24px;padding:20px;border:1px solid var(--purchase-line);border-radius:12px;background:#fff}
+.purchase-buybox-price{display:grid;gap:3px}
+.purchase-buybox-price small{font-size:.78rem;color:var(--purchase-muted)}
+.purchase-buybox-price strong{font-size:2rem;line-height:1.1;letter-spacing:-.02em}
+.purchase-buybox-price span{font-size:.82rem;color:var(--purchase-ink);font-weight:600}
+.purchase-units{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;border-top:1px solid var(--purchase-line)}
+.purchase-units>span{font-size:.86rem;font-weight:700}
+.purchase-buybox-total{margin:0;font-size:.9rem!important;color:var(--purchase-ink)!important}
+.purchase-buybox .purchase-product-actions{margin:0}
+.purchase-free-note{margin:0;font-size:.8rem!important;color:var(--purchase-green)!important;font-weight:600}
+.purchase-trust{list-style:none;margin:22px 0 0;padding:0;display:grid;gap:12px}
+.purchase-trust li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;font-size:.84rem;line-height:1.5;color:var(--purchase-muted)}
+.purchase-trust svg{color:var(--purchase-green);margin-top:1px}
+.purchase-trust strong{color:var(--purchase-ink)}
+.purchase-trust a,.purchase-help a{color:var(--purchase-green);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.purchase-details{margin-top:22px;border-top:1px solid var(--purchase-line)}
+.purchase-details details{border-bottom:1px solid var(--purchase-line)}
+.purchase-details summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 0;font-size:.9rem;font-weight:700;cursor:pointer;list-style:none}
+.purchase-details summary::-webkit-details-marker{display:none}
+.purchase-details summary svg{transition:transform .2s;color:var(--purchase-muted)}
+.purchase-details details[open] summary svg{transform:rotate(180deg)}
+.purchase-details details p{margin:0 0 12px;font-size:.86rem!important}
+/* Calculadora de frete */
+.ship-box{display:grid;gap:10px;margin-top:18px;padding:16px;border:1px dashed #b9c7c9;border-radius:12px;background:#fbfcfc}
+.ship-box.is-compact{margin:14px 0 4px;padding:12px;border-style:solid;background:#f7faf9}
+.ship-form{display:grid;gap:7px}
+.ship-form label{font-size:.82rem;font-weight:700;color:var(--purchase-ink)}
+.ship-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.ship-row input{min-height:44px;padding:10px 12px;border:1px solid #aebfc0;border-radius:8px;background:#fff;color:var(--purchase-ink);font-size:.95rem}
+.ship-row input:focus{outline:2px solid var(--purchase-green);outline-offset:1px}
+.ship-row button{min-height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--purchase-green);background:#fff;color:var(--purchase-green);font-weight:700;cursor:pointer}
+.ship-row button:disabled{opacity:.5;cursor:not-allowed}
+.ship-form a{font-size:.74rem;color:var(--purchase-muted);text-decoration:underline;text-underline-offset:3px;justify-self:start}
+.ship-status{margin:0;display:flex;align-items:center;gap:7px;font-size:.8rem!important}
+.ship-status.is-error{color:#b42318!important;font-weight:600}
+.ship-result,.purchase-delivery{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:10px;align-items:start;padding:12px;border-radius:10px;background:#ebf5f1;border:1px solid #cfe6dc}
+.ship-result svg,.purchase-delivery svg{color:var(--purchase-green);margin-top:2px}
+.ship-result div,.purchase-delivery div{display:grid;gap:2px;min-width:0}
+.ship-result strong,.purchase-delivery strong{font-size:.86rem}
+.ship-result span,.purchase-delivery span{font-size:.78rem;color:var(--purchase-muted);line-height:1.45}
+.ship-result b,.purchase-delivery b{font-size:.9rem;white-space:nowrap}
+.purchase-delivery{margin-top:16px}
+.purchase-delivery.is-error{background:#fef3f2;border-color:#fecdca}
+.purchase-delivery.is-error svg,.purchase-delivery.is-error span{color:#b42318}
+/* Frete grátis */
+.free-ship{display:grid;gap:7px;margin:4px 0 6px;padding:12px;border-radius:10px;background:#f2f7fb;border:1px solid #d6e6f0}
+.free-ship p{margin:0;font-size:.82rem!important;line-height:1.45!important;color:var(--purchase-ink)!important}
+.free-ship p svg{color:var(--purchase-green);vertical-align:-3px;margin-right:6px}
+.free-ship small{font-size:.7rem;color:var(--purchase-muted);line-height:1.4}
+.free-ship-bar{height:6px;border-radius:999px;background:#dbe5ea;overflow:hidden}
+.free-ship-bar span{display:block;height:100%;border-radius:inherit;background:var(--purchase-green);transition:width .3s}
+.free-ship.is-reached{background:#ebf5f1;border-color:#cfe6dc}
+/* Carrinho e revisão */
+.purchase-cart-main{display:grid;gap:14px;align-content:start}
+.purchase-help{margin:0;display:flex;align-items:center;gap:8px;font-size:.82rem!important;flex-wrap:wrap}
+.purchase-zip-status{align-self:end;margin:0 0 12px;font-size:.78rem!important}
+.purchase-zip-status a{color:var(--purchase-muted);text-decoration:underline;text-underline-offset:3px}
+.purchase-next{margin:16px 0 0;padding-left:20px;display:grid;gap:6px;font-size:.84rem;color:var(--purchase-muted);line-height:1.5}
+.purchase-next a{color:var(--purchase-green);font-weight:700}
+/* Barra fixa de compra no celular */
+.purchase-sticky{display:none}
+@media(max-width:700px){
+  .product-page .purchase-product{grid-template-columns:1fr;gap:22px}
+  .product-page .purchase-product-photo{position:static}
+  .purchase-buybox{padding:16px}
+  .product-page{padding-bottom:110px}
+  .purchase-sticky{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--purchase-line);box-shadow:0 -6px 20px #182c3312}
+  .purchase-sticky div{display:grid;min-width:0}
+  .purchase-sticky small{font-size:.72rem;color:var(--purchase-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .purchase-sticky strong{font-size:1.15rem}
+  .purchase-sticky .purchase-primary{width:auto;min-width:150px}
+  /* O botão flutuante do WhatsApp sobe para não cobrir a barra de compra. */
+  body:has(.purchase-sticky) .clean-floating-wa{bottom:96px!important}
+}
+@media (prefers-reduced-motion:reduce){.free-ship-bar span,.purchase-details summary svg{transition:none}}
+@media(max-width:700px){.purchase-heading{flex-wrap:wrap}.purchase-heading>span{white-space:normal}}

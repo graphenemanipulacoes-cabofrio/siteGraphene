@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, CreditCard, LockKeyhole, LoaderCircle, MapPin, UserRound, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CreditCard, LockKeyhole, LoaderCircle, MapPin, UserRound, Check, Truck } from 'lucide-react';
 import StoreLayout from '../components/StoreLayout';
 import PurchaseSteps from '../components/PurchaseSteps';
 import { useStore } from '../context/StoreContext';
@@ -8,6 +8,8 @@ import { supabase } from '../lib/supabaseClient';
 import { money, validCpf } from '../utils/commerce';
 import { isAdminPreview } from '../utils/adminPreview';
 import { variantText } from '../utils/productOptions';
+import { FreeShippingProgress } from '../components/ShippingEstimator';
+import { STORE_ADDRESS, cleanZip, deliveryText, formatZip, lookupAddress, useShippingConfig, useShippingQuote } from '../utils/shipping';
 import '../styles/purchase.css';
 
 const messages = {
@@ -16,6 +18,7 @@ const messages = {
     invalid_cart: 'Revise as quantidades no carrinho. O limite é de 20 unidades por produto.',
     invalid_shipping: 'Confira os dados de entrega.',
     invalid_or_unpriced_product: 'Um dos produtos não tem preço para compra. Revise o carrinho.',
+    invalid_shipping_zip: 'Confira o CEP: não conseguimos calcular a entrega para ele.',
     invalid_variant: 'Um produto do carrinho precisa da escolha de quantidade ou sabor. Remova-o e adicione de novo pela página do produto.',
     unable_to_create_order: 'Não foi possível validar o pedido. Revise os produtos e tente novamente.',
     invalid_coupon: 'Este cupom não está disponível. Confira o código ou continue sem ele.',
@@ -27,10 +30,10 @@ const messages = {
 };
 
 export default function CheckoutPage() {
-    const { cart, subtotal, itemCount, customer, authReady } = useStore();
+    const { cart, subtotal, itemCount, customer, authReady, zip: savedZip, setZip } = useStore();
     const location = useLocation();
     const preview = isAdminPreview(location.search);
-    const [form, setForm] = useState({ name: customer?.user_metadata?.full_name || '', cpf: '', phone: '', zip: '', address: '', number: '', complement: '', neighborhood: '', city: '', state: '' });
+    const [form, setForm] = useState({ name: customer?.user_metadata?.full_name || '', cpf: '', phone: '', zip: formatZip(savedZip), address: '', number: '', complement: '', neighborhood: '', city: '', state: '' });
     const [couponCode, setCouponCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -40,6 +43,27 @@ export default function CheckoutPage() {
     const errorRef = useRef(null);
     const headingRef = useRef(null);
     const field = event => setForm(current => ({ ...current, [event.target.name]: event.target.value }));
+    const config = useShippingConfig();
+    const { quote, error: quoteError, loading: quoteLoading } = useShippingQuote(form.zip, subtotal);
+    const [addressLookup, setAddressLookup] = useState('');
+    const numberRef = useRef(null);
+    // CEP completo: guarda para as próximas compras e preenche o endereço (ViaCEP).
+    const zipDigits = cleanZip(form.zip);
+    useEffect(() => {
+        if (zipDigits.length !== 8) return undefined;
+        setZip(zipDigits);
+        let active = true;
+        setAddressLookup('loading');
+        lookupAddress(zipDigits).then(found => {
+            if (!active) return;
+            setAddressLookup(found ? 'found' : 'manual');
+            if (found) {
+                setForm(current => ({ ...current, address: current.address || found.address, neighborhood: current.neighborhood || found.neighborhood, city: found.city || current.city, state: found.state || current.state }));
+                if (found.address) requestAnimationFrame(() => numberRef.current?.focus());
+            }
+        });
+        return () => { active = false; };
+    }, [zipDigits, setZip]);
     const showError = message => {
         setError(message);
         requestAnimationFrame(() => errorRef.current?.focus());
@@ -51,6 +75,7 @@ export default function CheckoutPage() {
         if (busy.current) return;
         if (!validCpf(form.cpf)) { showError('Confira seu CPF: informe os 11 números de um CPF válido.'); return; }
         if (!/^\d{8}$/.test(form.zip.replace(/\D/g, ''))) { showError('Confira seu CEP: ele deve ter 8 números.'); return; }
+        if (quote && !quote.ok) { showError(messages.invalid_shipping_zip); return; }
         if (!/^\d{10,11}$/.test(form.phone.replace(/\D/g, ''))) { showError('Informe seu telefone com DDD, com 10 ou 11 números.'); return; }
         busy.current = true;
         setLoading(true);
@@ -81,7 +106,7 @@ export default function CheckoutPage() {
             }
             // Read the actual order through the customer's RLS-protected access.
             const { data: order, error: orderError } = await supabase.from('orders')
-                .select('id,subtotal,discount_amount,discount_code,shipping_amount,total,order_items(product_id,product_name,unit_price,quantity)')
+                .select('id,subtotal,discount_amount,discount_code,shipping_amount,shipping_address,total,order_items(product_id,product_name,unit_price,quantity)')
                 .eq('id', data.orderId).single();
             if (orderError || !order) throw new Error('Não foi possível carregar o resumo final. Tente novamente para conferir o pedido.');
             const paymentUrl = new URL(data.paymentUrl);
@@ -102,48 +127,63 @@ export default function CheckoutPage() {
         window.location.assign(review.paymentUrl);
     };
     const summaryItems = review?.order_items?.map(item => ({ ...item, id: item.product_id, name: item.product_name, price: Number(item.unit_price) })) || cart;
-    const amount = review ? Number(review.total) : subtotal;
+    const shippingEstimate = quote?.ok ? Number(quote.amount) || 0 : 0;
+    const amount = review ? Number(review.total) : subtotal + shippingEstimate;
+    const delivery = deliveryText(review?.shipping_address?.delivery || quote);
+    const deliveryPrice = source => !source?.ok ? 'Informe o CEP' : source.local ? 'A combinar' : Number(source.amount) === 0 ? 'Grátis' : money(source.amount);
     const invalidPrice = cart.some(item => !(Number(item.price) > 0));
 
     return <StoreLayout><section className="purchase-page"><div className="purchase-container">
         <Link to="/carrinho" className="purchase-back"><ArrowLeft size={16} /> Voltar ao carrinho</Link>
         <PurchaseSteps current={review ? 3 : 2} />
-        <div className="purchase-heading"><div><span className="purchase-eyebrow">Finalizar compra</span><h1 ref={headingRef} tabIndex={-1}>{review ? 'Confira seu pedido' : 'Para onde vamos enviar?'}</h1><p>{review ? 'Revise os valores antes de seguir para o pagamento.' : 'Preencha os dados de quem vai receber a compra.'}</p></div></div>
+        <div className="purchase-heading"><div><span className="purchase-eyebrow">Finalizar compra</span><h1 ref={headingRef} tabIndex={-1}>{review ? 'Confira seu pedido' : 'Entrega'}</h1><p>{review ? 'Confira produtos, entrega e valor total. O pagamento acontece na próxima tela.' : 'Comece pelo CEP: o endereço é preenchido sozinho.'}</p></div></div>
         {!authReady ? <div className="purchase-empty" role="status">Carregando sua conta…</div> : !cart.length && !preview ? <div className="purchase-empty"><h2>Seu carrinho está vazio</h2><Link to="/#produtos" className="purchase-primary">Escolher produtos</Link></div> : !customer && !preview ? <div className="purchase-card purchase-signin"><UserRound size={28}/><h2>Entre para concluir sua compra</h2><p>Seus {itemCount} {itemCount === 1 ? 'item está' : 'itens estão'} no carrinho. Use sua conta para informar a entrega e acompanhar o pedido.</p><Link className="purchase-primary" to="/entrar" state={{ returnTo: '/checkout', intent: 'checkout' }}>Entrar ou criar conta <ArrowRight size={18}/></Link><Link to="/#produtos" className="purchase-continue">Continuar comprando</Link></div> :
         <div className="purchase-layout">
             <div>
                 {review ? <div className="purchase-card purchase-form">
-                    <div className="purchase-section-title"><MapPin size={20}/><h2>Endereço de entrega</h2><button className="purchase-text-link" onClick={() => setReview(null)}>Editar dados</button></div>
-                    <address className="purchase-address"><strong>{form.name}</strong><span>{form.address}, {form.number}{form.complement ? ` • ${form.complement}` : ''}</span><span>{form.neighborhood} • {form.city}/{form.state}</span><span>CEP {form.zip} • {form.phone}</span></address>
-                    <div className="purchase-section-title purchase-divider"><CreditCard size={20}/><h2>Como você quer pagar?</h2></div>
-                    <p>Escolha Pix ou cartão na próxima tela, no Mercado Pago.</p><div className="purchase-methods"><span>Pix</span><span>Cartão de crédito</span></div><p className="purchase-hint">As opções e condições de parcelamento aparecem antes de confirmar o pagamento.</p>
-                    <p className="purchase-note"><Check size={18}/> Pedido preparado. O pagamento ainda não foi realizado.</p>
+                    <div className="purchase-section-title"><MapPin size={20}/><h2>Entregar para</h2><button className="purchase-text-link" onClick={() => setReview(null)}>Alterar</button></div>
+                    <address className="purchase-address"><strong>{form.name}</strong><span>{form.address}, {form.number}{form.complement ? ` · ${form.complement}` : ''}</span><span>{form.neighborhood} · {form.city}/{form.state}</span><span>CEP {formatZip(form.zip)} · {form.phone}</span></address>
+                    {delivery && <div className="purchase-delivery"><Truck size={18} aria-hidden="true"/><div><strong>{delivery.title}</strong><span>{delivery.detail}</span>{review.shipping_address?.delivery?.local && <span>Se preferir retirar: {STORE_ADDRESS}.</span>}</div><b>{deliveryPrice(review.shipping_address?.delivery)}</b></div>}
+                    <div className="purchase-section-title purchase-divider"><CreditCard size={20}/><h2>Pagamento</h2></div>
+                    <p>Ao clicar em pagar, você vai para o ambiente seguro do Mercado Pago e escolhe <strong>Pix</strong> ou <strong>cartão de crédito</strong>. As condições de parcelamento aparecem lá, antes de confirmar.</p>
+                    <ol className="purchase-next">
+                        <li>Você paga no Mercado Pago e volta para o site.</li>
+                        <li>Com o pagamento confirmado, preparamos seu pedido no laboratório.</li>
+                        <li>Você acompanha tudo em <Link to="/minha-conta">Minha conta</Link>{review.shipping_address?.delivery?.local ? ' e combinamos a entrega pelo WhatsApp' : ''}.</li>
+                    </ol>
+                    <p className="purchase-note"><Check size={18}/> Pedido registrado. O pagamento ainda não foi feito.</p>
                 </div> : <form id="purchase-delivery" className="purchase-card purchase-form" onSubmit={submit}>
-                    <div className="purchase-section-title"><UserRound size={20}/><h2>Dados do destinatário</h2></div><p className="purchase-hint">{customer ? `Conta: ${customer.email}` : 'Visualização administrativa. Entre como cliente para realizar uma compra.'}</p>
-                    <fieldset disabled={loading}><legend className="sr-only">Dados de entrega</legend><div className="purchase-fields">
-                        <label className="purchase-full">Nome completo<input name="name" autoComplete="name" maxLength={120} value={form.name} onChange={field} required /></label>
-                        <label>CPF<input name="cpf" inputMode="numeric" placeholder="000.000.000-00" maxLength={14} value={form.cpf} onChange={field} required /></label>
-                        <label>Telefone com DDD<input name="phone" type="tel" autoComplete="tel" placeholder="(22) 99999-9999" maxLength={16} value={form.phone} onChange={field} required /></label>
-                    </div>
-                    <div className="purchase-section-title purchase-divider"><MapPin size={20}/><h2>Endereço de entrega</h2></div>
+                    <fieldset disabled={loading}><legend className="sr-only">Dados de entrega</legend>
+                    <div className="purchase-section-title"><MapPin size={20}/><h2>Endereço de entrega</h2></div>
                     <div className="purchase-fields">
-                        <label>CEP<input name="zip" inputMode="numeric" autoComplete="postal-code" placeholder="00000-000" maxLength={9} value={form.zip} onChange={field} required /></label><span />
+                        <label>CEP<input name="zip" inputMode="numeric" autoComplete="postal-code" placeholder="00000-000" maxLength={9} value={form.zip} onChange={event => setForm(current => ({ ...current, zip: formatZip(event.target.value) }))} required /></label>
+                        <p className="purchase-zip-status" aria-live="polite">{addressLookup === 'loading' ? 'Buscando endereço…' : addressLookup === 'manual' ? 'Não achamos o endereço deste CEP. Preencha abaixo.' : <a href="https://buscacepinter.correios.com.br/app/endereco/index.php" target="_blank" rel="noreferrer">Não sei meu CEP</a>}</p>
                         <label className="purchase-full">Rua ou avenida<input name="address" autoComplete="address-line1" maxLength={85} value={form.address} onChange={field} required /></label>
-                        <label>Número<input name="number" maxLength={20} placeholder="123 ou S/N" value={form.number} onChange={field} required /></label><label>Complemento <small>(opcional)</small><input name="complement" autoComplete="address-line2" placeholder="Apartamento, bloco…" maxLength={80} value={form.complement} onChange={field} /></label>
+                        <label>Número<input ref={numberRef} name="number" maxLength={20} placeholder="123 ou S/N" value={form.number} onChange={field} required /></label><label>Complemento <small>(opcional)</small><input name="complement" autoComplete="address-line2" placeholder="Apartamento, bloco…" maxLength={80} value={form.complement} onChange={field} /></label>
                         <label className="purchase-full">Bairro<input name="neighborhood" maxLength={40} value={form.neighborhood} onChange={field} required /></label>
                         <label>Cidade<input name="city" autoComplete="address-level2" maxLength={40} value={form.city} onChange={field} required /></label><label>Estado<select name="state" autoComplete="address-level1" value={form.state} onChange={field} required><option value="">Selecione</option>{'AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO'.split(' ').map(uf => <option key={uf}>{uf}</option>)}</select></label>
+                    </div>
+                    {(quoteLoading || quoteError || delivery) && <div className={`purchase-delivery${quoteError ? ' is-error' : ''}`} aria-live="polite"><Truck size={18} aria-hidden="true"/>{quoteLoading ? <div><span>Calculando entrega…</span></div> : quoteError ? <div><span>{quoteError}</span></div> : <><div><strong>{delivery.title}</strong><span>{delivery.detail}</span></div><b>{deliveryPrice(quote)}</b></>}</div>}
+                    <div className="purchase-section-title purchase-divider"><UserRound size={20}/><h2>Quem vai receber</h2></div>
+                    <p className="purchase-hint">{customer ? `Você está comprando com a conta ${customer.email}.` : 'Visualização administrativa. Entre como cliente para realizar uma compra.'}</p>
+                    <div className="purchase-fields">
+                        <label className="purchase-full">Nome completo<input name="name" autoComplete="name" maxLength={120} value={form.name} onChange={field} required /></label>
+                        <label>CPF <small>(para a nota e o pagamento)</small><input name="cpf" inputMode="numeric" placeholder="000.000.000-00" maxLength={14} value={form.cpf} onChange={field} required /></label>
+                        <label>Celular com DDD <small>(WhatsApp)</small><input name="phone" type="tel" autoComplete="tel" placeholder="(22) 99999-9999" maxLength={16} value={form.phone} onChange={field} required /></label>
                     </div></fieldset>
-                    <details className="purchase-coupon"><summary>Tenho um cupom de desconto</summary><label>Código do cupom<input disabled={loading} value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} maxLength={40} placeholder="Digite seu cupom" /></label><p className="purchase-hint">O desconto aparecerá na revisão, antes do pagamento.</p></details>
-                    {error && <div className="purchase-error" role="alert" tabIndex={-1} ref={errorRef}>{error}<Link to="/entrar" state={{ returnTo: '/checkout' }}>Acessar minha conta</Link></div>}
+                    <details className="purchase-coupon"><summary>Tenho um cupom de desconto</summary><label>Código do cupom<input disabled={loading} value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} maxLength={40} placeholder="Digite seu cupom" /></label><p className="purchase-hint">O desconto aparece na revisão, antes do pagamento.</p></details>
+                    {error && <div className="purchase-error" role="alert" tabIndex={-1} ref={errorRef}>{error}{/sess[aã]o/i.test(error) && <Link to="/entrar" state={{ returnTo: '/checkout' }}>Entrar novamente</Link>}</div>}
                 </form>}
             </div>
-            <aside className="purchase-card purchase-summary"><div className="purchase-section-title"><h2>Resumo do pedido</h2><Link to="/carrinho" className="purchase-text-link">Editar</Link></div>
+            <aside className="purchase-card purchase-summary"><div className="purchase-section-title"><h2>Resumo do pedido</h2>{!review && <Link to="/carrinho" className="purchase-text-link">Editar</Link>}</div>
                 <div className="purchase-mini-items">{summaryItems.map((item, index) => <div className="purchase-mini-item" key={item.key || `${item.id}-${index}`}><span><strong>{item.name}</strong>{item.key && variantText(item) && <small>{variantText(item)}</small>}<small>{item.quantity} × {money(item.price)}</small></span><b>{money(item.quantity * item.price)}</b></div>)}</div>
+                {!review && !quote?.local && <FreeShippingProgress subtotal={subtotal} freeMin={config?.free_min} />}
                 <div className="purchase-amount"><span>Produtos</span><strong>{money(review?.subtotal ?? subtotal)}</strong></div>
-                {review && <><div className="purchase-amount"><span>Entrega</span><strong>{money(review.shipping_amount)}</strong></div>{Number(review.discount_amount) > 0 && <div className="purchase-amount purchase-discount"><span>Cupom {review.discount_code}</span><strong>− {money(review.discount_amount)}</strong></div>}</>}
-                <div className="purchase-amount purchase-total"><span>{review ? 'Total do pedido' : 'Subtotal'}</span><strong>{money(amount)}</strong></div>
-                {invalidPrice ? <p className="purchase-error">Revise os produtos sem preço no carrinho.</p> : review ? <button className="purchase-primary" onClick={proceed}><LockKeyhole size={17}/> Pagar {money(amount)}</button> : <button form="purchase-delivery" type="submit" className="purchase-primary" disabled={loading || !customer || !cart.length}>{loading ? <LoaderCircle className="spin" size={18}/> : <ArrowRight size={18}/>} {loading ? 'Preparando revisão…' : 'Revisar pedido'}</button>}
-                <p className="purchase-hint">{review ? 'Você continuará no ambiente do Mercado Pago.' : 'Confira o valor final na próxima etapa, antes de pagar.'}</p>
+                <div className="purchase-amount"><span>Entrega</span><strong>{deliveryPrice(review ? review.shipping_address?.delivery : quote)}</strong></div>
+                {review && Number(review.discount_amount) > 0 && <div className="purchase-amount purchase-discount"><span>Cupom {review.discount_code}</span><strong>− {money(review.discount_amount)}</strong></div>}
+                <div className="purchase-amount purchase-total"><span>Total</span><strong>{money(amount)}</strong></div>
+                {invalidPrice ? <p className="purchase-error">Revise os produtos sem preço no carrinho.</p> : review ? <button className="purchase-primary" onClick={proceed}><LockKeyhole size={17}/> Pagar {money(amount)} no Mercado Pago</button> : <button form="purchase-delivery" type="submit" className="purchase-primary" disabled={loading || !customer || !cart.length}>{loading ? <LoaderCircle className="spin" size={18}/> : <ArrowRight size={18}/>} {loading ? 'Preparando revisão…' : 'Revisar pedido'}</button>}
+                <p className="purchase-hint"><LockKeyhole size={14}/> {review ? 'Pagamento seguro pelo Mercado Pago.' : 'Você confere tudo na próxima etapa, antes de pagar.'}</p>
             </aside>
         </div>}
     </div></section></StoreLayout>;

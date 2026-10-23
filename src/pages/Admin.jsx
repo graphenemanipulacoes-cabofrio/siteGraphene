@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Package, PackageCheck, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink, WalletCards, Eye, UserRound, ShoppingBag, Monitor, FlaskConical, LayoutGrid } from 'lucide-react';
+import { Package, PackageCheck, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink, WalletCards, Eye, UserRound, ShoppingBag, Monitor, FlaskConical, LayoutGrid, Truck } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { Link, useNavigate } from 'react-router-dom';
@@ -10,6 +10,7 @@ import AdminOrders from '../components/AdminOrders';
 import AdminFinance from '../components/AdminFinance';
 import AdminPartners from '../components/AdminPartners';
 import AdminCounterAccess from '../components/AdminCounterAccess';
+import AdminShipping from '../components/AdminShipping';
 import { getSession, destroySession } from '../utils/security';
 
 const Admin = () => {
@@ -330,6 +331,10 @@ const Admin = () => {
                     <Package size={22} />
                     <span>Produtos</span>
                 </div>
+                <div className={`nav-item ${view === 'shipping' ? 'active' : ''}`} onClick={() => setView('shipping')}>
+                    <Truck size={22} />
+                    <span>Frete</span>
+                </div>
                 <div className={`nav-item ${view === 'admins' ? 'active' : ''}`} onClick={() => setView('admins')}>
                     <Users size={22} />
                     <span>Time</span>
@@ -397,6 +402,13 @@ const Admin = () => {
                     </Button>
                     <Button
                         variant="ghost"
+                        className={`admin-nav-link ${view === 'shipping' ? 'active' : ''}`}
+                        onClick={() => { setView('shipping'); setExpandedId(null); }}
+                    >
+                        <Truck size={18} /> Frete e entrega
+                    </Button>
+                    <Button
+                        variant="ghost"
                         className={`admin-nav-link ${view === 'admins' ? 'active' : ''}`}
                         onClick={() => { setView('admins'); setExpandedId(null); }}
                     >
@@ -434,7 +446,7 @@ const Admin = () => {
                         )}
                         <span className="admin-eyebrow">CENTRAL DE OPERAÇÕES</span>
                         <h1 className="admin-page-title">
-                            {view === 'active' ? 'Solicitações' : view === 'orders' ? 'Pedidos e Entregas' : view === 'counter' ? 'Acessos da Equipe' : view === 'finance' ? 'Central Financeira' : view === 'products' ? 'Gerenciar Produtos' : view === 'admins' ? 'Gerenciar Admins' : view === 'partners' ? 'Parceiros' : 'Lixeira'}
+                            {view === 'active' ? 'Solicitações' : view === 'orders' ? 'Pedidos e Entregas' : view === 'counter' ? 'Acessos da Equipe' : view === 'finance' ? 'Central Financeira' : view === 'products' ? 'Gerenciar Produtos' : view === 'shipping' ? 'Frete e entrega' : view === 'admins' ? 'Gerenciar Admins' : view === 'partners' ? 'Parceiros' : 'Lixeira'}
                         </h1>
                         <p className="admin-page-copy">{view === 'orders' ? 'Acompanhe pagamentos, separação e envios em um só lugar.' : view === 'finance' ? 'Controle vendas, taxas, comissões, cupons e repasses em uma única área.' : view === 'partners' ? 'Analise inscrições, ative cupons e acompanhe o acesso dos parceiros.' : view === 'active' ? 'Receitas e solicitações recebidas pelos canais da Graphène.' : 'Gerencie os dados operacionais da Graphène com segurança.'}</p>
                     </div>
@@ -464,6 +476,8 @@ const Admin = () => {
                     <AdminFinance onUnauthorized={handleLogout} />
                 ) : view === 'products' ? (
                     <AdminProducts />
+                ) : view === 'shipping' ? (
+                    <AdminShipping onUnauthorized={handleLogout} />
                 ) : view === 'partners' ? (
                     <AdminPartners onUnauthorized={handleLogout} />
                 ) : view === 'admins' ? (

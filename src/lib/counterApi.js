@@ -12,6 +12,8 @@ export const counterErrors = {
     wrong_area: 'Esta conta não é de farmacêutico. Peça ao administrador para liberar o acesso.',
     forbidden: 'Sua conta não tem permissão para esta área.',
     invalid_product: 'Confira o nome, a imagem, as quantidades (nomes diferentes entre si) e os preços do produto.',
+    invalid_shipping: 'Confira os valores: preço entre R$ 0 e R$ 1.000 e prazo mínimo menor ou igual ao máximo.',
+    unable_to_save_settings: 'Não foi possível salvar as regras de frete. Tente de novo.',
     invalid_flavor: 'Digite um nome de sabor com pelo menos 2 letras.',
     flavor_exists: 'Esse sabor já está na lista.',
     unable_to_save_flavor: 'Não foi possível salvar o sabor. Tente de novo.',

@@ -56,7 +56,7 @@ Deno.serve(async (req: Request) => {
     });
     if (orderError || !order) {
       const reason = String(orderError?.message || '');
-      const knownError = ['invalid_cart', 'invalid_shipping_address', 'invalid_or_unpriced_product', 'invalid_variant', 'invalid_coupon', 'coupon_minimum_not_reached']
+      const knownError = ['invalid_cart', 'invalid_shipping_address', 'invalid_or_unpriced_product', 'invalid_variant', 'invalid_shipping_zip', 'invalid_coupon', 'coupon_minimum_not_reached']
         .find(code => reason.includes(code));
       console.error('checkout_order_failed', { code: orderError?.code, reason: knownError || 'database_error' });
       return json({ error: knownError || 'unable_to_create_order' }, 422, origin);
@@ -68,7 +68,11 @@ Deno.serve(async (req: Request) => {
     const siteUrl = Deno.env.get('SITE_URL')!;
     const preferenceItems = Number(order.discount || 0) > 0
       ? [{ id: `order-${order.order_id}`, title: `Pedido Graphène${couponCode ? ` · cupom ${couponCode}` : ''}`, currency_id: 'BRL', quantity: 1, unit_price: Number(order.total) }]
-      : order.items.map((item: Record<string, unknown>) => ({ id: String(item.product_id), title: item.title, currency_id: 'BRL', quantity: item.quantity, unit_price: Number(item.unit_price) }));
+      : [
+        ...order.items.map((item: Record<string, unknown>) => ({ id: String(item.product_id), title: item.title, currency_id: 'BRL', quantity: item.quantity, unit_price: Number(item.unit_price) })),
+        // Frete calculado no pedido (painel admin > Frete e entrega).
+        ...(Number(order.shipping || 0) > 0 ? [{ id: 'frete', title: 'Entrega', currency_id: 'BRL', quantity: 1, unit_price: Number(order.shipping) }] : []),
+      ];
 
     const preferenceResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',

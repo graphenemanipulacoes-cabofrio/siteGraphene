@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient.ts';
 import { ShoppingBag, Zap } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useStore } from '../context/StoreContext';
-import { toast } from 'sonner';
 import { resolveProductImage } from '../utils/productImages';
 import { NATURAL_FLAVOR, flavorName, productOptions, requiresChoice, useFlavors, variantPrice } from '../utils/productOptions';
 import { money } from '../utils/commerce';
@@ -154,7 +152,6 @@ const flavorColors = {
 const ProductGrid = ({ searchTerm = '' }) => {
     const [activeTab, setActiveTab] = useState('Todos');
     const [productsList, setProductsList] = useState(defaultProducts);
-    const { addItem } = useStore();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -202,7 +199,6 @@ const ProductGrid = ({ searchTerm = '' }) => {
     // Quantidade e sabor escolhidos direto no cartão (obrigatórios quando o produto tem).
     const flavors = useFlavors();
     const [choices, setChoices] = useState({});
-    const [missing, setMissing] = useState({});
     const choiceOf = item => {
         const options = productOptions(item);
         const chosen = choices[item.id] || {};
@@ -214,22 +210,12 @@ const ProductGrid = ({ searchTerm = '' }) => {
     };
     const choose = (id, changes) => {
         setChoices(current => ({ ...current, [id]: { ...current[id], ...changes } }));
-        setMissing(current => ({ ...current, [id]: false }));
     };
 
-    const startPurchase = (product, destination, intent) => {
-        let choice = {};
-        if (requiresChoice(product)) {
-            const selected = choiceOf(product);
-            if (!selected.complete) { setMissing(current => ({ ...current, [product.id]: true })); return; }
-            choice = {
-                size: selected.size || null, sizeLabel: selected.options.availableSizes.find(size => size.id === selected.size)?.label || null,
-                flavor: selected.flavor || null, flavorLabel: selected.flavor ? flavorName(flavors, selected.flavor) : null, price: selected.price,
-            };
-        }
-        if (!addItem(product, choice)) return;
-        if (intent === 'checkout') navigate(destination);
-        else toast.success('Adicionado ao carrinho', { description: [product.name, choice.sizeLabel, choice.flavorLabel].filter(Boolean).join(' · '), duration: 2500 });
+    // "Comprar" abre a página do produto, já com a escolha feita no cartão.
+    const openProduct = item => {
+        const selected = choiceOf(item);
+        navigate(`/produto/${item.id}`, { state: { product: item, size: selected.size || null, flavor: selected.flavor || null } });
     };
 
     return (
@@ -283,9 +269,8 @@ const ProductGrid = ({ searchTerm = '' }) => {
                                 const selected = choiceOf(item);
                                 const withChoice = requiresChoice(item);
                                 const sizeLabel = selected.options.availableSizes.length > 1 || selected.options.flavorPrice > 0;
-                                const showMissing = missing[item.id];
                                 return <div className="product-footer">
-                                    {withChoice && item.price && <div className={`product-chips${showMissing ? ' is-missing' : ''}`}>
+                                    {withChoice && item.price && <div className="product-chips">
                                         {selected.options.hasSizes && <div className="product-chip-row" role="radiogroup" aria-label={`Quantidade de ${item.name}`}>
                                             {selected.options.availableSizes.map(size => <button type="button" key={size.id} role="radio" aria-checked={selected.size === size.id} className={`product-chip${selected.size === size.id ? ' is-on' : ''}`} onClick={() => choose(item.id, { size: size.id })}>{size.label}</button>)}
                                         </div>}
@@ -294,7 +279,6 @@ const ProductGrid = ({ searchTerm = '' }) => {
                                                 <i style={{ background: flavorColors[id] || '#94a3b8' }} aria-hidden="true" />{id === NATURAL_FLAVOR ? 'Natural' : flavorName(flavors, id)}
                                             </button>)}
                                         </div>}
-                                        {showMissing && <p className="product-option-error" role="alert">Toque para escolher {[!selected.size && selected.options.hasSizes && 'a quantidade', !selected.flavor && selected.options.hasFlavors && 'o sabor'].filter(Boolean).join(' e ')}.</p>}
                                     </div>}
                                     <div className="product-price-row">
                                         <div className="product-price">
@@ -303,9 +287,8 @@ const ProductGrid = ({ searchTerm = '' }) => {
                                                     : <><span className="price-small">{withChoice && sizeLabel ? 'A partir de' : 'Preço por unidade'}</span><strong>R$ {item.price}</strong></>}
                                         </div>
                                     </div>
-                                    {item.price ? <div className="product-card-actions">
-                                        <button onClick={() => startPurchase(item, '/carrinho', 'cart')} className="btn-add-cart"><ShoppingBag size={16} /><span>Adicionar ao carrinho</span></button>
-                                        <button onClick={() => startPurchase(item, '/checkout', 'checkout')} className="btn-buy-now"><Zap size={16} /><span>Comprar agora</span></button>
+                                    {item.price ? <div className="product-card-actions product-card-actions--single">
+                                        <button onClick={() => openProduct(item)} className="btn-buy-now"><ShoppingBag size={16} /><span>Comprar</span></button>
                                     </div> : <div className="product-card-actions product-card-actions--single">
                                         <button disabled className="btn-buy-now"><Zap size={16} /><span>Em breve</span></button>
                                     </div>}
@@ -433,7 +416,6 @@ const ProductGrid = ({ searchTerm = '' }) => {
                 .product-chip.is-on { border-color:var(--brand-blue); background:rgba(34,199,232,.14); color:#fff; }
                 .product-chip:focus-visible { outline:2px solid var(--brand-blue); outline-offset:1px; }
                 .product-chip i { width:8px; height:8px; border-radius:50%; flex:none; box-shadow:0 0 0 1px rgba(255,255,255,.18); }
-                .product-chips.is-missing .product-chip:not(.is-on) { border-color:rgba(249,115,22,.55); }
                 .product-option-error { margin:0; font-size:.74rem; font-weight:600; color:#fb923c; }
                 .product-card-actions button:disabled { opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
                 .btn-add-cart, .btn-buy-now { min-height:44px; display:flex; align-items:center; justify-content:center; gap:7px; border-radius:9px; font-size:.78rem; font-weight:800; transition:var(--transition); cursor:pointer; }

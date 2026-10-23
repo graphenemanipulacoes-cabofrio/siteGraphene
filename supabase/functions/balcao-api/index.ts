@@ -11,6 +11,28 @@ const counterActions = new Set(['session', 'logout', 'summary', 'list_orders', '
 // Cadastro de produtos: só contas do tipo farmacêutico (e administradores).
 const productActions = new Set(['products_list', 'product_save', 'product_delete', 'products_reorder', 'product_image_upload', 'flavor_save', 'flavor_delete']);
 const roles = new Set(['balcao', 'farmaceutico']);
+// Regras de frete (painel admin > Frete e entrega): só administradores alteram.
+const settingsActions = new Set(['shipping_save']);
+const shippingZones = ['rj', 'sudeste', 'sul', 'centro-oeste', 'nordeste', 'norte'];
+function cleanShipping(raw: unknown, current: Record<string, unknown>) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const input = raw as Record<string, unknown>;
+  const freeMin = moneyValue(input.free_min);
+  if (Number.isNaN(freeMin) || (freeMin !== null && freeMin > 100_000)) return null;
+  const zonesIn = Array.isArray(input.zones) ? input.zones as Record<string, unknown>[] : [];
+  const zonesNow = Array.isArray(current.zones) ? current.zones as Record<string, unknown>[] : [];
+  const zones = [];
+  for (const zone of zonesNow) {
+    if (!shippingZones.includes(String(zone.id))) continue;
+    const update = zonesIn.find(item => item && item.id === zone.id) || zone;
+    const price = moneyValue(update.price);
+    const daysMin = Number(update.days_min);
+    const daysMax = Number(update.days_max);
+    if (price === null || Number.isNaN(price) || price > 1_000 || !Number.isInteger(daysMin) || !Number.isInteger(daysMax) || daysMin < 0 || daysMax < daysMin || daysMax > 90) return null;
+    zones.push({ ...zone, price, days_min: daysMin, days_max: daysMax });
+  }
+  return { ...current, free_min: freeMin && freeMin > 0 ? freeMin : null, zones };
+}
 const productImageTypes: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
 const productImagePattern = /^(?:https:\/\/\S+|\/assets\/products\/[a-z0-9_-]+\.(?:png|jpe?g|webp))$/;
 // Quantidades e sabores do produto (migração 202610230001). O preço de cada
@@ -141,7 +163,7 @@ Deno.serve(async (req: Request) => {
       return json({ token: adminToken, expiresAt, user: { username: adminUsername, displayName: adminUsername, role: 'admin' } }, 200, origin);
     }
 
-    if (!counterActions.has(action) && !productActions.has(action)) return json({ error: 'invalid_action' }, 400, origin);
+    if (!counterActions.has(action) && !productActions.has(action) && !settingsActions.has(action)) return json({ error: 'invalid_action' }, 400, origin);
     const token = text(body.sessionToken, 100);
     const isAdmin = adminTokenPattern.test(token);
     if (!isAdmin && !/^[a-f0-9]{64}$/.test(token)) return json({ error: 'unauthorized' }, 401, origin);
@@ -166,6 +188,16 @@ Deno.serve(async (req: Request) => {
     }
     await admin.from(isAdmin ? 'admin_sessions' : 'counter_sessions').update({ last_used_at: new Date().toISOString() }).eq('token_hash', tokenHash);
     if (action === 'session') return json({ user: { username: account.username, displayName: account.display_name, role: account.role } }, 200, origin);
+    if (settingsActions.has(action)) {
+      if (account.role !== 'admin') return json({ error: 'forbidden' }, 403, origin);
+      const { data: config, error: configError } = await admin.from('loja_config').select('frete').eq('id', 1).maybeSingle();
+      if (configError || !config) return json({ error: 'unable_to_load_data' }, 500, origin);
+      const frete = cleanShipping(body.frete, config.frete || {});
+      if (!frete) return json({ error: 'invalid_shipping' }, 400, origin);
+      const { error } = await admin.from('loja_config').update({ frete, updated_at: new Date().toISOString(), updated_by: account.username }).eq('id', 1);
+      if (error) return json({ error: 'unable_to_save_settings' }, 500, origin);
+      return json({ frete }, 200, origin);
+    }
     if (productActions.has(action)) {
       if (account.role !== 'farmaceutico' && account.role !== 'admin') return json({ error: 'forbidden' }, 403, origin);
       if (action === 'products_list') {

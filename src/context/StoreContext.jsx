@@ -19,6 +19,13 @@ const readCart = () => {
 
 export const StoreProvider = ({ children }) => {
     const [cart, setCart] = useState(readCart);
+    // CEP do cliente: digitado uma vez (produto, carrinho ou checkout) e reaproveitado.
+    const [zip, setZipState] = useState(() => { try { return localStorage.getItem('graphene_cep') || ''; } catch { return ''; } });
+    const setZip = useCallback(value => {
+        const digits = String(value || '').replace(/\D/g, '').slice(0, 8);
+        setZipState(digits);
+        try { localStorage.setItem('graphene_cep', digits); } catch { /* Vale só nesta visita. */ }
+    }, []);
     const [customer, setCustomer] = useState(null);
     const [authReady, setAuthReady] = useState(false);
     const settledOrders = useRef(new Set());
@@ -42,7 +49,8 @@ export const StoreProvider = ({ children }) => {
     }, []);
 
     // choice = { size, sizeLabel, flavor, flavorLabel, price } quando o produto tem opções.
-    const addItem = useCallback((product, choice = {}) => {
+    const addItem = useCallback((product, choice = {}, units = 1) => {
+        const amount = Math.max(1, Math.min(20, Number.isInteger(units) ? units : 1));
         const options = productOptions(product);
         if ((options.hasSizes && !choice.size) || (options.hasFlavors && !choice.flavor)) {
             toast.error('Escolha a quantidade e o sabor antes de continuar.'); return false;
@@ -59,7 +67,7 @@ export const StoreProvider = ({ children }) => {
         setCart(current => {
             const existing = current.find(item => item.key === key);
             if (existing) {
-                return current.map(item => item.key === key ? { ...item, price, quantity: Math.min(item.quantity + 1, 20) } : item);
+                return current.map(item => item.key === key ? { ...item, price, quantity: Math.min(item.quantity + amount, 20) } : item);
             }
             return [...current, {
                 key,
@@ -72,7 +80,7 @@ export const StoreProvider = ({ children }) => {
                 flavor: choice.flavor || null,
                 flavorLabel: choice.flavorLabel || null,
                 price,
-                quantity: 1,
+                quantity: amount,
             }];
         });
         return true;
@@ -106,9 +114,9 @@ export const StoreProvider = ({ children }) => {
     const subtotal = cart.reduce((total, item) => total + item.quantity * (item.price || 0), 0);
 
     const value = useMemo(() => ({
-        cart, customer, authReady, itemCount, subtotal,
+        cart, customer, authReady, itemCount, subtotal, zip, setZip,
         addItem, updateQuantity, removeItem, clearCart, settleCart,
-    }), [cart, customer, authReady, itemCount, subtotal, addItem, updateQuantity, removeItem, clearCart, settleCart]);
+    }), [cart, customer, authReady, itemCount, subtotal, zip, setZip, addItem, updateQuantity, removeItem, clearCart, settleCart]);
 
     return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 };
