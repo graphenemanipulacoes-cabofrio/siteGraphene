@@ -1,467 +1,160 @@
-import { useState, useEffect } from 'react';
-import { getWhatsAppUrl } from '../config';
-import { Menu, X, MessageCircle, FileUp, Search, ShieldCheck, MapPin, Truck, Phone, Award, ChevronRight, ShoppingBag, UserRound, LockKeyhole } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Menu, X, MessageCircle, FileUp, Search, Truck, MapPin, Clock, Phone, ShoppingBag, UserRound, LockKeyhole, ChevronRight } from 'lucide-react';
+import { getWhatsAppUrl } from '../config';
 import { useStore } from '../context/StoreContext';
+import '../styles/header.css';
+
+const LOGO = '/assets/brand/graphene-logo';
+const PHONE = '(22) 99936-1256';
+const HOURS = 'Seg a sex 8h–18h30 · Sáb 8h–13h';
+
+const NAV = [
+    { label: 'Produtos', to: '/#produtos', match: '/' },
+    { label: 'Matérias-primas', to: '/ativos' },
+    { label: 'O laboratório', to: '/laboratorio' },
+    { label: 'Avaliações', to: '/avaliacoes' },
+    { label: 'Profissionais de saúde', to: '/prescritores' },
+    { label: 'Programa de parceiros', to: '/parceiros' },
+];
+
+function Logo({ className }) {
+    return <picture>
+        <source srcSet={`${LOGO}.webp`} type="image/webp" />
+        <img src={`${LOGO}.png`} alt="Graphène Farmácia de Manipulação" className={className} width="278" height="112" />
+    </picture>;
+}
+
+// Acompanha a rolagem: sombra depois do topo e menu de seções que some ao
+// descer e volta ao subir, para o cabeçalho ocupar menos espaço na leitura.
+function useScrollState() {
+    const [state, setState] = useState({ scrolled: false, condensed: false });
+    const last = useRef(0);
+    useEffect(() => {
+        let frame = 0;
+        const update = () => {
+            frame = 0;
+            const y = Math.max(window.scrollY, 0);
+            const delta = y - last.current;
+            if (Math.abs(delta) < 6 && y > 0) return;
+            last.current = y;
+            setState(current => {
+                const next = { scrolled: y > 8, condensed: y > 160 ? (delta > 0 ? true : false) : false };
+                return next.scrolled === current.scrolled && next.condensed === current.condensed ? current : next;
+            });
+        };
+        const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
+        update();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => { window.removeEventListener('scroll', onScroll); if (frame) cancelAnimationFrame(frame); };
+    }, []);
+    return state;
+}
 
 const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
-    const [scrolled, setScrolled] = useState(false);
+    const { scrolled, condensed } = useScrollState();
     const [menuOpen, setMenuOpen] = useState(false);
     const location = useLocation();
     const { itemCount, customer } = useStore();
+    const closeButton = useRef(null);
+
+    // Fecha o menu ao trocar de página.
+    const [lastPath, setLastPath] = useState(location.pathname + location.hash);
+    if (lastPath !== location.pathname + location.hash) {
+        setLastPath(location.pathname + location.hash);
+        if (menuOpen) setMenuOpen(false);
+    }
 
     useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 20);
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
-
-    // Prevent body scroll when mobile menu is open
-    useEffect(() => {
-        if (menuOpen) {
-            document.body.style.overflow = 'hidden';
-            document.body.classList.add('mobile-menu-open');
-        } else {
-            document.body.style.overflow = 'unset';
-            document.body.classList.remove('mobile-menu-open');
-        }
+        if (!menuOpen) return undefined;
+        document.body.style.overflow = 'hidden';
+        document.body.classList.add('mobile-menu-open');
+        closeButton.current?.focus();
+        const onKey = event => { if (event.key === 'Escape') setMenuOpen(false); };
+        window.addEventListener('keydown', onKey);
         return () => {
-            document.body.style.overflow = 'unset';
+            document.body.style.overflow = '';
             document.body.classList.remove('mobile-menu-open');
+            window.removeEventListener('keydown', onKey);
         };
     }, [menuOpen]);
 
-    const navItems = [
-        { label: 'Início', to: '/' },
-        { label: 'Matérias-primas', to: '/ativos', highlight: true },
-        { label: 'Solicitar orçamento', to: '/receita' },
-        { label: 'O Laboratório', to: '/laboratorio' },
-        { label: 'Profissionais de saúde', to: '/prescritores' },
-        { label: 'Programa de Parceiros', to: '/parceiros' },
-        { label: 'Avaliações', to: '/avaliacoes' },
-    ];
+    const isActive = item => location.pathname === (item.match || item.to);
+    const accountPath = customer ? '/minha-conta' : '/entrar';
+    const accountLabel = customer ? 'Minha conta' : 'Entrar';
+    const cartLabel = `Carrinho${itemCount ? `, ${itemCount} ${itemCount === 1 ? 'item' : 'itens'}` : ''}`;
+    const search = showSearch && <label className="gh-search">
+        <Search size={17} aria-hidden="true" />
+        <span className="gh-sr">Buscar produtos</span>
+        <input type="search" placeholder="Buscar creatina, melatonina, coenzima Q10…" value={searchTerm || ''} onChange={event => onSearchChange?.(event.target.value)} />
+    </label>;
 
-    const isActive = (to) => location.pathname === to;
+    return <>
+        <div className="gh-top">
+            <div className="container gh-top-row">
+                <p className="gh-top-info">
+                    <span><Truck size={14} aria-hidden="true" /> Enviamos para todo o Brasil</span>
+                    <span className="gh-top-optional"><MapPin size={14} aria-hidden="true" /> Laboratório próprio em Cabo Frio, RJ</span>
+                </p>
+                <p className="gh-top-info">
+                    <span><Clock size={14} aria-hidden="true" /> {HOURS}</span>
+                    <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer"><Phone size={14} aria-hidden="true" /> {PHONE}</a>
+                    <Link to="/parceiros/entrar" className="gh-top-partner"><LockKeyhole size={13} aria-hidden="true" /> Painel do parceiro</Link>
+                </p>
+            </div>
+        </div>
 
-    return (
-        <header className="store-header-wrapper">
-            {/* Top Announcement Bar */}
-            <div className="store-top-bar">
-                <div className="container top-bar-flex">
-                    <div className="top-bar-left">
-                        <span><Truck size={13} /> Consulte opções de entrega</span>
-                        <span className="divider-dot">•</span>
-                        <span><MapPin size={13} /> Laboratório Próprio — Cabo Frio, RJ</span>
-                    </div>
-                    <div className="top-bar-right">
-                        <Link to="/parceiros/entrar" className="top-partner-link" title="Acesse com seu e-mail e senha para ver vendas e comissões">
-                            <LockKeyhole size={11} />
-                            <span>Painel do Parceiro</span>
+        <header className={`gh-bar${scrolled ? ' is-scrolled' : ''}${condensed ? ' is-condensed' : ''}`}>
+            <div className="gh-main">
+                <div className="container gh-main-row">
+                    <Link to="/" className="gh-brand" aria-label="Graphène — página inicial"><Logo className="gh-logo" /></Link>
+                    {search}
+                    <nav className="gh-actions" aria-label="Sua conta">
+                        <Link to={accountPath} className="gh-icon-link" aria-label={accountLabel}><UserRound size={20} aria-hidden="true" /><span>{accountLabel}</span></Link>
+                        <Link to="/carrinho" className="gh-icon-link gh-cart" aria-label={cartLabel}>
+                            <span className="gh-cart-icon"><ShoppingBag size={20} aria-hidden="true" />{itemCount > 0 && <b aria-hidden="true">{itemCount > 9 ? '9+' : itemCount}</b>}</span>
+                            <span>Carrinho</span>
                         </Link>
-                        <span className="divider-dot">•</span>
-                        <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="top-wa-link">
-                            <Phone size={12} />
-                            <span>(22) 99936-1256</span>
-                        </a>
-                        <span className="divider-dot">•</span>
-                        <span className="anvisa-tag"><ShieldCheck size={13} /> Atendimento farmacêutico</span>
-                    </div>
+                        <Link to="/receita" className="gh-cta"><FileUp size={16} aria-hidden="true" /> Solicitar orçamento</Link>
+                        <button type="button" className="gh-menu-toggle" onClick={() => setMenuOpen(true)} aria-label="Abrir menu" aria-expanded={menuOpen} aria-controls="gh-drawer"><Menu size={24} /></button>
+                    </nav>
                 </div>
             </div>
-
-            {/* Main Header */}
-            <div className={`store-main-header ${scrolled ? 'store-header--scrolled' : ''}`}>
-                <div className="container header-content-grid">
-                    <Link to="/" className="store-brand" onClick={() => setMenuOpen(false)}>
-                        <img src="/assets/logo.png" alt="Graphène" className="store-logo-img" />
-                    </Link>
-
-                    {showSearch && (
-                        <div className="store-search-bar">
-                            <Search size={16} className="search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Buscar Creatina, Melatonina, Coenzima Q10..."
-                                value={searchTerm || ''}
-                                onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
-                            />
-                        </div>
-                    )}
-
-                    <div className="store-header-actions">
-                        <Link to={customer ? '/minha-conta' : '/entrar'} className="btn-header-icon" aria-label="Minha conta" title="Minha conta">
-                            <UserRound size={18} />
-                            <span className="header-icon-label">{customer ? 'Minha conta' : 'Entrar'}</span>
-                        </Link>
-                        <Link to="/carrinho" className="btn-header-icon cart-header-link" aria-label={`Carrinho com ${itemCount} ${itemCount === 1 ? 'item' : 'itens'}`} title="Carrinho">
-                            <ShoppingBag size={18} />
-                            {itemCount > 0 && <span className="cart-count">{itemCount > 9 ? '9+' : itemCount}</span>}
-                            <span className="header-icon-label">Carrinho</span>
-                        </Link>
-                        <Link to="/receita" className="btn-header-receita">
-                            <FileUp size={15} />
-                            <span>Solicitar orçamento</span>
-                        </Link>
-                        <a href={getWhatsAppUrl('Olá, gostaria de fazer um pedido na Graphène.')} target="_blank" rel="noopener noreferrer" className="btn-header-wa">
-                            <MessageCircle size={15} />
-                            <span>WhatsApp</span>
-                        </a>
-                        <button
-                            className="store-menu-toggle"
-                            onClick={() => setMenuOpen(!menuOpen)}
-                            aria-label="Abrir Menu de Navegação"
-                        >
-                            {menuOpen ? <X size={26} /> : <Menu size={26} />}
-                        </button>
-                    </div>
+            <nav className="gh-sections" aria-label="Seções do site" aria-hidden={condensed || undefined}>
+                <div className="container gh-sections-row">
+                    {NAV.map(item => <Link key={item.to} to={item.to} tabIndex={condensed ? -1 : undefined} className={`gh-section-link${isActive(item) ? ' is-active' : ''}`} aria-current={isActive(item) ? 'page' : undefined}>{item.label}</Link>)}
                 </div>
-
-                {/* Subnav Desktop */}
-                <div className="store-subnav">
-                    <div className="container subnav-flex">
-                        {navItems.map((item, idx) => (
-                            <Link
-                                key={idx}
-                                to={item.to}
-                                className={`subnav-link ${isActive(item.to) ? 'subnav-link--active' : ''} ${item.highlight ? 'subnav-link--highlight' : ''}`}
-                            >
-                                {item.highlight && <Award size={13} style={{ display: 'inline', marginRight: '4px' }} />}
-                                {item.label}
-                            </Link>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Mobile Search Bar if on Home */}
-            {showSearch && (
-                <div className="store-mobile-search-strip">
-                    <div className="container">
-                        <div className="mobile-search-input-wrap">
-                            <Search size={15} className="mobile-search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Buscar produtos ou fórmulas..."
-                                value={searchTerm || ''}
-                                onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modern Mobile Drawer */}
-            {menuOpen && (
-                <div className="store-mobile-drawer-overlay" onClick={() => setMenuOpen(false)}>
-                    <div className="store-mobile-drawer" onClick={(e) => e.stopPropagation()}>
-                        <div className="mobile-drawer-top">
-                            <img src="/assets/logo.png" alt="Graphène" className="mobile-drawer-logo" />
-                            <button className="mobile-drawer-close" onClick={() => setMenuOpen(false)} aria-label="Fechar Menu">
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                        <div className="mobile-drawer-links">
-                            <Link to={customer ? '/minha-conta' : '/entrar'} className="mobile-drawer-link" onClick={() => setMenuOpen(false)}><div className="drawer-link-content"><UserRound size={15}/><span>{customer ? 'Minha conta' : 'Entrar / Criar conta'}</span></div><ChevronRight size={16} opacity={0.4} /></Link>
-                            <Link to="/carrinho" className="mobile-drawer-link" onClick={() => setMenuOpen(false)}><div className="drawer-link-content"><ShoppingBag size={15}/><span>Carrinho {itemCount ? `(${itemCount})` : ''}</span></div><ChevronRight size={16} opacity={0.4} /></Link>
-                            {navItems.map((item, idx) => (
-                                <Link
-                                    key={idx}
-                                    to={item.to}
-                                    className={`mobile-drawer-link ${isActive(item.to) ? 'mobile-drawer-link--active' : ''}`}
-                                    onClick={() => setMenuOpen(false)}
-                                >
-                                    <div className="drawer-link-content">
-                                        {item.highlight && <Award size={15} color="var(--brand-blue)" />}
-                                        <span>{item.label}</span>
-                                    </div>
-                                    <ChevronRight size={16} opacity={0.4} />
-                                </Link>
-                            ))}
-                        </div>
-
-                        <div className="mobile-drawer-footer">
-                            <Link to="/receita" className="btn-cta-blue" style={{ width: '100%' }} onClick={() => setMenuOpen(false)}>
-                                <FileUp size={17} /> Solicitar orçamento
-                            </Link>
-                            <Link to="/parceiros/entrar" className="btn-drawer-partner" style={{ width: '100%' }} onClick={() => setMenuOpen(false)}>
-                                <LockKeyhole size={16} /> Painel do Parceiro (Entrar)
-                            </Link>
-                            <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="btn-buy-wa" style={{ width: '100%' }}>
-                                <MessageCircle size={17} /> Atendimento WhatsApp
-                            </a>
-                            <div className="mobile-drawer-contact-info">
-                                <small>Rua Itajuru, 300, Lojas 5 e 6 • Cabo Frio, RJ</small>
-                                <small>(22) 99936-1256 • Seg a Sex 08h-18h30</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <style>{`
-                .store-header-wrapper { position: sticky; top: 0; z-index: 100; width: 100%; }
-                
-                .store-top-bar {
-                    background: #040508;
-                    border-bottom: 1px solid var(--border-subtle);
-                    padding: 6px 0;
-                    font-size: 0.76rem;
-                    color: var(--text-dim);
-                }
-                .top-bar-flex { display: flex; align-items: center; justify-content: space-between; }
-                .top-bar-left, .top-bar-right { display: flex; align-items: center; gap: 10px; }
-                .top-bar-left span, .top-bar-right span { display: inline-flex; align-items: center; gap: 4px; }
-                .divider-dot { color: var(--text-muted); opacity: 0.5; }
-                .top-wa-link { display: inline-flex; align-items: center; gap: 4px; color: var(--brand-green); font-weight: 700; }
-                .top-partner-link { display: inline-flex; align-items: center; gap: 5px; color: #67dff3; font-weight: 700; font-size: 0.74rem; transition: var(--transition); }
-                .top-partner-link:hover { color: #fff; text-decoration: underline; }
-                .anvisa-tag { color: var(--brand-blue); font-weight: 600; }
-
-                .store-main-header {
-                    background: rgba(7, 9, 14, 0.96);
-                    backdrop-filter: blur(12px);
-                    -webkit-backdrop-filter: blur(12px);
-                    border-bottom: 1px solid var(--border-subtle);
-                    transition: var(--transition);
-                }
-                .store-header--scrolled { box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
-
-                .header-content-grid { display: flex; align-items: center; gap: 20px; height: 64px; }
-                .store-brand { display: flex; align-items: center; flex-shrink: 0; }
-                .store-logo-img { height: 34px; width: auto; object-fit: contain; }
-
-                .store-search-bar { position: relative; flex: 1; max-width: 440px; }
-                .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
-                .store-search-bar input {
-                    width: 100%;
-                    padding: 9px 16px 9px 40px;
-                    border-radius: var(--radius-full);
-                    border: 1px solid var(--border-card);
-                    background: rgba(255,255,255,0.04);
-                    color: #fff;
-                    font-size: 0.86rem;
-                    outline: none;
-                    transition: var(--transition);
-                }
-                .store-search-bar input:focus { border-color: var(--brand-blue); background: rgba(255,255,255,0.08); }
-
-                .store-header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-                .btn-header-icon { position: relative; display: inline-flex; align-items: center; gap: 6px; color: var(--text-dim); font-size: .78rem; font-weight: 700; padding: 8px 7px; border-radius: var(--radius-sm); transition: var(--transition); }
-                .btn-header-icon:hover { color: var(--brand-blue); background: rgba(0,180,216,.08); }
-                .cart-count { position: absolute; top: 1px; right: 0; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; display: grid; place-items: center; background: var(--brand-green); color: var(--action-ink); font-size: .62rem; font-weight:900; border: 2px solid #070a10; }
-                .btn-header-receita {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 6px;
-                    padding: 8px 14px;
-                    border-radius: var(--radius-sm);
-                    background: rgba(34,199,232,0.10);
-                    border: 1px solid var(--border-blue);
-                    color: var(--brand-blue);
-                    font-size: 0.8rem;
-                    font-weight: 700;
-                    transition: var(--transition);
-                }
-                .btn-header-receita:hover { background: var(--brand-blue); color: #07090e; }
-                .btn-header-wa {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 6px;
-                    padding: 8px 14px;
-                    border-radius: var(--radius-sm);
-                    background: rgba(36,211,154,.08);
-                    border: 1px solid var(--border-green);
-                    color: var(--brand-green) !important;
-                    font-size: 0.8rem;
-                    font-weight: 700;
-                    transition: var(--transition);
-                }
-                .btn-header-wa:hover { background: rgba(36,211,154,.16); border-color:var(--brand-green); }
-                
-                .store-menu-toggle {
-                    display: none;
-                    background: none;
-                    border: none;
-                    color: #fff;
-                    cursor: pointer;
-                    padding: 6px;
-                    border-radius: var(--radius-xs);
-                }
-
-                .store-subnav { border-top: 1px solid rgba(255,255,255,0.04); padding: 8px 0; }
-                .subnav-flex { display: flex; align-items: center; gap: clamp(12px, 1.8vw, 24px); }
-                .subnav-link {
-                    font-size: 0.84rem;
-                    font-weight: 600;
-                    color: var(--text-dim);
-                    padding: 4px 0;
-                    border-bottom: 2px solid transparent;
-                    transition: var(--transition);
-                    display: inline-flex;
-                    align-items: center;
-                }
-                .subnav-link:hover { color: var(--brand-blue); }
-                .subnav-link--active { color: var(--brand-blue); border-bottom-color: var(--brand-blue); }
-                .subnav-link--highlight { color: #38bdf8; font-weight: 700; }
-
-                .btn-drawer-partner {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 8px;
-                    padding: 12px;
-                    border-radius: var(--radius-sm);
-                    background: rgba(0, 180, 216, 0.12);
-                    border: 1px solid rgba(0, 180, 216, 0.35);
-                    color: #67dff3 !important;
-                    font-weight: 800;
-                    font-size: 0.84rem;
-                    transition: var(--transition);
-                }
-                .btn-drawer-partner:hover {
-                    background: var(--brand-blue);
-                    color: #07090e !important;
-                }
-
-                /* Mobile Search Strip */
-                .store-mobile-search-strip {
-                    display: none;
-                    background: #090c13;
-                    border-bottom: 1px solid var(--border-subtle);
-                    padding: 8px 0;
-                }
-                .mobile-search-input-wrap {
-                    position: relative;
-                    width: 100%;
-                }
-                .mobile-search-icon {
-                    position: absolute;
-                    left: 12px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    color: var(--text-muted);
-                }
-                .mobile-search-input-wrap input {
-                    width: 100%;
-                    padding: 10px 14px 10px 36px;
-                    border-radius: var(--radius-full);
-                    border: 1px solid var(--border-card);
-                    background: rgba(255,255,255,0.04);
-                    color: #fff;
-                    outline: none;
-                }
-
-                /* Mobile Drawer Overlay */
-                .store-mobile-drawer-overlay {
-                    position: fixed;
-                    inset: 0;
-                    background: rgba(0, 0, 0, 0.75);
-                    backdrop-filter: blur(6px);
-                    -webkit-backdrop-filter: blur(6px);
-                    z-index: 1000;
-                    display: flex;
-                    justify-content: flex-end;
-                    animation: fadeIn 0.2s ease-out;
-                }
-
-                .store-mobile-drawer {
-                    width: 85%;
-                    max-width: 320px;
-                    height: 100%;
-                    background: #0c1018;
-                    border-left: 1px solid var(--border-card);
-                    display: flex;
-                    flex-direction: column;
-                    padding: 20px;
-                    gap: 18px;
-                    overflow-y: auto;
-                    animation: slideInRight 0.25s ease-out;
-                }
-
-                .mobile-drawer-top {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding-bottom: 14px;
-                    border-bottom: 1px solid var(--border-subtle);
-                }
-                .mobile-drawer-logo { height: 28px; width: auto; }
-                .mobile-drawer-close { background: none; border: none; color: #fff; cursor: pointer; padding: 4px; }
-
-                .mobile-drawer-links {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
-                    flex: 1;
-                }
-
-                .mobile-drawer-link {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 12px 10px;
-                    border-radius: var(--radius-sm);
-                    font-size: 0.95rem;
-                    font-weight: 600;
-                    color: var(--text-dim);
-                    transition: var(--transition);
-                }
-                .drawer-link-content { display: flex; align-items: center; gap: 8px; }
-                .mobile-drawer-link:hover, .mobile-drawer-link--active {
-                    background: rgba(0, 180, 216, 0.08);
-                    color: var(--brand-blue);
-                }
-
-                .mobile-drawer-footer {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                    padding-top: 16px;
-                    border-top: 1px solid var(--border-subtle);
-                }
-
-                .mobile-drawer-contact-info {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
-                    text-align: center;
-                    margin-top: 6px;
-                    color: var(--text-muted);
-                    font-size: 0.72rem;
-                }
-
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-
-                @keyframes slideInRight {
-                    from { transform: translateX(100%); }
-                    to { transform: translateX(0); }
-                }
-
-                @media (max-width: 960px) {
-                    .store-subnav { display: none; }
-                    .store-search-bar { display: none; }
-                    .store-menu-toggle { display: flex; align-items: center; justify-content: center; }
-                    .top-bar-left { display: none; }
-                    .store-mobile-search-strip { display: block; }
-                }
-
-                @media (max-width: 820px) {
-                    .btn-header-receita, .btn-header-wa { display: none; }
-                    .header-icon-label { display: none; }
-                    .btn-header-icon { padding: 8px 5px; }
-                }
-
-                @media (max-width: 600px) {
-                    .header-content-grid { height: 56px; }
-                    .top-bar-right { width: 100%; justify-content: space-between; }
-                }
-            `}</style>
+            </nav>
         </header>
-    );
+        <div className="gh-sections-space" aria-hidden="true" />
+
+        {showSearch && <div className="gh-mobile-search"><div className="container">{search}</div></div>}
+
+        {menuOpen && <div className="gh-drawer-backdrop" onClick={() => setMenuOpen(false)}>
+            <div id="gh-drawer" className="gh-drawer" role="dialog" aria-modal="true" aria-label="Menu" onClick={event => event.stopPropagation()}>
+                <div className="gh-drawer-head">
+                    <Logo className="gh-drawer-logo" />
+                    <button type="button" ref={closeButton} className="gh-drawer-close" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"><X size={22} /></button>
+                </div>
+                <div className="gh-drawer-quick">
+                    <Link to={accountPath}><UserRound size={18} aria-hidden="true" /> {customer ? 'Minha conta' : 'Entrar ou criar conta'}</Link>
+                    <Link to="/carrinho"><ShoppingBag size={18} aria-hidden="true" /> Carrinho{itemCount ? ` (${itemCount})` : ''}</Link>
+                </div>
+                <nav className="gh-drawer-links" aria-label="Seções do site">
+                    {NAV.map(item => <Link key={item.to} to={item.to} className={isActive(item) ? 'is-active' : ''} aria-current={isActive(item) ? 'page' : undefined}>{item.label}<ChevronRight size={17} aria-hidden="true" /></Link>)}
+                    <Link to="/parceiros/entrar">Painel do parceiro<ChevronRight size={17} aria-hidden="true" /></Link>
+                </nav>
+                <div className="gh-drawer-foot">
+                    <Link to="/receita" className="gh-cta"><FileUp size={17} aria-hidden="true" /> Solicitar orçamento</Link>
+                    <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="gh-drawer-wa"><MessageCircle size={17} aria-hidden="true" /> Falar no WhatsApp</a>
+                    <address>
+                        <span>Rua Itajuru, 300 (Lojas 5 e 6) · Centro, Cabo Frio, RJ</span>
+                        <span>{PHONE} · {HOURS}</span>
+                    </address>
+                </div>
+            </div>
+        </div>}
+    </>;
 };
 
 export default Header;

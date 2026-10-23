@@ -26,7 +26,7 @@ const AuthenticityRibbon = () => {
                             </div>
                         </div>
 
-                        <Link to="/ativos" className="btn-header-receita ribbon-link-btn">
+                        <Link to="/ativos" className="ribbon-link-btn">
                             <span>Conhecer matérias-primas</span>
                             <ArrowRight size={15} />
                         </Link>
@@ -93,9 +93,19 @@ const AuthenticityRibbon = () => {
                 }
 
                 .ribbon-link-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
                     padding: 10px 18px;
+                    border-radius: var(--radius-sm);
+                    background: rgba(34,199,232,0.10);
+                    border: 1px solid var(--border-blue);
+                    color: var(--brand-blue);
                     font-size: 0.82rem;
+                    font-weight: 700;
+                    transition: var(--transition);
                 }
+                .ribbon-link-btn:hover { background: var(--brand-blue); color: #07090e; }
 
                 .seals-scroll-row {
                     display: grid;

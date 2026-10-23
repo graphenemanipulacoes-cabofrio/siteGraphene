@@ -24,20 +24,6 @@
   color: var(--text-main);
 }
 
-.page-root .store-top-bar { background: #091722; padding: 8px 0; }
-.page-root .store-main-header { background: rgba(9, 23, 34, .86); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-.page-root .store-header--scrolled { box-shadow: 0 12px 36px rgba(0, 7, 15, .25); }
-.page-root .header-content-grid { height: 78px; gap: 28px; }
-.page-root .store-logo-img { width: 155px; height: 60px; object-fit: cover; object-position: center; mix-blend-mode: screen; }
-.page-root .store-search-bar input { min-height: 44px; background: rgba(94, 142, 167, .07); border-color: var(--border-card); }
-.page-root .store-subnav { padding: 10px 0; }
-.page-root .subnav-link { font-size: .79rem; font-weight: 500; }
-.page-root .btn-header-icon { min-height: 44px; font-weight: 500; }
-.page-root .btn-header-receita, .page-root .btn-header-wa { min-height: 40px; border-radius: 11px; }
-.page-root .cart-count { background: #8be0ec; color: #08141d; border-color: #091722; }
-.page-root .store-mobile-search-strip { background: #0c1d29; }
-.page-root .store-mobile-drawer { background: #0d202d; }
-.page-root .mobile-drawer-logo { width: 120px; height: 48px; object-fit: cover; object-position: center; mix-blend-mode: screen; }
 
 .page-root .btn-commerce, .page-root .btn-buy-now, .page-root .access-submit {
   background: var(--premium-action); color: #fff !important; border: 1px solid rgba(111, 194, 239, .45);
@@ -86,7 +72,7 @@
 .page-root .benefit-text span { color: #9fb7c8; }
 
 .page-root .store-section { padding: 64px 0 76px; }
-.page-root .products-section { scroll-margin-top: 182px; }
+.page-root .products-section { scroll-margin-top: 96px; }
 .page-root .store-section-header { max-width: 660px; margin-bottom: 32px; }
 .page-root .store-badge { background: transparent; border: 0; border-radius: 0; padding: 0; letter-spacing: .15em; font-size: .65rem; color: #86c9dd; margin-bottom: 15px; }
 .page-root .store-section-header h2 { font-size: clamp(1.8rem, 3.2vw, 2.75rem); font-weight: 500; letter-spacing: -.035em; }
@@ -123,7 +109,7 @@
 .page-root .footer-col h4 { color: #e0eef7; font-weight: 550; letter-spacing: .1em; }
 .page-root .footer-bio, .page-root .footer-info, .page-root .footer-links a, .page-root .footer-reg { color: #a1bacb; line-height: 1.8; font-size: .8rem; }
 .page-root .footer-reg { margin-top: 18px; }
-.page-root .footer-logo { width: 165px; height: 66px; object-fit: cover; object-position: center; mix-blend-mode: screen; margin-bottom: 20px; }
+.page-root .footer-logo { height: 58px; width: auto; margin-bottom: 20px; }
 
 /* Glass sign-in surfaces; no authentication logic is changed. */
 .page-root .customer-access-page { position: relative; background: radial-gradient(ellipse at 50% 12%, rgba(27, 127, 220, .14), transparent 60%); padding: 64px 20px 80px; }
@@ -144,7 +130,6 @@
 @keyframes premium-enter { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 1100px) {
   .premium-hero h1 { font-size: 2.8rem; }
-  .page-root .header-content-grid { gap: 18px; }
 }
 @media (max-width: 960px) {
   .premium-hero { margin-bottom: 30px; }
@@ -158,11 +143,6 @@
   .page-root .benefits-grid { padding: 22px; }
 }
 @media (max-width: 600px) {
-  .page-root .header-content-grid { height: 66px; gap: 12px; }
-  .page-root .store-logo-img { width: 120px; height: 48px; }
-  .page-root .top-wa-link, .page-root .top-bar-right .divider-dot { display: none; }
-  .page-root .top-bar-right { gap: 14px; font-size: .63rem; }
-  .page-root .top-partner-link { font-size: .63rem; white-space: nowrap; }
   .premium-hero { margin-bottom: 24px; }
   .premium-eyebrow { font-size: .61rem; margin-bottom: 20px; }
   .premium-hero h1 { font-size: clamp(2.5rem, 10.5vw, 3.5rem); line-height: 1.1; }

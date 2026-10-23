@@ -5,8 +5,8 @@ const BenefitsBar = () => {
     const perks = [
         {
             icon: Truck,
-            title: 'Entrega sob consulta',
-            desc: 'Confira prazos e regiões no atendimento',
+            title: 'Enviamos para todo o Brasil',
+            desc: 'Calcule frete e prazo pelo CEP',
             color: 'var(--brand-blue)'
         },
         {

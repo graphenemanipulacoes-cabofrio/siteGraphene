@@ -9,7 +9,7 @@ const Footer = () => {
         <footer className="store-footer">
             <div className="container store-footer-grid">
                 <div className="footer-col">
-                    <img src="/assets/logo.png" alt="Graphène" className="footer-logo" />
+                    <img src="/assets/brand/graphene-logo.png" alt="Graphène Farmácia de Manipulação" className="footer-logo" width="278" height="112" />
                     <p className="footer-bio">
                         A Graphène é uma farmácia de manipulação em Cabo Frio — RJ. Conheça os produtos da loja, conte com atendimento farmacêutico e solicite orçamento para fórmulas individualizadas.
                     </p>
@@ -71,7 +71,7 @@ const Footer = () => {
             <style>{`
                 .store-footer { background: #040508; border-top: 1px solid var(--border-subtle); padding-top: 56px; position: relative; z-index: 10; }
                 .store-footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 0.8fr 1fr; gap: 40px; padding-bottom: 40px; border-bottom: 1px solid var(--border-subtle); }
-                .footer-logo { height: 34px; width: auto; margin-bottom: 14px; }
+                .footer-logo { display: block; height: 52px; width: auto; margin-bottom: 14px; }
                 .footer-bio { font-size: 0.84rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 14px; }
                 .footer-social { display: inline-flex; align-items: center; gap: 6px; color: #fff; font-size: 0.82rem; font-weight: 600; }
                 .footer-social:hover { color: var(--brand-blue); }

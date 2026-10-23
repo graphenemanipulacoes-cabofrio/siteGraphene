@@ -195,7 +195,7 @@ const institutionalStyles = `
     .institutional-hero p { max-width: 670px; color: var(--text-dim); font-size: 1.03rem; line-height: 1.7; }
     .institutional-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); align-items: start; gap: 26px; }
     .institutional-nav, .institutional-content { background: var(--surface-card, rgba(15, 22, 34, .88)); border: 1px solid var(--border-subtle); border-radius: 16px; }
-    .institutional-nav { position: sticky; top: 120px; padding: 20px; }
+    .institutional-nav { position: sticky; top: 136px; padding: 20px; }
     .institutional-nav h2 { margin: 0 0 12px; font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; }
     .institutional-nav a { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 10px; border-radius: 8px; color: var(--text-dim); font-size: .87rem; }
     .institutional-nav a:hover, .institutional-nav a.is-active { color: var(--text-main); background: rgba(64, 204, 229, .09); }
