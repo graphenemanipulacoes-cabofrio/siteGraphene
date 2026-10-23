@@ -1,24 +1,20 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'sonner';
 import { productOptions, variantKey } from '../utils/productOptions';
+import { CustomerCartStore, syncCustomerCart } from '../utils/cartPersistence';
 
 const StoreContext = createContext(null);
-const CART_KEY = 'graphene_cart';
-
-const readCart = () => {
-    try {
-        const saved = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
-        // Cada linha é um produto + quantidade + sabor (key). Carrinhos antigos não tinham key.
-        return Array.isArray(saved) ? saved.filter(item => item && item.id && Number.isInteger(item.quantity) && item.quantity > 0).map(item => ({ ...item, id: String(item.id), key: item.key || variantKey(item.id, item.size, item.flavor), quantity: Math.min(item.quantity, 20) })) : [];
-    } catch {
-        return [];
-    }
-};
 
 export const StoreProvider = ({ children }) => {
-    const [cart, setCart] = useState(readCart);
+    const [cartState, setCartState] = useState({ cart: [], cartReady: false, cartSyncing: false, cartSyncError: null });
+    const [cartStore] = useState(() => {
+        let storage;
+        try { storage = window.localStorage; } catch { /* Storage can be unavailable in private browsing. */ }
+        return new CustomerCartStore({ storage, syncRemote: (userId, operations) => syncCustomerCart(supabase, userId, operations) });
+    });
+    const { cart, cartReady, cartSyncing, cartSyncError } = cartState;
     // CEP do cliente: digitado uma vez (produto, carrinho ou checkout) e reaproveitado.
     const [zip, setZipState] = useState(() => { try { return localStorage.getItem('graphene_cep') || ''; } catch { return ''; } });
     const setZip = useCallback(value => {
@@ -28,25 +24,53 @@ export const StoreProvider = ({ children }) => {
     }, []);
     const [customer, setCustomer] = useState(null);
     const [authReady, setAuthReady] = useState(false);
-    const settledOrders = useRef(new Set());
+    useEffect(() => {
+        return cartStore.subscribe(setCartState);
+    }, [cartStore]);
 
     useEffect(() => {
-        try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch { /* The cart remains usable when storage is unavailable. */ }
-    }, [cart]);
-
-    useEffect(() => {
+        let active = true;
+        let authVersion = 0;
+        const requestedVersion = authVersion;
         supabase.auth.getSession().then(({ data }) => {
+            if (!active || requestedVersion !== authVersion) return;
+            void cartStore.activate(data.session?.user?.id || null);
             setCustomer(data.session?.user || null);
             setAuthReady(true);
+        }).catch(() => {
+            if (active && requestedVersion === authVersion) {
+                void cartStore.activate(null);
+                setAuthReady(true);
+            }
         });
 
         const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+            authVersion += 1;
+            // This only updates the local owner immediately. Network work is
+            // deferred to a microtask, outside Supabase's synchronous callback.
+            void cartStore.activate(session?.user?.id || null);
             setCustomer(session?.user || null);
             setAuthReady(true);
         });
 
-        return () => subscription.subscription.unsubscribe();
-    }, []);
+        return () => { active = false; subscription.subscription.unsubscribe(); cartStore.deactivate(); };
+    }, [cartStore]);
+
+    useEffect(() => {
+        if (!authReady) return;
+        void cartStore.activate(customer?.id || null);
+        const refresh = () => { if (document.visibilityState !== 'hidden') void cartStore.flush(); };
+        const timer = window.setInterval(refresh, 20000);
+        window.addEventListener('focus', refresh);
+        window.addEventListener('online', refresh);
+        document.addEventListener('visibilitychange', refresh);
+        return () => {
+            window.clearInterval(timer);
+            window.removeEventListener('focus', refresh);
+            window.removeEventListener('online', refresh);
+            document.removeEventListener('visibilitychange', refresh);
+        };
+    }, [authReady, customer?.id, cartStore]);
 
     // choice = { size, sizeLabel, flavor, flavorLabel, price } quando o produto tem opções.
     const addItem = useCallback((product, choice = {}, units = 1) => {
@@ -60,16 +84,11 @@ export const StoreProvider = ({ children }) => {
 
         if (!price) { toast.error('Este produto ainda não tem um preço para compra.'); return false; }
         const key = variantKey(product.id, choice.size, choice.flavor);
-        if (cart.some(item => item.key === key && item.quantity >= 20)) {
+        if (cartStore.items.some(item => item.key === key && item.quantity >= 20)) {
             toast.info('Limite de 20 unidades por produto.'); return false;
         }
 
-        setCart(current => {
-            const existing = current.find(item => item.key === key);
-            if (existing) {
-                return current.map(item => item.key === key ? { ...item, price, quantity: Math.min(item.quantity + amount, 20) } : item);
-            }
-            return [...current, {
+        const added = cartStore.add({
                 key,
                 id: String(product.id),
                 name: product.name,
@@ -81,42 +100,30 @@ export const StoreProvider = ({ children }) => {
                 flavorLabel: choice.flavorLabel || null,
                 price,
                 quantity: amount,
-            }];
         });
-        return true;
-    }, [cart]);
+        if (!added) toast.info('Seu carrinho pode ter até 50 produtos diferentes.');
+        return added;
+    }, [cartStore]);
 
     const updateQuantity = useCallback((key, quantity) => {
-        setCart(current => current.flatMap(item => {
-            if (item.key !== key) return [item];
-            return quantity > 0 && Number.isInteger(quantity) ? [{ ...item, quantity: Math.min(quantity, 20) }] : [];
-        }));
-    }, []);
+        cartStore.quantity(key, quantity);
+    }, [cartStore]);
 
-    const removeItem = useCallback((key) => setCart(current => current.filter(item => item.key !== key)), []);
-    const clearCart = useCallback(() => setCart([]), []);
-    const settleCart = useCallback((orderId, items) => {
-        if (settledOrders.current.has(orderId)) return;
-        try {
-            const settled = JSON.parse(localStorage.getItem('graphene_settled_carts') || '[]');
-            if (settled.includes(orderId)) return;
-            localStorage.setItem('graphene_settled_carts', JSON.stringify([...settled, orderId].slice(-50)));
-        } catch { /* Keep an in-memory guard if storage is unavailable. */ }
-        settledOrders.current.add(orderId);
-        setCart(current => current.flatMap(item => {
-            const purchased = items.find(p => variantKey(p.product_id, p.variant?.size, p.variant?.flavor) === item.key);
-            const quantity = item.quantity - Number(purchased?.quantity || 0);
-            return quantity > 0 ? [{ ...item, quantity }] : [];
-        }));
-    }, []);
+    const removeItem = useCallback(key => cartStore.remove(key), [cartStore]);
+    const clearCart = useCallback(() => cartStore.clear(), [cartStore]);
+    const settleCart = useCallback((orderId, items) => cartStore.settle(orderId, items), [cartStore]);
+    const syncCart = useCallback(async () => {
+        const ok = await cartStore.flush();
+        return { ok, items: cartStore.items.map(item => ({ ...item })), userId: cartStore.userId };
+    }, [cartStore]);
 
     const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
     const subtotal = cart.reduce((total, item) => total + item.quantity * (item.price || 0), 0);
 
     const value = useMemo(() => ({
-        cart, customer, authReady, itemCount, subtotal, zip, setZip,
+        cart, customer, authReady, cartReady, cartSyncing, cartSyncError, syncCart, itemCount, subtotal, zip, setZip,
         addItem, updateQuantity, removeItem, clearCart, settleCart,
-    }), [cart, customer, authReady, itemCount, subtotal, zip, setZip, addItem, updateQuantity, removeItem, clearCart, settleCart]);
+    }), [cart, customer, authReady, cartReady, cartSyncing, cartSyncError, syncCart, itemCount, subtotal, zip, setZip, addItem, updateQuantity, removeItem, clearCart, settleCart]);
 
     return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 };

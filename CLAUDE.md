@@ -13,6 +13,7 @@ Este arquivo é a fonte de contexto do projeto. Não há notas externas (Obsidia
 ## Áreas do site
 - **Loja pública:** `/`, `/produto/:id`, `/ativos`, `/laboratorio`, `/receita` (envio de receita), `/prescritores`, `/avaliacoes`, `/parceiros`, `/sobre`, `/compras`, `/privacidade`.
 - **Compra:** `/carrinho`, `/entrar`, `/minha-conta`, `/checkout`, `/pedido/retorno`, `/redefinir-senha`. Carrinho em `src/context/StoreContext.jsx`.
+  Carrinhos autenticados ficam em `customer_carts`/RPC `customer_cart_sync`; `src/utils/cartPersistence.js` mantém cache separado por conta e operações pendentes idempotentes. Não voltar a usar um único localStorage para todos os clientes. Checkout usa sempre `create_checkout_order_v2`, incluindo frete, e `src/lib/checkoutApi.js` cuida da sessão/erros sem repetir pagamentos.
 - **Admin** (`/admin`, login em `/login`): solicitações, pedidos, produtos, financeiro, parceiros, acessos do balcão, administradores.
 - **Parceiros:** `/parceiros/cadastro`, `/parceiros/entrar`, `/parceiros/painel`.
 - **Balcão** (`/balcaographene`): consulta da equipe da loja. Detalhes em `BALCAO_GRAPHENE.md`.
@@ -48,5 +49,5 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - Senhas do admin usam SHA-256 sem sal (o balcão já usa PBKDF2).
 - Proteção contra senhas vazadas no login de clientes exige o plano Pro do Supabase.
 - A função `migrar-receitas-antigas` está desativada (responde 410) e pode ser excluída no painel do Supabase.
-- O conector do Supabase não consegue aplicar alterações no banco (pede confirmação que não chega): SQL de mudança roda no SQL Editor do painel.
+- O conector do Supabase está disponível. Em 23/10/2026, a migração de carrinho foi aplicada em duas partes (`customer_cart_storage`, `customer_cart_sync`) após erro de confirmação no arquivo completo; `checkout_retry` e a função `create-checkout` v12 também foram publicados. Não repetir migrações antigas sem conferir o schema atual.
 - Itens de negócio (alvará, Google Ads, frete, trocas): `PENDENCIAS_GOOGLE_E_SITE.md`.

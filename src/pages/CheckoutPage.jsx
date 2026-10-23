@@ -5,6 +5,7 @@ import StoreLayout from '../components/StoreLayout';
 import PurchaseSteps from '../components/PurchaseSteps';
 import { useStore } from '../context/StoreContext';
 import { supabase } from '../lib/supabaseClient';
+import { prepareCheckout } from '../lib/checkoutApi';
 import { money, validCpf } from '../utils/commerce';
 import { isAdminPreview } from '../utils/adminPreview';
 import { variantText } from '../utils/productOptions';
@@ -12,31 +13,24 @@ import { FreeShippingProgress } from '../components/ShippingEstimator';
 import { STORE_ADDRESS, cleanZip, deliveryText, formatZip, lookupAddress, useShippingConfig, useShippingQuote } from '../utils/shipping';
 import '../styles/purchase.css';
 
-const messages = {
-    authentication_required: 'Sua sessão expirou. Entre novamente para continuar.',
-    invalid_document: 'Confira o CPF informado.',
-    invalid_cart: 'Revise as quantidades no carrinho. O limite é de 20 unidades por produto.',
-    invalid_shipping: 'Confira os dados de entrega.',
-    invalid_or_unpriced_product: 'Um dos produtos não tem preço para compra. Revise o carrinho.',
-    invalid_shipping_zip: 'Confira o CEP: não conseguimos calcular a entrega para ele.',
-    invalid_variant: 'Um produto do carrinho precisa da escolha de quantidade ou sabor. Remova-o e adicione de novo pela página do produto.',
-    unable_to_create_order: 'Não foi possível validar o pedido. Revise os produtos e tente novamente.',
-    invalid_coupon: 'Este cupom não está disponível. Confira o código ou continue sem ele.',
-    coupon_minimum_not_reached: 'O valor mínimo para usar este cupom não foi atingido.',
-    payment_provider_not_configured: 'O pagamento está temporariamente indisponível. Tente novamente mais tarde.',
-    payment_provider_credentials_invalid: 'O pagamento está temporariamente indisponível. Tente novamente mais tarde.',
-    payment_provider_request_rejected: 'Não foi possível gerar o pagamento. Confira seus dados.',
-    payment_provider_unavailable: 'O Mercado Pago está temporariamente indisponível. Tente novamente em instantes.',
-};
+const cartSignature = items => JSON.stringify(items.map(item => [item.key, item.quantity, item.price]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))));
 
 export default function CheckoutPage() {
-    const { cart, subtotal, itemCount, customer, authReady, zip: savedZip, setZip } = useStore();
+    const { customer } = useStore();
+    // A logout/account change must also discard the previous customer's form
+    // and order review, not just replace the cart underneath those details.
+    return <CustomerCheckout key={customer?.id || 'guest'} />;
+}
+
+function CustomerCheckout() {
+    const { cart, subtotal, itemCount, customer, authReady, cartReady, syncCart, zip: savedZip, setZip } = useStore();
     const location = useLocation();
     const preview = isAdminPreview(location.search);
     const [form, setForm] = useState({ name: customer?.user_metadata?.full_name || '', cpf: '', phone: '', zip: formatZip(savedZip), address: '', number: '', complement: '', neighborhood: '', city: '', state: '' });
     const [couponCode, setCouponCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [errorReference, setErrorReference] = useState(null);
     const [review, setReview] = useState(null);
     const attempt = useRef(null);
     const busy = useRef(false);
@@ -75,45 +69,40 @@ export default function CheckoutPage() {
         if (busy.current) return;
         if (!validCpf(form.cpf)) { showError('Confira seu CPF: informe os 11 números de um CPF válido.'); return; }
         if (!/^\d{8}$/.test(form.zip.replace(/\D/g, ''))) { showError('Confira seu CEP: ele deve ter 8 números.'); return; }
-        if (quote && !quote.ok) { showError(messages.invalid_shipping_zip); return; }
+        if (quote && !quote.ok) { showError('Confira o CEP: não conseguimos calcular a entrega para ele.'); return; }
         if (!/^\d{10,11}$/.test(form.phone.replace(/\D/g, ''))) { showError('Informe seu telefone com DDD, com 10 ou 11 números.'); return; }
         busy.current = true;
         setLoading(true);
         setError('');
+        setErrorReference(null);
         try {
-            let { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-            let session = sessionData?.session;
-            if (session?.expires_at && session.expires_at * 1000 - Date.now() < 60_000) {
-                const refreshed = await supabase.auth.refreshSession();
-                session = refreshed.data?.session;
-            }
-            if (sessionError || !session?.access_token) throw new Error(messages.authentication_required);
+            const synced = await syncCart();
+            if (!synced.ok || synced.userId !== customer?.id) throw new Error('Não foi possível sincronizar seu carrinho. Verifique sua conexão e tente novamente. Os produtos foram mantidos.');
+            if (cartSignature(synced.items) !== cartSignature(cart)) throw new Error('Seu carrinho foi atualizado em outro acesso. Confira os produtos no resumo e clique em revisar novamente.');
             const body = {
-                items: cart.map(item => ({ productId: item.id, quantity: item.quantity, size: item.size || undefined, flavor: item.flavor || undefined })),
+                items: synced.items.map(item => ({ productId: item.id, quantity: item.quantity, size: item.size || undefined, flavor: item.flavor || undefined })),
                 shipping: { ...form, cpf: undefined, address: `${form.address.trim()}, ${form.neighborhood.trim()} — ${form.city.trim()}/${form.state}` },
                 payerDocument: form.cpf.replace(/\D/g, ''), couponCode: couponCode.trim().toUpperCase(),
             };
-            const fingerprint = JSON.stringify(body);
-            if (attempt.current?.fingerprint !== fingerprint) attempt.current = { fingerprint, key: crypto.randomUUID() };
-            const { data, error: invokeError } = await supabase.functions.invoke('create-checkout', {
-                body: { ...body, checkoutKey: attempt.current.key },
-                headers: { Authorization: `Bearer ${session.access_token}` },
-            });
-            if (invokeError || !data?.paymentUrl) {
-                let reason = data?.error;
-                try { reason ||= (await invokeError?.context?.clone().json())?.error; } catch { /* Network errors may not carry JSON. */ }
-                throw new Error(messages[reason] || 'Não foi possível preparar o pagamento. Seu carrinho foi mantido. Tente novamente.');
+            // Retain the attempt across reloads without storing CPF/address in browser storage.
+            const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(body)));
+            const fingerprint = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+            const attemptStorageKey = `graphene_checkout_attempt:${customer.id}`;
+            if (!attempt.current) {
+                try { attempt.current = JSON.parse(sessionStorage.getItem(attemptStorageKey) || 'null'); } catch { /* A fresh in-memory attempt is safe. */ }
             }
+            if (attempt.current?.fingerprint !== fingerprint || !/^[0-9a-f-]{36}$/i.test(attempt.current?.key || '')) attempt.current = { fingerprint, key: crypto.randomUUID() };
+            try { sessionStorage.setItem(attemptStorageKey, JSON.stringify(attempt.current)); } catch { /* Retained in memory until navigation. */ }
+            const data = await prepareCheckout({ ...body, checkoutKey: attempt.current.key });
             // Read the actual order through the customer's RLS-protected access.
             const { data: order, error: orderError } = await supabase.from('orders')
-                .select('id,subtotal,discount_amount,discount_code,shipping_amount,shipping_address,total,order_items(product_id,product_name,unit_price,quantity)')
+                .select('id,subtotal,discount_amount,discount_code,shipping_amount,shipping_address,total,order_items(product_id,product_name,unit_price,quantity,variant)')
                 .eq('id', data.orderId).single();
             if (orderError || !order) throw new Error('Não foi possível carregar o resumo final. Tente novamente para conferir o pedido.');
-            const paymentUrl = new URL(data.paymentUrl);
-            if (paymentUrl.protocol !== 'https:' || !(paymentUrl.hostname === 'mercadopago.com.br' || paymentUrl.hostname.endsWith('.mercadopago.com.br'))) throw new Error('Não foi possível abrir o ambiente de pagamento.');
-            setReview({ ...order, paymentUrl: paymentUrl.href });
+            setReview({ ...order, paymentUrl: data.paymentUrl });
             requestAnimationFrame(() => headingRef.current?.focus());
         } catch (failure) {
+            setErrorReference(failure.requestId || null);
             showError(failure.message || 'Não foi possível conectar. Tente novamente.');
         } finally {
             busy.current = false;
@@ -137,7 +126,7 @@ export default function CheckoutPage() {
         <Link to="/carrinho" className="purchase-back"><ArrowLeft size={16} /> Voltar ao carrinho</Link>
         <PurchaseSteps current={review ? 3 : 2} />
         <div className="purchase-heading"><div><span className="purchase-eyebrow">Finalizar compra</span><h1 ref={headingRef} tabIndex={-1}>{review ? 'Confira seu pedido' : 'Entrega'}</h1><p>{review ? 'Confira produtos, entrega e valor total. O pagamento acontece na próxima tela.' : 'Comece pelo CEP: o endereço é preenchido sozinho.'}</p></div></div>
-        {!authReady ? <div className="purchase-empty" role="status">Carregando sua conta…</div> : !cart.length && !preview ? <div className="purchase-empty"><h2>Seu carrinho está vazio</h2><Link to="/#produtos" className="purchase-primary">Escolher produtos</Link></div> : !customer && !preview ? <div className="purchase-card purchase-signin"><UserRound size={28}/><h2>Entre para concluir sua compra</h2><p>Seus {itemCount} {itemCount === 1 ? 'item está' : 'itens estão'} no carrinho. Use sua conta para informar a entrega e acompanhar o pedido.</p><Link className="purchase-primary" to="/entrar" state={{ returnTo: '/checkout', intent: 'checkout' }}>Entrar ou criar conta <ArrowRight size={18}/></Link><Link to="/#produtos" className="purchase-continue">Continuar comprando</Link></div> :
+        {!authReady || !cartReady ? <div className="purchase-empty" role="status">Carregando sua conta e seu carrinho…</div> : !cart.length && !preview ? <div className="purchase-empty"><h2>Seu carrinho está vazio</h2><Link to="/#produtos" className="purchase-primary">Escolher produtos</Link></div> : !customer && !preview ? <div className="purchase-card purchase-signin"><UserRound size={28}/><h2>Entre para concluir sua compra</h2><p>Seus {itemCount} {itemCount === 1 ? 'item está' : 'itens estão'} no carrinho. Use sua conta para informar a entrega e acompanhar o pedido.</p><Link className="purchase-primary" to="/entrar" state={{ returnTo: '/checkout', intent: 'checkout' }}>Entrar ou criar conta <ArrowRight size={18}/></Link><Link to="/#produtos" className="purchase-continue">Continuar comprando</Link></div> :
         <div className="purchase-layout">
             <div>
                 {review ? <div className="purchase-card purchase-form">
@@ -172,7 +161,7 @@ export default function CheckoutPage() {
                         <label>Celular com DDD <small>(WhatsApp)</small><input name="phone" type="tel" autoComplete="tel" placeholder="(22) 99999-9999" maxLength={16} value={form.phone} onChange={field} required /></label>
                     </div></fieldset>
                     <details className="purchase-coupon"><summary>Tenho um cupom de desconto</summary><label>Código do cupom<input disabled={loading} value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} maxLength={40} placeholder="Digite seu cupom" /></label><p className="purchase-hint">O desconto aparece na revisão, antes do pagamento.</p></details>
-                    {error && <div className="purchase-error" role="alert" tabIndex={-1} ref={errorRef}>{error}{/sess[aã]o/i.test(error) && <Link to="/entrar" state={{ returnTo: '/checkout' }}>Entrar novamente</Link>}</div>}
+                    {error && <div className="purchase-error" role="alert" tabIndex={-1} ref={errorRef}>{error}{errorReference && <small>Referência para o suporte: {errorReference}</small>}{/sess[aã]o/i.test(error) && <Link to="/entrar" state={{ returnTo: '/checkout' }}>Entrar novamente</Link>}</div>}
                 </form>}
             </div>
             <aside className="purchase-card purchase-summary"><div className="purchase-section-title"><h2>Resumo do pedido</h2>{!review && <Link to="/carrinho" className="purchase-text-link">Editar</Link>}</div>

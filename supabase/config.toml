@@ -1,7 +1,8 @@
 project_id = "ngphbcrdphluuphctvpr"
 
 [functions.create-checkout]
-verify_jwt = true
+# The handler validates the customer JWT with auth.getUser(). Matches production.
+verify_jwt = false
 
 [functions.payment-webhook]
 verify_jwt = false

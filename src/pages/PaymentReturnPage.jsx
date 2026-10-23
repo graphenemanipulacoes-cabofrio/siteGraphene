@@ -21,12 +21,19 @@ export default function PaymentReturnPage() {
         let attempts = 0;
         const check = async () => {
             const { data, error } = await supabase.from('orders')
-                .select('id,total,payment_status,order_items(product_id,quantity,variant)').eq('id', orderId).maybeSingle();
+                .select('id,checkout_key,total,payment_status,order_items(product_id,quantity,variant)').eq('id', orderId).maybeSingle();
             if (!active) return;
             setUnavailable(Boolean(error || !data));
             if (data) {
                 setOrder(data);
-                if (data.payment_status === 'paid') settleCart(data.id, data.order_items || []);
+                if (data.payment_status === 'paid') {
+                    settleCart(data.id, data.order_items || []);
+                    try {
+                        const key = `graphene_checkout_attempt:${customer.id}`;
+                        const attempt = JSON.parse(sessionStorage.getItem(key) || 'null');
+                        if (attempt?.key === data.checkout_key) sessionStorage.removeItem(key);
+                    } catch { /* Optional storage must not affect confirmation. */ }
+                }
             }
             if ((!data || data.payment_status === 'pending') && ++attempts < 12) timer = setTimeout(check, 5000);
         };
