@@ -3,6 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CreditCard, LockKeyhole, LoaderCircle, MapPin, UserRound, Check, Truck } from 'lucide-react';
 import StoreLayout from '../components/StoreLayout';
 import PurchaseSteps from '../components/PurchaseSteps';
+import CouponPanel from '../components/CouponPanel';
+import { useCoupon } from '../context/CouponContext';
 import { useStore } from '../context/StoreContext';
 import { supabase } from '../lib/supabaseClient';
 import { prepareCheckout } from '../lib/checkoutApi';
@@ -27,7 +29,7 @@ function CustomerCheckout() {
     const location = useLocation();
     const preview = isAdminPreview(location.search);
     const [form, setForm] = useState({ name: customer?.user_metadata?.full_name || '', cpf: '', phone: '', zip: formatZip(savedZip), address: '', number: '', complement: '', neighborhood: '', city: '', state: '' });
-    const [couponCode, setCouponCode] = useState('');
+    const { code: couponCode, draft: couponDraft, coupon, checking: couponChecking } = useCoupon();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [errorReference, setErrorReference] = useState(null);
@@ -67,6 +69,11 @@ function CustomerCheckout() {
         event.preventDefault();
         if (preview && !customer) return;
         if (busy.current) return;
+        if (couponChecking) { showError('Aguarde a validação do seu cupom.'); return; }
+        if (couponDraft.trim() && couponDraft.trim() !== couponCode) { showError('Você digitou um cupom ou nome de parceiro. Selecione uma sugestão e aplique, ou limpe a busca para continuar sem cupom.'); return; }
+        // Final eligibility belongs to the checkout RPC, not the estimate. In
+        // particular, a limited coupon may already be reserved by this same
+        // customer's pending attempt; an idempotent retry must still work.
         if (!validCpf(form.cpf)) { showError('Confira seu CPF: informe os 11 números de um CPF válido.'); return; }
         if (!/^\d{8}$/.test(form.zip.replace(/\D/g, ''))) { showError('Confira seu CEP: ele deve ter 8 números.'); return; }
         if (quote && !quote.ok) { showError('Confira o CEP: não conseguimos calcular a entrega para ele.'); return; }
@@ -117,7 +124,7 @@ function CustomerCheckout() {
     };
     const summaryItems = review?.order_items?.map(item => ({ ...item, id: item.product_id, name: item.product_name, price: Number(item.unit_price) })) || cart;
     const shippingEstimate = quote?.ok ? Number(quote.amount) || 0 : 0;
-    const amount = review ? Number(review.total) : subtotal + shippingEstimate;
+    const amount = review ? Number(review.total) : subtotal - (coupon?.discountAmount || 0) + shippingEstimate;
     const delivery = deliveryText(review?.shipping_address?.delivery || quote);
     const deliveryPrice = source => !source?.ok ? 'Informe o CEP' : source.local ? 'A combinar' : Number(source.amount) === 0 ? 'Grátis' : money(source.amount);
     const invalidPrice = cart.some(item => !(Number(item.price) > 0));
@@ -128,7 +135,8 @@ function CustomerCheckout() {
         <div className="purchase-heading"><div><span className="purchase-eyebrow">Finalizar compra</span><h1 ref={headingRef} tabIndex={-1}>{review ? 'Confira seu pedido' : 'Entrega'}</h1><p>{review ? 'Confira produtos, entrega e valor total. O pagamento acontece na próxima tela.' : 'Comece pelo CEP: o endereço é preenchido sozinho.'}</p></div></div>
         {!authReady || !cartReady ? <div className="purchase-empty" role="status">Carregando sua conta e seu carrinho…</div> : !cart.length && !preview ? <div className="purchase-empty"><h2>Seu carrinho está vazio</h2><Link to="/#produtos" className="purchase-primary">Escolher produtos</Link></div> : !customer && !preview ? <div className="purchase-card purchase-signin"><UserRound size={28}/><h2>Entre para concluir sua compra</h2><p>Seus {itemCount} {itemCount === 1 ? 'item está' : 'itens estão'} no carrinho. Use sua conta para informar a entrega e acompanhar o pedido.</p><Link className="purchase-primary" to="/entrar" state={{ returnTo: '/checkout', intent: 'checkout' }}>Entrar ou criar conta <ArrowRight size={18}/></Link><Link to="/#produtos" className="purchase-continue">Continuar comprando</Link></div> :
         <div className="purchase-layout">
-            <div>
+            <div className="purchase-cart-main">
+                {!review && <CouponPanel disabled={loading} />}
                 {review ? <div className="purchase-card purchase-form">
                     <div className="purchase-section-title"><MapPin size={20}/><h2>Entregar para</h2><button className="purchase-text-link" onClick={() => setReview(null)}>Alterar</button></div>
                     <address className="purchase-address"><strong>{form.name}</strong><span>{form.address}, {form.number}{form.complement ? ` · ${form.complement}` : ''}</span><span>{form.neighborhood} · {form.city}/{form.state}</span><span>CEP {formatZip(form.zip)} · {form.phone}</span></address>
@@ -160,7 +168,6 @@ function CustomerCheckout() {
                         <label>CPF <small>(para a nota e o pagamento)</small><input name="cpf" inputMode="numeric" placeholder="000.000.000-00" maxLength={14} value={form.cpf} onChange={field} required /></label>
                         <label>Celular com DDD <small>(WhatsApp)</small><input name="phone" type="tel" autoComplete="tel" placeholder="(22) 99999-9999" maxLength={16} value={form.phone} onChange={field} required /></label>
                     </div></fieldset>
-                    <details className="purchase-coupon"><summary>Tenho um cupom de desconto</summary><label>Código do cupom<input disabled={loading} value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} maxLength={40} placeholder="Digite seu cupom" /></label><p className="purchase-hint">O desconto aparece na revisão, antes do pagamento.</p></details>
                     {error && <div className="purchase-error" role="alert" tabIndex={-1} ref={errorRef}>{error}{errorReference && <small>Referência para o suporte: {errorReference}</small>}{/sess[aã]o/i.test(error) && <Link to="/entrar" state={{ returnTo: '/checkout' }}>Entrar novamente</Link>}</div>}
                 </form>}
             </div>
@@ -169,9 +176,9 @@ function CustomerCheckout() {
                 {!review && !quote?.local && <FreeShippingProgress subtotal={subtotal} freeMin={config?.free_min} />}
                 <div className="purchase-amount"><span>Produtos</span><strong>{money(review?.subtotal ?? subtotal)}</strong></div>
                 <div className="purchase-amount"><span>Entrega</span><strong>{deliveryPrice(review ? review.shipping_address?.delivery : quote)}</strong></div>
-                {review && Number(review.discount_amount) > 0 && <div className="purchase-amount purchase-discount"><span>Cupom {review.discount_code}</span><strong>− {money(review.discount_amount)}</strong></div>}
-                <div className="purchase-amount purchase-total"><span>Total</span><strong>{money(amount)}</strong></div>
-                {invalidPrice ? <p className="purchase-error">Revise os produtos sem preço no carrinho.</p> : review ? <button className="purchase-primary" onClick={proceed}><LockKeyhole size={17}/> Pagar {money(amount)} no Mercado Pago</button> : <button form="purchase-delivery" type="submit" className="purchase-primary" disabled={loading || !customer || !cart.length}>{loading ? <LoaderCircle className="spin" size={18}/> : <ArrowRight size={18}/>} {loading ? 'Preparando revisão…' : 'Revisar pedido'}</button>}
+                {(review ? Number(review.discount_amount) > 0 : coupon) && <div className="purchase-amount purchase-discount"><span>Cupom {review ? review.discount_code : coupon.code}</span><strong>− {money(review ? review.discount_amount : coupon.discountAmount)}</strong></div>}
+                <div className="purchase-amount purchase-total"><span>{review ? 'Total' : 'Total estimado'}</span><strong>{money(amount)}</strong></div>
+                {invalidPrice ? <p className="purchase-error">Revise os produtos sem preço no carrinho.</p> : review ? <button className="purchase-primary" onClick={proceed}><LockKeyhole size={17}/> Pagar {money(amount)} no Mercado Pago</button> : <button form="purchase-delivery" type="submit" className="purchase-primary" disabled={loading || couponChecking || !customer || !cart.length}>{loading ? <LoaderCircle className="spin" size={18}/> : <ArrowRight size={18}/>} {loading ? 'Preparando revisão…' : 'Revisar pedido'}</button>}
                 <p className="purchase-hint"><LockKeyhole size={14}/> {review ? 'Pagamento seguro pelo Mercado Pago.' : 'Você confere tudo na próxima etapa, antes de pagar.'}</p>
             </aside>
         </div>}

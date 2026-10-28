@@ -4,6 +4,10 @@ project_id = "ngphbcrdphluuphctvpr"
 # The handler validates the customer JWT with auth.getUser(). Matches production.
 verify_jwt = false
 
+[functions.customer-coupons]
+# CORS preflight is public; every POST validates auth.getUser() in the handler.
+verify_jwt = false
+
 [functions.payment-webhook]
 verify_jwt = false
 

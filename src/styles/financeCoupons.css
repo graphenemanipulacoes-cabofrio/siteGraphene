@@ -1,0 +1,14 @@
+.finance-coupon-filters{display:grid;grid-template-columns:minmax(160px,2fr) 1fr 1fr 1fr;gap:12px;align-items:end;margin-bottom:18px}
+.finance-coupon-filters label{display:grid;gap:6px;min-width:0;font-size:.7rem;font-weight:600;color:#aebed0}
+.finance-coupon-filters input:not([type=checkbox]),.finance-coupon-filters select{width:100%;min-width:0;min-height:42px;padding:9px 10px;border:1px solid #40546b;border-radius:7px;background:#0b192b;color:#edf5fc;font:inherit;font-size:.8rem;color-scheme:dark}
+.finance-coupon-filters input::placeholder{color:#8399b0}
+.finance-coupon-filters .finance-coupon-only{display:flex;align-items:center;gap:8px;grid-column:span 2;min-height:38px;font-weight:400}
+.finance-coupon-only input{accent-color:#22c7e8;width:17px;height:17px}
+.finance-export{grid-column:span 2;justify-self:end;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 13px;min-height:40px;border:1px solid #44647b;border-radius:7px;background:#19344b;color:#d9f2ff;font-size:.75rem;font-weight:650;cursor:pointer}
+.finance-export:disabled{opacity:.45;cursor:not-allowed}
+.finance-export:hover:not(:disabled){background:#22465f}
+.finance-filter-metrics{margin-bottom:12px}
+.finance-result-count{color:#a0b4c8;font-size:.72rem;margin:0 0 16px}
+.finance-coupon-filters :is(input,select,button):focus-visible{outline:2px solid #67dcf3;outline-offset:3px}
+@media(max-width:1050px){.finance-coupon-filters{grid-template-columns:1fr 1fr}.finance-coupon-filters .finance-search{grid-column:1/-1}.finance-coupon-filters .finance-coupon-only,.finance-export{grid-column:auto;justify-self:stretch}}
+@media(max-width:480px){.finance-coupon-filters{grid-template-columns:1fr}.finance-coupon-filters .finance-search{grid-column:auto}.finance-filter-metrics{grid-template-columns:1fr 1fr}.finance-export{justify-self:stretch}}

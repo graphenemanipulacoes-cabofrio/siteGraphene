@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { toast } from 'sonner';
 import { productOptions, variantKey } from '../utils/productOptions';
 import { CustomerCartStore, syncCustomerCart } from '../utils/cartPersistence';
+import { CouponProvider } from './CouponContext';
 
 const StoreContext = createContext(null);
 
@@ -125,7 +126,7 @@ export const StoreProvider = ({ children }) => {
         addItem, updateQuantity, removeItem, clearCart, settleCart,
     }), [cart, customer, authReady, cartReady, cartSyncing, cartSyncError, syncCart, itemCount, subtotal, zip, setZip, addItem, updateQuantity, removeItem, clearCart, settleCart]);
 
-    return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+    return <StoreContext.Provider value={value}><CouponProvider key={customer?.id || 'guest'} userId={customer?.id} subtotal={subtotal}>{children}</CouponProvider></StoreContext.Provider>;
 };
 
 export const useStore = () => {

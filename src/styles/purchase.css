@@ -59,15 +59,12 @@
 .purchase-text-link{font-size:.78rem!important;background:none;border:0;text-decoration:underline;text-underline-offset:3px;color:var(--purchase-green);cursor:pointer}
 .purchase-form fieldset{border:0;padding:0;margin:20px 0 0}
 .purchase-fields{display:grid;grid-template-columns:1fr 1fr;gap:20px 16px}
-.purchase-fields label,.purchase-coupon label{display:flex;flex-direction:column;gap:8px;font-size:.8rem;font-weight:600;color:var(--purchase-ink)}
+.purchase-fields label{display:flex;flex-direction:column;gap:8px;font-size:.8rem;font-weight:600;color:var(--purchase-ink)}
 .purchase-fields label small{display:inline;font-weight:400;color:var(--purchase-muted)}
-.purchase-fields input,.purchase-fields select,.purchase-coupon input{width:100%;min-height:46px;padding:11px 12px;background:#fff;border:1px solid #b8c8cb;border-radius:6px;color:var(--purchase-ink);outline-offset:2px;font-size:16px}
-.purchase-fields input::placeholder,.purchase-coupon input::placeholder{color:#718084}
+.purchase-fields input,.purchase-fields select{width:100%;min-height:46px;padding:11px 12px;background:#fff;border:1px solid #b8c8cb;border-radius:6px;color:var(--purchase-ink);outline-offset:2px;font-size:16px}
+.purchase-fields input::placeholder{color:#718084}
 .purchase-full{grid-column:1/-1}
 .purchase-divider{margin-top:30px;padding-top:26px;border-top:1px solid var(--purchase-line)}
-.purchase-coupon{margin-top:28px;border-top:1px solid var(--purchase-line);padding-top:20px;font-size:.85rem}
-.purchase-coupon summary{cursor:pointer;color:var(--purchase-green);font-weight:600;min-height:32px}
-.purchase-coupon label{margin-top:14px}
 .purchase-error{background:#fff1f2;border:1px solid #e8bdc3;color:#8e2535!important;padding:14px;border-radius:7px;margin-top:18px;font-size:.85rem}
 .purchase-error a{display:block;margin-top:10px;text-decoration:underline}
 .purchase-mini-items{border-bottom:1px solid var(--purchase-line);padding-bottom:16px}

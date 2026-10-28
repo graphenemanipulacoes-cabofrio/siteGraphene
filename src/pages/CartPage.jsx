@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { Minus, Plus, ShoppingBag, Trash2, ArrowRight, ArrowLeft, LockKeyhole, MessageCircle } from 'lucide-react';
 import StoreLayout from '../components/StoreLayout';
 import PurchaseSteps from '../components/PurchaseSteps';
+import CouponPanel from '../components/CouponPanel';
+import { useCoupon } from '../context/CouponContext';
 import { FreeShippingProgress, ShippingEstimator } from '../components/ShippingEstimator';
 import { useStore } from '../context/StoreContext';
 import { money } from '../utils/commerce';
@@ -11,12 +13,13 @@ import '../styles/purchase.css';
 
 export default function CartPage() {
     const { cart, subtotal, itemCount, updateQuantity, removeItem, zip, cartReady, cartSyncing, cartSyncError, syncCart, customer } = useStore();
+    const { coupon } = useCoupon();
     const config = useShippingConfig();
     const { quote } = useShippingQuote(zip, subtotal);
     const delivery = deliveryText(quote);
     const invalidPrice = cart.some(item => !(Number(item.price) > 0));
     const shipping = quote?.ok ? Number(quote.amount) || 0 : null;
-    const total = subtotal + (shipping || 0);
+    const total = subtotal - (coupon?.discountAmount || 0) + (shipping || 0);
     return <StoreLayout><section className="purchase-page"><div className="purchase-container">
         <Link to="/#produtos" className="purchase-back"><ArrowLeft size={16} /> Continuar comprando</Link>
         <PurchaseSteps current={1} />
@@ -24,6 +27,7 @@ export default function CartPage() {
         {customer && cartReady && <p className={cartSyncError ? 'purchase-error' : 'purchase-hint'} role="status">{cartSyncError || (cartSyncing ? 'Salvando seu carrinho na conta…' : 'Carrinho salvo na sua conta. Você pode continuar em outro aparelho.')}{cartSyncError && <button className="purchase-text-link" disabled={cartSyncing} onClick={() => void syncCart()}>Tentar sincronizar</button>}</p>}
         {!cartReady ? <div className="purchase-empty" role="status">Carregando seu carrinho…</div> : !cart.length ? <div className="purchase-empty"><ShoppingBag size={36} /><h2>Seu carrinho está vazio</h2><p>Escolha seus produtos e adicione tudo o que precisar por aqui.</p><Link to="/#produtos" className="purchase-primary">Ver produtos <ArrowRight size={18} /></Link></div> :
             <div className="purchase-layout"><div className="purchase-cart-main">
+                <CouponPanel />
                 <div className="purchase-card purchase-items">
                     {cart.map(item => <article className="purchase-item" key={item.key}>
                         <Link to={`/produto/${item.id}`} className="purchase-thumbnail"><img src={item.image_url || '/assets/logo.png'} alt="" /></Link>
@@ -40,9 +44,10 @@ export default function CartPage() {
                 <div className="purchase-amount"><span>Produtos ({itemCount})</span><strong>{money(subtotal)}</strong></div>
                 <div className="purchase-amount"><span>Frete{delivery && !quote.local ? ` · ${quote.uf}` : ''}</span><strong>{!quote?.ok ? 'Informe o CEP' : quote.local ? 'A combinar' : shipping === 0 ? 'Grátis' : money(shipping)}</strong></div>
                 <ShippingEstimator subtotal={subtotal} compact />
-                <div className="purchase-amount purchase-total"><span>{quote?.ok ? 'Total' : 'Total sem frete'}</span><strong>{money(total)}</strong></div>
+                {coupon && <div className="purchase-amount purchase-discount"><span>Cupom {coupon.code}</span><strong>− {money(coupon.discountAmount)}</strong></div>}
+                <div className="purchase-amount purchase-total"><span>{quote?.ok ? 'Total estimado' : 'Total sem frete'}</span><strong>{money(total)}</strong></div>
                 {invalidPrice ? <p className="purchase-error" role="alert">Remova os produtos sem preço para continuar.</p> : <Link to="/checkout" className="purchase-primary">Continuar para entrega <ArrowRight size={18} /></Link>}
-                <p className="purchase-hint"><LockKeyhole size={14} /> Pagamento seguro pelo Mercado Pago. Cupom de desconto na próxima etapa.</p>
+                <p className="purchase-hint"><LockKeyhole size={14} /> Pagamento seguro pelo Mercado Pago. Você confirma o valor final na revisão.</p>
                 <Link to="/#produtos" className="purchase-continue">Escolher mais produtos</Link>
             </aside></div>}
     </div></section></StoreLayout>;

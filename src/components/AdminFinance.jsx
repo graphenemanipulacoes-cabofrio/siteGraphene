@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BadgeCheck, BanknoteArrowDown, CircleDollarSign, CreditCard, Gift, Landmark, LoaderCircle, Plus, ReceiptText, RefreshCw, ShieldCheck, TicketPercent, WalletCards } from 'lucide-react';
+import { BadgeCheck, BanknoteArrowDown, CircleDollarSign, CreditCard, Download, Gift, Landmark, LoaderCircle, Plus, ReceiptText, RefreshCw, ShieldCheck, TicketPercent, WalletCards } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { getSession } from '../utils/security';
 import { toast } from 'sonner';
+import { couponOrdersCsv, filterCouponOrders, summarizeCouponOrders } from '../utils/couponReporting';
+import '../styles/financeCoupons.css';
 
 const money = value => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const date = value => value ? new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+const date = value => value ? new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) : '—';
 const paymentLabel = { paid: 'Confirmado', pending: 'Pendente', failed: 'Falhou', refunded: 'Estornado' };
 const roleLabel = { influencer: 'Influenciador(a)', marketing: 'Marketing', development: 'Desenvolvimento', other: 'Outro' };
 
@@ -14,6 +16,7 @@ const AdminFinance = ({ onUnauthorized }) => {
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState('');
     const [tab, setTab] = useState('overview');
+    const [filters, setFilters] = useState({ search: '', status: '', from: '', to: '', attributedOnly: false });
     const [recipientForm, setRecipientForm] = useState({ name: '', email: '', role: 'influencer', commissionType: 'percentage', commissionValue: '', attributionScope: 'coupon', holdDays: '14' });
     const [couponForm, setCouponForm] = useState({ recipientId: '', code: '', discountType: 'percentage', discountValue: '', minimumOrderAmount: '', maxRedemptions: '' });
 
@@ -49,6 +52,19 @@ const AdminFinance = ({ onUnauthorized }) => {
         const paidOut = data.commissions.filter(item => item.status === 'paid').reduce((sum, item) => sum + Number(item.amount || 0), 0);
         return { gross, fees, net, pending, available, paidOut, paidCount: paid.length, refunded: refunded.reduce((sum, order) => sum + Number(order.total || 0), 0), pendingPayments: data.orders.filter(order => order.payment_status === 'pending').length };
     }, [data]);
+    const filteredOrders = useMemo(() => filterCouponOrders(data.orders, filters), [data.orders, filters]);
+    const filteredMetrics = useMemo(() => summarizeCouponOrders(filteredOrders), [filteredOrders]);
+    const filter = event => setFilters(current => ({ ...current, [event.target.name]: event.target.type === 'checkbox' ? event.target.checked : event.target.value }));
+    const exportOrders = () => {
+        let url;
+        try {
+            url = URL.createObjectURL(new Blob([couponOrdersCsv(filteredOrders)], { type: 'text/csv;charset=utf-8;' }));
+            const anchor = document.createElement('a');
+            anchor.href = url; anchor.download = `graphene-vendas-cupons-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(anchor); anchor.click(); anchor.remove();
+        } catch { toast.error('Não foi possível exportar o relatório. Tente novamente.'); }
+        finally { if (url) window.setTimeout(() => URL.revokeObjectURL(url), 1000); }
+    };
 
     const createRecipient = async event => {
         event.preventDefault();
@@ -119,11 +135,13 @@ const AdminFinance = ({ onUnauthorized }) => {
 
         <nav className="finance-tabs">
             <button className={tab === 'overview' ? 'active' : ''} onClick={() => setTab('overview')}>Visão geral</button>
-            <button className={tab === 'transactions' ? 'active' : ''} onClick={() => setTab('transactions')}>Transações</button>
+            <button className={tab === 'transactions' ? 'active' : ''} onClick={() => setTab('transactions')}>Vendas e cupons</button>
             <button className={tab === 'commissions' ? 'active' : ''} onClick={() => setTab('commissions')}>Comissões e repasses</button>
             <button className={tab === 'coupons' ? 'active' : ''} onClick={() => setTab('coupons')}>Cupons</button>
             <button className="refresh" onClick={load}><RefreshCw size={15}/> Atualizar</button>
         </nav>
+
+        {tab === 'coupons' && <p className="finance-result-count">Os usos de cupom incluem pedidos em revisão, ainda sem pagamento. Para conferir vendas pagas por parceiro, abra a aba Vendas e cupons.</p>}
 
         {tab === 'overview' && <div className="finance-grid">
             <section className="finance-card finance-card-wide"><div className="finance-card-title"><div><h2>Resumo operacional</h2><p>Valores consolidados exclusivamente das vendas deste site.</p></div><BadgeCheck/></div><div className="finance-summary-grid"><div><span>Pagamentos pendentes</span><strong>{metrics.pendingPayments}</strong></div><div><span>Estornos registrados</span><strong>{money(metrics.refunded)}</strong></div><div><span>Comissões já pagas</span><strong>{money(metrics.paidOut)}</strong></div><div><span>Cupons ativos</span><strong>{data.coupons.filter(coupon => coupon.is_active).length}</strong></div></div></section>
@@ -131,7 +149,20 @@ const AdminFinance = ({ onUnauthorized }) => {
             <section className="finance-card"><div className="finance-card-title"><div><h2>Atividade recente</h2><p>Últimas atualizações recebidas.</p></div><ReceiptText/></div>{data.paymentEvents.length ? <div className="finance-events">{data.paymentEvents.slice(0, 5).map(event => <div key={event.id}><span className={`event-dot event-${event.status}`}/><div><strong>{event.payment_method || 'Pagamento Mercado Pago'}</strong><small>{date(event.created_at)} · {event.status}</small></div><b>{event.gross_amount ? money(event.gross_amount) : '—'}</b></div>)}</div> : <div className="finance-empty">Nenhum evento de pagamento recebido ainda.</div>}</section>
         </div>}
 
-        {tab === 'transactions' && <section className="finance-card"><div className="finance-card-title"><div><h2>Histórico de vendas e pagamentos</h2><p>Pedidos criados no site, incluindo pendências, confirmações e estornos.</p></div><CreditCard/></div>{data.orders.length ? <div className="finance-table-wrap"><table className="finance-table"><thead><tr><th>Pedido</th><th>Cliente</th><th>Pagamento</th><th>Cupom</th><th>Bruto</th><th>Taxa</th><th>Líquido</th></tr></thead><tbody>{data.orders.map(order => <tr key={order.id}><td><strong>#{order.id.slice(-8).toUpperCase()}</strong><small>{date(order.created_at)}</small></td><td>{order.customer_email}</td><td><span className={`finance-status ${order.payment_status}`}>{paymentLabel[order.payment_status] || order.payment_status}</span><small>{order.payment_method || '—'}</small></td><td>{order.discount_code ? <><strong>{order.discount_code}</strong><small>- {money(order.discount_amount)}</small></> : '—'}</td><td>{money(order.total)}</td><td>{order.payment_status === 'paid' ? money(order.provider_fee) : '—'}</td><td><strong>{order.payment_status === 'paid' ? money(order.net_amount ?? (Number(order.total) - Number(order.provider_fee))) : '—'}</strong></td></tr>)}</tbody></table></div> : <div className="finance-empty">As transações aparecerão aqui assim que os pagamentos forem gerados.</div>}</section>}
+        {tab === 'transactions' && <section className="finance-card">
+            <div className="finance-card-title"><div><h2>Vendas por cupom e parceiro</h2><p>Consulta dos {data.orders.length} pedidos carregados (até os 300 mais recentes). Vendas confirmadas não incluem pendências ou estornos.</p></div><CreditCard/></div>
+            <div className="finance-coupon-filters">
+                <label className="finance-search">Buscar cupom, parceiro, cliente ou pedido<input name="search" type="search" placeholder="Digite para filtrar" value={filters.search} onChange={filter}/></label>
+                <label>Pagamento<select name="status" value={filters.status} onChange={filter}><option value="">Todos</option>{Object.entries(paymentLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+                <label>De<input type="date" name="from" value={filters.from} max={filters.to || undefined} onChange={filter}/></label>
+                <label>Até<input type="date" name="to" value={filters.to} min={filters.from || undefined} onChange={filter}/></label>
+                <label className="finance-coupon-only"><input type="checkbox" name="attributedOnly" checked={filters.attributedOnly} onChange={filter}/> Apenas pedidos com cupom</label>
+                <button className="finance-export" onClick={exportOrders} disabled={!filteredOrders.length}><Download size={15}/> Exportar seleção CSV</button>
+            </div>
+            <div className="finance-summary-grid finance-filter-metrics" aria-live="polite"><div><span>Vendas confirmadas</span><strong>{filteredMetrics.paidCount}</strong></div><div><span>Valor confirmado</span><strong>{money(filteredMetrics.gross)}</strong></div><div><span>Descontos em vendas confirmadas</span><strong>{money(filteredMetrics.discounts)}</strong></div><div><span>Pagamentos pendentes</span><strong>{filteredMetrics.pendingCount}</strong></div></div>
+            <p className="finance-result-count">{filteredOrders.length} pedidos na seleção · datas no horário de Brasília.</p>
+            {filteredOrders.length ? <div className="finance-table-wrap"><table className="finance-table"><thead><tr><th>Pedido</th><th>Cliente</th><th>Pagamento</th><th>Cupom / parceiro</th><th>Total do pedido</th><th>Taxa</th><th>Líquido</th></tr></thead><tbody>{filteredOrders.map(order => <tr key={order.id}><td><strong>#{order.id.slice(-8).toUpperCase()}</strong><small>{date(order.created_at)}</small></td><td>{order.customer_email}</td><td><span className={`finance-status ${order.payment_status}`}>{paymentLabel[order.payment_status] || order.payment_status}</span><small>{order.payment_method || '—'}</small></td><td>{order.discount_code ? <><strong>{order.discount_code}</strong><small>{order.commission_recipients?.name || 'Parceiro não informado'}</small><small>Desconto: {money(order.discount_amount)}</small></> : 'Sem cupom'}</td><td>{money(order.total)}</td><td>{order.payment_status === 'paid' ? money(order.provider_fee) : '—'}</td><td><strong>{order.payment_status === 'paid' ? money(order.net_amount ?? (Number(order.total) - Number(order.provider_fee))) : '—'}</strong></td></tr>)}</tbody></table></div> : <div className="finance-empty">Nenhum pedido corresponde aos filtros.</div>}
+        </section>}
 
         {tab === 'commissions' && <div className="finance-grid commissions-layout">
             <section className="finance-card"><div className="finance-card-title"><div><h2>Novo recebedor</h2><p>Influenciador, marketing, desenvolvimento ou outro.</p></div><Plus/></div><form className="finance-form" onSubmit={createRecipient}><label>Nome<input value={recipientForm.name} onChange={e => setRecipientForm({ ...recipientForm, name: e.target.value })} required /></label><label>E-mail opcional<input type="email" value={recipientForm.email} onChange={e => setRecipientForm({ ...recipientForm, email: e.target.value })} /></label><div className="finance-form-row"><label>Função<select value={recipientForm.role} onChange={e => setRecipientForm({ ...recipientForm, role: e.target.value })}><option value="influencer">Influenciador(a)</option><option value="marketing">Marketing</option><option value="development">Desenvolvimento</option><option value="other">Outro</option></select></label><label>Comissão<select value={recipientForm.commissionType} onChange={e => setRecipientForm({ ...recipientForm, commissionType: e.target.value })}><option value="percentage">Porcentagem</option><option value="fixed">Valor fixo</option></select></label></div><div className="finance-form-row"><label>{recipientForm.commissionType === 'percentage' ? 'Percentual' : 'Valor (R$)'}<input type="number" min="0" max={recipientForm.commissionType === 'percentage' ? '100' : undefined} step="0.01" value={recipientForm.commissionValue} onChange={e => setRecipientForm({ ...recipientForm, commissionValue: e.target.value })} required /></label><label>Prazo de segurança (dias)<input type="number" min="0" max="180" value={recipientForm.holdDays} onChange={e => setRecipientForm({ ...recipientForm, holdDays: e.target.value })} required /></label></div><label>Origem<select value={recipientForm.attributionScope} onChange={e => setRecipientForm({ ...recipientForm, attributionScope: e.target.value })}><option value="coupon">Apenas vendas com cupom próprio</option><option value="all_paid_orders">Todas as vendas aprovadas</option></select></label><button disabled={busy === 'recipient'}>{busy === 'recipient' ? <LoaderCircle className="spin"/> : <Plus/>} Adicionar recebedor</button></form></section>
