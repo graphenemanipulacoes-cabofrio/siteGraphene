@@ -1,6 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Check, LoaderCircle, TicketPercent, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { useCoupon } from '../context/CouponContext';
 import { normalizeCoupon, searchCoupons } from '../lib/couponsApi';
 import { money } from '../utils/commerce';
@@ -16,7 +15,8 @@ export default function CouponPanel({ disabled = false }) {
     const id = useId();
     const root = useRef(null);
     const query = draft.trim();
-    const showSearch = focused && query.length >= 3 && query !== code && !disabled;
+    // Busca por nome do parceiro só para quem está logado; visitante digita o código.
+    const showSearch = Boolean(userId) && focused && query.length >= 3 && query !== code && !disabled;
     const results = search?.query === query ? search : null;
     const suggestions = results?.items || [];
     const open = Boolean(showSearch && suggestions.length);
@@ -50,13 +50,12 @@ export default function CouponPanel({ disabled = false }) {
     return <section className={`coupon-panel${coupon ? ' is-applied' : ''}`} aria-labelledby={`${id}-title`} ref={root}
         onBlur={event => { if (!root.current?.contains(event.relatedTarget)) setFocused(false); }}>
         <div className="coupon-panel-heading"><span className="coupon-panel-icon"><TicketPercent size={21} aria-hidden="true" /></span><div><h2 id={`${id}-title`}>Tem cupom de um parceiro?</h2><p>Encontre seu influencer e use o cupom na compra.</p></div></div>
-        {!userId ? <p className="coupon-feedback"><Link to="/entrar" state={{ returnTo: '/carrinho' }}>Entre na sua conta</Link> para escolher seu cupom.</p> : <>
-            <label className="coupon-label" htmlFor={`${id}-input`}>Nome do parceiro ou código do cupom</label>
+            <label className="coupon-label" htmlFor={`${id}-input`}>{userId ? 'Nome do parceiro ou código do cupom' : 'Código do cupom'}</label>
             <div className="coupon-entry"><div className="coupon-autocomplete">
                 <input id={`${id}-input`} role="combobox" aria-autocomplete="list" aria-expanded={open} aria-controls={open ? `${id}-list` : undefined}
                     aria-activedescendant={open && active >= 0 && suggestions[active] ? `${id}-option-${active}` : undefined}
                     aria-describedby={`${id}-help`} autoComplete="off" autoCorrect="off" autoCapitalize="characters" spellCheck={false}
-                    placeholder="DIGITE O NOME OU CUPOM" maxLength={40} value={draft} disabled={disabled}
+                    placeholder={userId ? "DIGITE O NOME OU CUPOM" : "DIGITE O CUPOM"} maxLength={40} value={draft} disabled={disabled}
                     onChange={event => { edit(normalizeCoupon(event.target.value)); setFocused(true); setActive(-1); }}
                     onFocus={() => setFocused(true)} onKeyDown={keyDown} />
                 {open && <ul id={`${id}-list`} className="coupon-suggestions" role="listbox" aria-label="Cupons de parceiros">
@@ -66,14 +65,13 @@ export default function CouponPanel({ disabled = false }) {
                     </li>)}
                 </ul>}
             </div><button type="button" className="coupon-apply" onClick={applyDraft} aria-label={checking ? 'Validando cupom' : 'Aplicar cupom'} aria-busy={checking} disabled={disabled || query.length < 3 || checking}>{checking ? <LoaderCircle size={17} className="spin" aria-hidden="true" /> : 'Aplicar'}</button></div>
-            <p className="coupon-help" id={`${id}-help`}>Digite pelo menos 3 caracteres para ver sugestões.</p>
+            <p className="coupon-help" id={`${id}-help`}>{userId ? 'Digite pelo menos 3 caracteres para ver sugestões.' : 'Digite o código do cupom e clique em Aplicar.'}</p>
             <div aria-live="polite" aria-atomic="true">
                 {showSearch && <p className="coupon-feedback">{!results ? 'Buscando cupons…' : results.error || (!suggestions.length ? 'Nenhum parceiro encontrado. Se tiver o código completo, digite e clique em Aplicar.' : `${suggestions.length} ${suggestions.length === 1 ? 'cupom encontrado' : 'cupons encontrados'}. Selecione uma sugestão para aplicar.`)}</p>}
                 {checking && <p className="coupon-feedback" role="status">Validando {code}…</p>}
                 {error && <p className="coupon-feedback is-error" role="alert">{error}</p>}
-                {coupon && <div className="coupon-confirmation"><Check size={18} aria-hidden="true" /><div><strong>{coupon.code} aplicado</strong><span>{coupon.partnerName} · {money(coupon.discountAmount)} de desconto nos produtos.</span></div></div>}
+                {coupon && <div className="coupon-confirmation"><Check size={18} aria-hidden="true" /><div><strong>{coupon.code} aplicado</strong><span>{coupon.partnerName} · {coupon.discountAmount > 0 ? `${money(coupon.discountAmount)} de desconto nos produtos.` : `${discountLabel(coupon)}${coupon.productRates?.length ? ' (alguns produtos têm desconto especial)' : ''}.`}</span></div></div>}
             </div>
             {(code || draft) && <button type="button" className="coupon-remove" disabled={disabled} onClick={() => { remove(); setFocused(false); }}><X size={14} aria-hidden="true" /> {code ? `Remover cupom ${code}` : 'Limpar busca'}</button>}
-        </>}
     </section>;
 }

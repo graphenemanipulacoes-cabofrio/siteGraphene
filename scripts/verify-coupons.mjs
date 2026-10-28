@@ -10,13 +10,14 @@ let handler;
 let user = { id: 'synthetic-user' };
 let lookupError = null;
 let rows = [];
+let rates = [];
 const calls = [];
 const env = { SITE_URL: 'https://www.graphenemanipulacoes.com.br', SUPABASE_URL: 'https://mock.supabase.co', SUPABASE_ANON_KEY: 'mock-anon', SUPABASE_SERVICE_ROLE_KEY: 'mock-service' };
 const context = createContext({ Request, Response, URL, console, Deno: { serve: callback => { handler = callback; }, env: { get: key => env[key] } } });
 const sdk = new SyntheticModule(['createClient'], function () {
     this.setExport('createClient', () => ({
         auth: { getUser: async () => ({ data: { user }, error: null }) },
-        rpc: async (name, args) => { calls.push({ name, args }); return { data: rows, error: lookupError }; },
+        rpc: async (name, args) => { calls.push({ name, args }); return { data: name === 'checkout_coupon_product_rates' ? rates : rows, error: lookupError }; },
         from: () => { throw new Error('No direct table writes or reads allowed in this handler'); },
     }));
 }, { context });
@@ -53,7 +54,21 @@ for (const privateValue of ['private@example.invalid', 'commission_value', 'reci
 rows = Array.from({ length: 12 }, () => synthetic); assert.equal((await invoke()).data.coupons.length, 6); rows = [synthetic];
 const validate = (subtotal, query = 'synthetic15') => invoke({ payload: { action: 'validate', query, subtotal } });
 result = await validate(199.9); assert.equal(result.data.coupon.discountAmount, 29.99); assert.equal(calls[0].args.p_exact, true);
-for (const subtotal of [0, -1, null, '100', 10_000_001]) assert.equal((await validate(subtotal)).response.status, 400);
+for (const subtotal of [-1, '100', 10_000_001]) assert.equal((await validate(subtotal)).response.status, 400);
+// Carrinho vazio (página do produto): devolve as regras do cupom sem valor de desconto.
+for (const subtotal of [0, null]) { result = await validate(subtotal); assert.equal(result.response.status, 200); assert.equal(result.data.coupon.discountAmount, 0); }
+// Visitante sem login valida o código exato, mas não busca por nome.
+result = await invoke({ auth: false, payload: { action: 'validate', query: 'synthetic15' } }); assert.equal(result.response.status, 200); assert.equal(result.data.coupon.code, 'SYNTHETIC15');
+// Desconto especial por produto: 20% no produto 7, 15% (geral) no produto 8.
+rates = [{ product_id: 7, discount_percent: 20 }];
+const byItems = items => invoke({ payload: { action: 'validate', query: 'synthetic15', items } });
+result = await byItems([{ productId: 7, amount: 100 }, { productId: 8, amount: 50 }]);
+assert.equal(result.data.coupon.discountAmount, 27.5); assert.deepEqual(result.data.coupon.productRates, [{ productId: 7, percent: 20 }]);
+assert.equal(calls[1].name, 'checkout_coupon_product_rates');
+for (const items of ['x', [{ productId: 'a', amount: 1 }], [{ productId: 7, amount: -1 }], Array.from({ length: 51 }, () => ({ productId: 7, amount: 1 }))]) assert.equal((await byItems(items)).response.status, 400);
+rows = [{ ...synthetic, discount_type: 'fixed', discount_value: 30 }];
+assert.equal((await byItems([{ productId: 7, amount: 100 }, { productId: 8, amount: 50 }])).data.coupon.discountAmount, 50, 'Fixed value applies to items without a product rate');
+rates = []; rows = [synthetic];
 rows = [{ ...synthetic, minimum_order_amount: 200 }];
 result = await validate(100); assert.equal(result.data.error, 'coupon_minimum_not_reached'); assert.equal(result.data.minimumOrderAmount, 200);
 rows = [{ ...synthetic, discount_type: 'fixed', discount_value: 30 }]; assert.equal((await validate(100)).data.coupon.discountAmount, 30);
@@ -76,4 +91,4 @@ assert.equal(filterCouponOrders(orders, { from: '2026-10-23', to: '2026-10-23' }
 assert.deepEqual(summarizeCouponOrders(filterCouponOrders(orders, { attributedOnly: true })), { paidCount: 1, gross: 85, discounts: 15, pendingCount: 1 });
 const csv = couponOrdersCsv([{ ...orders[0], customer_email: '=SUM(1;1)', commission_recipients: { name: '@formula' } }]);
 assert.ok(csv.startsWith('\uFEFF')); assert.ok(csv.includes('"\'=SUM(1;1)"')); assert.ok(csv.includes('"\'@formula"')); assert.ok(csv.includes('"81,00"')); assert.ok(csv.includes('SYNTHETIC15'));
-console.log('Coupon checks passed: authenticated safe projection, min 3 characters, uppercase, CORS, limits, exact validation, minimum, rounding, fixed/percentage/cap, failures, paid attribution filters, Brasília dates and CSV formula safety.');
+console.log('Coupon checks passed: authenticated search, guest exact validation, per-product rates, safe projection, min 3 characters, uppercase, CORS, limits, exact validation, minimum, rounding, fixed/percentage/cap, failures, paid attribution filters, Brasília dates and CSV formula safety.');

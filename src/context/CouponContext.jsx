@@ -3,59 +3,84 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { normalizeCoupon, validateCoupon } from '../lib/couponsApi';
 
 const CouponContext = createContext(null);
-const storageKey = userId => `graphene_coupon:${userId}`;
-function savedCoupon(userId) {
-    if (!userId) return '';
+const GUEST = 'guest';
+const storageKey = owner => `graphene_coupon:${owner}`;
+const validCode = code => /^[A-Z0-9_-]{3,40}$/.test(code) ? code : '';
+function readSaved(owner) {
+    try { return validCode(localStorage.getItem(storageKey(owner)) || ''); } catch { return ''; }
+}
+function writeSaved(owner, code) {
     try {
-        const code = localStorage.getItem(storageKey(userId)) || '';
-        return /^[A-Z0-9_-]{3,40}$/.test(code) ? code : '';
-    } catch { return ''; }
+        if (code) localStorage.setItem(storageKey(owner), code);
+        else localStorage.removeItem(storageKey(owner));
+    } catch { /* This visit still retains the selection. */ }
+}
+// Cupom digitado antes de entrar na conta (ex.: na página do produto)
+// passa para a conta no login, uma única vez.
+// Link do influencer com ?cupom=CODIGO: o cupom já entra aplicado.
+function linkCode() {
+    try { return validCode(normalizeCoupon(new URLSearchParams(window.location.search).get('cupom') || '').trim()); } catch { return ''; }
+}
+function initialCode(userId) {
+    const fromLink = linkCode();
+    if (fromLink) { writeSaved(userId || GUEST, fromLink); return fromLink; }
+    if (!userId) return readSaved(GUEST);
+    const own = readSaved(userId);
+    if (own) return own;
+    const guest = readSaved(GUEST);
+    if (guest) { writeSaved(userId, guest); writeSaved(GUEST, ''); }
+    return guest;
 }
 
 // Keyed by account in StoreProvider: drafts and async responses never cross users.
-export function CouponProvider({ userId, subtotal, children }) {
-    const [code, setCode] = useState(() => savedCoupon(userId));
-    const [draft, setDraft] = useState(() => savedCoupon(userId));
+// items: [{ productId, amount }] do carrinho; o cupom é validado mesmo com o carrinho vazio.
+export function CouponProvider({ userId, items, children }) {
+    const owner = userId || GUEST;
+    const [code, setCode] = useState(() => initialCode(userId));
+    const [draft, setDraft] = useState(() => initialCode(userId) || '');
     const [validation, setValidation] = useState(null);
     const [retry, setRetry] = useState(0);
-    const key = `${code}:${subtotal}:${retry}`;
+    const itemsKey = JSON.stringify(items || []);
+    const key = `${code}:${itemsKey}:${retry}`;
     const ready = !code || validation?.key === key;
     const coupon = code && ready ? validation?.coupon : null;
     const error = code && ready ? validation?.error || '' : '';
 
     useEffect(() => {
-        if (!userId || !code || subtotal <= 0) return undefined;
+        if (!code) return undefined;
         const controller = new AbortController();
-        validateCoupon(code, subtotal, userId, controller.signal).then(result => {
-            if (!controller.signal.aborted) setValidation({ key, coupon: result });
-        }).catch(failure => {
-            if (!controller.signal.aborted) setValidation({ key, error: failure.message });
-        });
-        return () => controller.abort();
-    }, [code, subtotal, userId, key]);
+        const timer = setTimeout(() => {
+            validateCoupon(code, JSON.parse(itemsKey), userId, controller.signal).then(result => {
+                if (!controller.signal.aborted) setValidation({ key, coupon: result });
+            }).catch(failure => {
+                if (!controller.signal.aborted) setValidation({ key, error: failure.message });
+            });
+        }, 150);
+        return () => { clearTimeout(timer); controller.abort(); };
+    }, [code, itemsKey, userId, key]);
 
     const apply = useCallback(value => {
         const next = normalizeCoupon(value).trim();
-        if (!userId || !next) return;
+        if (!next) return;
         setValidation(null);
-        setRetry(value => value + 1);
+        setRetry(current => current + 1);
         setCode(next);
         setDraft(next);
-        try { localStorage.setItem(storageKey(userId), next); } catch { /* This visit still retains the selection. */ }
-    }, [userId]);
+        writeSaved(owner, validCode(next));
+    }, [owner]);
     const remove = useCallback(() => {
         setCode(''); setDraft(''); setValidation(null);
-        try { if (userId) localStorage.removeItem(storageKey(userId)); } catch { /* In-memory removal still works. */ }
-    }, [userId]);
+        writeSaved(owner, '');
+    }, [owner]);
     const edit = useCallback(value => {
         const next = normalizeCoupon(value);
         setDraft(next);
         if (next.trim() !== code) {
             setCode(''); setValidation(null);
-            try { if (userId) localStorage.removeItem(storageKey(userId)); } catch { /* In-memory selection is already removed. */ }
+            writeSaved(owner, '');
         }
-    }, [code, userId]);
-    const value = useMemo(() => ({ userId, code, draft, edit, coupon, error, checking: Boolean(code && !ready && subtotal > 0), apply, remove }), [userId, code, draft, edit, coupon, error, ready, subtotal, apply, remove]);
+    }, [code, owner]);
+    const value = useMemo(() => ({ userId, code, draft, edit, coupon, error, checking: Boolean(code && !ready), apply, remove }), [userId, code, draft, edit, coupon, error, ready, apply, remove]);
     return <CouponContext.Provider value={value}>{children}</CouponContext.Provider>;
 }
 

@@ -121,12 +121,16 @@ export const StoreProvider = ({ children }) => {
     const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
     const subtotal = cart.reduce((total, item) => total + item.quantity * (item.price || 0), 0);
 
+    // Linhas do carrinho para o cupom: desconto pode ser diferente por produto.
+    const couponItems = useMemo(() => cart.map(item => ({ productId: Number(item.id), amount: Math.round(item.quantity * (item.price || 0) * 100) / 100 }))
+        .filter(item => Number.isSafeInteger(item.productId) && item.productId > 0), [cart]);
+
     const value = useMemo(() => ({
         cart, customer, authReady, cartReady, cartSyncing, cartSyncError, syncCart, itemCount, subtotal, zip, setZip,
         addItem, updateQuantity, removeItem, clearCart, settleCart,
     }), [cart, customer, authReady, cartReady, cartSyncing, cartSyncError, syncCart, itemCount, subtotal, zip, setZip, addItem, updateQuantity, removeItem, clearCart, settleCart]);
 
-    return <StoreContext.Provider value={value}><CouponProvider key={customer?.id || 'guest'} userId={customer?.id} subtotal={subtotal}>{children}</CouponProvider></StoreContext.Provider>;
+    return <StoreContext.Provider value={value}><CouponProvider key={customer?.id || 'guest'} userId={customer?.id} items={couponItems}>{children}</CouponProvider></StoreContext.Provider>;
 };
 
 export const useStore = () => {

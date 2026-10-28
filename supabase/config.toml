@@ -8,6 +8,10 @@ verify_jwt = false
 # CORS preflight is public; every POST validates auth.getUser() in the handler.
 verify_jwt = false
 
+[functions.admin-coupons]
+# Admin token (x-admin-token) is validated against admin_sessions in the handler.
+verify_jwt = false
+
 [functions.payment-webhook]
 verify_jwt = false
 

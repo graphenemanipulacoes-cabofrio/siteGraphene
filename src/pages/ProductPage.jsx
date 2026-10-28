@@ -6,6 +6,9 @@ import { supabase } from '../lib/supabaseClient';
 import StoreLayout from '../components/StoreLayout';
 import { ShippingEstimator } from '../components/ShippingEstimator';
 import RelatedProducts from '../components/RelatedProducts';
+import ProductCoupon from '../components/ProductCoupon';
+import { useCoupon } from '../context/CouponContext';
+import { couponRate, discountedPrice, percentLabel } from '../lib/couponsApi';
 import { useStore } from '../context/StoreContext';
 import { money } from '../utils/commerce';
 import { resolveProductImage } from '../utils/productImages';
@@ -36,6 +39,7 @@ export default function ProductPage() {
     const navigate = useNavigate();
     const catalog = useFlavors();
     const config = useShippingConfig();
+    const { coupon } = useCoupon();
     const [result, setResult] = useState({ id: null, product: null, error: '' });
     // A escolha feita no cartão da vitrine chega já marcada.
     const [choice, setChoice] = useState(() => ({ id, size: location.state?.size || null, flavor: location.state?.flavor || null }));
@@ -90,10 +94,14 @@ export default function ProductPage() {
     };
 
     const missingNow = tried && (missingSize || missingFlavor);
-    const priceLabel = !purchasable ? 'Consulte o valor' : price ? money(price) : `A partir de ${money(lowest)}`;
+    // Cupom de influencer: preço deste produto já com o desconto (o checkout confirma o valor final).
+    const rate = product ? couponRate(coupon, product.id) : 0;
+    const off = value => rate > 0 ? discountedPrice(value, rate) : value;
+    const priceLabel = !purchasable ? 'Consulte o valor' : price ? money(off(price)) : `A partir de ${money(off(lowest))}`;
 
     return <StoreLayout><section className="purchase-page product-page"><div className="purchase-container">
         <Link to="/#produtos" className="purchase-back"><ArrowLeft size={16} /> Continuar comprando</Link>
+        {product && purchasable && <ProductCoupon productId={product.id} />}
         {!product ? <div className="purchase-empty" role="status"><h1>{result.id === id ? result.error : 'Carregando produto…'}</h1><Link to="/#produtos">Ver produtos</Link></div> :
             <div className="purchase-product">
                 <div className="purchase-product-photo"><img src={resolveProductImage(product)} alt={product.name} /></div>
@@ -109,7 +117,9 @@ export default function ProductPage() {
                     <div className="purchase-buybox">
                         <div className="purchase-buybox-price">
                             <small>{price ? 'Preço por unidade' : purchasable ? 'Escolha as opções para ver o preço' : 'Preço'}</small>
+                            {rate > 0 && purchasable && <span className="purchase-price-old">{price ? money(price) : `A partir de ${money(lowest)}`}</span>}
                             <strong>{priceLabel}</strong>
+                            {rate > 0 && purchasable && <span className="purchase-coupon-tag">−{percentLabel(rate)} com o cupom {coupon.code}</span>}
                             {[sizeLabel, flavor && flavorName(catalog, flavor)].filter(Boolean).length > 0 && <span>{[sizeLabel, flavor && flavorName(catalog, flavor)].filter(Boolean).join(' · ')}</span>}
                         </div>
                         {purchasable && <div className="purchase-units">
@@ -120,7 +130,7 @@ export default function ProductPage() {
                                 <button type="button" disabled={units >= 20} onClick={() => setUnits(value => value + 1)} aria-label="Aumentar unidades"><Plus size={16} /></button>
                             </div>
                         </div>}
-                        {price && units > 1 && <p className="purchase-buybox-total">Total: <strong>{money(price * units)}</strong></p>}
+                        {price && units > 1 && <p className="purchase-buybox-total">Total: <strong>{money(off(price) * units)}</strong></p>}
                         {missingNow && <p className="purchase-option-error" role="alert">Escolha {[missingSize && 'a quantidade', missingFlavor && 'o sabor'].filter(Boolean).join(' e ')} para continuar.</p>}
                         <div className="purchase-product-actions">
                             {purchasable ? <button className="purchase-primary" onClick={() => buy(true)}>Comprar <ArrowRight size={18} /></button> : <a className="purchase-primary" href={`${WHATSAPP_URL}?text=${encodeURIComponent(`Olá! Gostaria de consultar o valor de ${product.name}.`)}`} target="_blank" rel="noreferrer">Consultar valor <MessageCircle size={18} /></a>}
@@ -152,7 +162,7 @@ export default function ProductPage() {
         {product && <RelatedProducts product={product} />}
     </div>
         {product && purchasable && <div className="purchase-sticky" aria-hidden={false}>
-            <div><small>{price ? `${units}× ${sizeLabel || ''}${flavor ? ` · ${flavorName(catalog, flavor)}` : ''}` : 'A partir de'}</small><strong>{price ? money(price * units) : money(lowest)}</strong></div>
+            <div><small>{price ? `${units}× ${sizeLabel || ''}${flavor ? ` · ${flavorName(catalog, flavor)}` : ''}` : 'A partir de'}</small><strong>{price ? money(off(price) * units) : money(off(lowest))}</strong></div>
             <button className="purchase-primary" onClick={() => buy(true)}>Comprar <ArrowRight size={18} /></button>
         </div>}
     </section></StoreLayout>;
