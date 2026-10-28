@@ -27,7 +27,7 @@ async function requestCoupon(body, userId, signal) {
         }
         if (error || payload?.error) {
             if (payload?.error === 'authentication_required') throw new Error(sessionMessage);
-            if (payload?.error === 'invalid_coupon') throw new Error('Cupom não encontrado. Confira o código com o seu influencer.');
+            if (payload?.error === 'invalid_coupon') throw new Error('Cupom não encontrado. Confira o código e tente novamente.');
             if (payload?.error === 'coupon_minimum_not_reached') throw new Error(`Este cupom vale para compras a partir de ${money(payload.minimumOrderAmount)}. Adicione mais produtos ou remova o cupom para continuar.`);
             throw new Error('Não foi possível consultar o cupom. Tente novamente.');
         }

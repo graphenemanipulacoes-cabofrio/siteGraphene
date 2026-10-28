@@ -94,14 +94,13 @@ export default function ProductPage() {
     };
 
     const missingNow = tried && (missingSize || missingFlavor);
-    // Cupom de influencer: preço deste produto já com o desconto (o checkout confirma o valor final).
+    // Cupom de desconto: preço deste produto já com o desconto (o checkout confirma o valor final).
     const rate = product ? couponRate(coupon, product.id) : 0;
     const off = value => rate > 0 ? discountedPrice(value, rate) : value;
     const priceLabel = !purchasable ? 'Consulte o valor' : price ? money(off(price)) : `A partir de ${money(off(lowest))}`;
 
     return <StoreLayout><section className="purchase-page product-page"><div className="purchase-container">
         <Link to="/#produtos" className="purchase-back"><ArrowLeft size={16} /> Continuar comprando</Link>
-        {product && purchasable && <ProductCoupon productId={product.id} />}
         {!product ? <div className="purchase-empty" role="status"><h1>{result.id === id ? result.error : 'Carregando produto…'}</h1><Link to="/#produtos">Ver produtos</Link></div> :
             <div className="purchase-product">
                 <div className="purchase-product-photo"><img src={resolveProductImage(product)} alt={product.name} /></div>
@@ -132,6 +131,7 @@ export default function ProductPage() {
                         </div>}
                         {price && units > 1 && <p className="purchase-buybox-total">Total: <strong>{money(off(price) * units)}</strong></p>}
                         {missingNow && <p className="purchase-option-error" role="alert">Escolha {[missingSize && 'a quantidade', missingFlavor && 'o sabor'].filter(Boolean).join(' e ')} para continuar.</p>}
+                        {product && purchasable && <ProductCoupon productId={product.id} />}
                         <div className="purchase-product-actions">
                             {purchasable ? <button className="purchase-primary" onClick={() => buy(true)}>Comprar <ArrowRight size={18} /></button> : <a className="purchase-primary" href={`${WHATSAPP_URL}?text=${encodeURIComponent(`Olá! Gostaria de consultar o valor de ${product.name}.`)}`} target="_blank" rel="noreferrer">Consultar valor <MessageCircle size={18} /></a>}
                             {purchasable && <button className="purchase-secondary" onClick={() => buy(false)}><ShoppingBag size={18} /> Adicionar ao carrinho e continuar comprando</button>}

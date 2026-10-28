@@ -5,7 +5,7 @@ import { couponRate, normalizeCoupon, percentLabel } from '../lib/couponsApi';
 import { money } from '../utils/commerce';
 import '../styles/coupons.css';
 
-// Cupom de influencer no topo da página do produto: funciona sem login e
+// Cupom de desconto logo acima do botão de compra: funciona sem login e
 // mostra na hora o desconto deste produto. O mesmo cupom segue para o carrinho.
 export default function ProductCoupon({ productId }) {
     const { code, draft, edit, coupon, checking, error, apply, remove } = useCoupon();
@@ -19,7 +19,7 @@ export default function ProductCoupon({ productId }) {
         <div className="product-coupon-head">
             <span className="product-coupon-icon"><TicketPercent size={22} aria-hidden="true" /></span>
             <div>
-                <h2 id={`${id}-title`}>{coupon ? `Cupom ${coupon.code} aplicado` : 'Tem cupom de influencer?'}</h2>
+                <h2 id={`${id}-title`}>{coupon ? `Cupom ${coupon.code} aplicado` : 'Tem cupom de desconto?'}</h2>
                 <p>{coupon
                     ? rate > 0 ? <>Você ganhou <strong>{percentLabel(rate)} de desconto</strong> neste produto{special ? ' (desconto especial)' : ''}. Indicação de {coupon.partnerName}.</>
                         : <>Você ganhou <strong>{money(coupon.discountValue)} de desconto</strong> no total da compra. Indicação de {coupon.partnerName}.</>

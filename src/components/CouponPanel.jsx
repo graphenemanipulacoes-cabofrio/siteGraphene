@@ -49,7 +49,7 @@ export default function CouponPanel({ disabled = false }) {
 
     return <section className={`coupon-panel${coupon ? ' is-applied' : ''}`} aria-labelledby={`${id}-title`} ref={root}
         onBlur={event => { if (!root.current?.contains(event.relatedTarget)) setFocused(false); }}>
-        <div className="coupon-panel-heading"><span className="coupon-panel-icon"><TicketPercent size={21} aria-hidden="true" /></span><div><h2 id={`${id}-title`}>Tem cupom de um parceiro?</h2><p>Encontre seu influencer e use o cupom na compra.</p></div></div>
+        <div className="coupon-panel-heading"><span className="coupon-panel-icon"><TicketPercent size={21} aria-hidden="true" /></span><div><h2 id={`${id}-title`}>Tem cupom de desconto?</h2><p>Encontre o cupom pelo nome do parceiro e use na compra.</p></div></div>
             <label className="coupon-label" htmlFor={`${id}-input`}>{userId ? 'Nome do parceiro ou código do cupom' : 'Código do cupom'}</label>
             <div className="coupon-entry"><div className="coupon-autocomplete">
                 <input id={`${id}-input`} role="combobox" aria-autocomplete="list" aria-expanded={open} aria-controls={open ? `${id}-list` : undefined}

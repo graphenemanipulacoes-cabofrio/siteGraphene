@@ -30,7 +30,7 @@
 .coupon-panel.is-applied{border-color:#7db4cc;background:#eaf5fa}
 @media(max-width:700px){.coupon-panel{padding:19px 18px}.coupon-panel-heading{gap:10px}.coupon-panel-heading h2{font-size:.97rem}.coupon-entry{gap:7px}.coupon-apply{min-width:76px;padding:0 12px}.coupon-suggestions{width:calc(100% + 83px)}.coupon-suggestions li{gap:8px;padding:10px;min-height:66px}.coupon-suggestion-offer{max-width:48%}}
 
-/* Cupom no topo da página do produto: bem visível para quem vem de influencer. */
+/* Cupom de desconto logo acima do botão Comprar: bem visível sem competir com o preço. */
 .product-coupon{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,420px);align-items:center;gap:14px 28px;margin:0 0 26px;padding:20px 24px;border:2px dashed #0c5c89;border-radius:14px;background:linear-gradient(100deg,#e3f2fb,#f2f9fd);color:var(--purchase-ink)}
 .product-coupon-head{display:flex;align-items:center;gap:14px;min-width:0}
 .product-coupon-icon{width:48px;height:48px;flex-shrink:0;display:grid;place-items:center;border-radius:12px;background:#0c5c89;color:#fff}
@@ -57,3 +57,6 @@
 .purchase-coupon-tag{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:4px 9px;border-radius:99px;background:#dff4ea;color:#075c3e!important;font-size:.74rem!important;font-weight:700}
 @media(max-width:760px){.product-coupon{grid-template-columns:1fr;padding:16px;margin-bottom:20px}.product-coupon-applied{justify-self:start;flex-wrap:wrap}.product-coupon h2{font-size:1.02rem}.product-coupon-icon{width:42px;height:42px}}
 .product-coupon>div:last-child:empty{display:none}
+
+.purchase-buybox .product-coupon{grid-template-columns:minmax(0,1fr);gap:14px;margin:0;padding:16px 18px}
+.purchase-buybox .product-coupon-form{width:100%}
