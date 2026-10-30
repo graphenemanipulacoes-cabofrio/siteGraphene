@@ -1,34 +1,9 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { allowedOrigin, json } from '../_shared/http.ts';
+import { ensureAuthAccount, hashToken, normalizeEmail, requestIdPattern, uuidPattern, validAccountPassword, validEmail } from '../_shared/counter-security.ts';
 
-const json = (body: unknown, status = 200, origin?: string) => new Response(status === 204 ? null : JSON.stringify(body), {
-  status,
-  headers: {
-    'Content-Type': 'application/json', 'Cache-Control': 'no-store',
-    'Access-Control-Allow-Origin': origin || 'null',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-admin-token',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Vary': 'Origin',
-  },
-});
-
-const allowedOrigin = (requestOrigin: string | null) => {
-  const siteUrl = Deno.env.get('SITE_URL') || '';
-  const localOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
-  return requestOrigin && (requestOrigin === siteUrl || localOrigins.includes(requestOrigin)) ? requestOrigin : null;
-};
-
-const encoder = new TextEncoder();
-const hex = (buffer: ArrayBuffer) => [...new Uint8Array(buffer)].map(byte => byte.toString(16).padStart(2, '0')).join('');
-const sha256 = async (value: string) => hex(await crypto.subtle.digest('SHA-256', encoder.encode(value)));
+const sha256 = hashToken;
 const clean = (value: unknown, max: number) => typeof value === 'string' ? value.trim().slice(0, max) : '';
-// Senha de admin no formato forte (PBKDF2 com sal), o mesmo das contas da equipe.
-const hashAdminPassword = async (password: string) => {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
-  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 600_000, hash: 'SHA-256' }, key, 256);
-  return `pbkdf2-sha256$600000$${hex(salt.buffer)}$${hex(bits)}`;
-};
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const requestIdPattern = /^\d{1,18}$/;
 // intake/: current form. legacy/: first-form files moved from the public bucket in Oct/2026.
 const privateRecipePathPattern = /^(?:intake\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy\/\d{13}_[a-z0-9]{5,6})\.(?:jpg|jpeg|png|pdf)$/i;
 const productImageTypes: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
@@ -382,30 +357,38 @@ Deno.serve(async (req: Request) => {
     }
 
     if (body.action === 'list_admins') {
-      const { data, error } = await admin.from('admins').select('id,username,created_at').order('created_at', { ascending: false });
+      const { data, error } = await admin.from('admins').select('id,email,username,created_at').order('created_at', { ascending: false });
       if (error) return json({ error: 'unable_to_load_admins' }, 500, origin);
-      return json({ admins: data || [] }, 200, origin);
+      return json({ admins: data || [], me: session.admin_username }, 200, origin);
     }
 
+    // Qualquer admin cadastra outro pelo e-mail. Quem ainda não tem conta no site recebe
+    // a senha inicial informada aqui; quem já tem continua com a própria senha (ou Google).
     if (body.action === 'add_admin') {
-      const username = clean(body.username, 80);
-      const password = clean(body.password, 200);
-      if (!/^[a-zA-Z0-9._-]{3,80}$/.test(username) || password.length < 10) return json({ error: 'invalid_admin' }, 400, origin);
-      const passwordHash = await hashAdminPassword(password);
-      const { error } = await admin.from('admins').insert({ username, password: passwordHash });
+      const email = normalizeEmail(body.email);
+      const password = typeof body.password === 'string' ? body.password : '';
+      if (!validEmail(email) || (password && !validAccountPassword(password))) return json({ error: 'invalid_admin' }, 400, origin);
+      const { data: existing } = await admin.from('admins').select('id').eq('email', email).maybeSingle();
+      if (existing) return json({ error: 'admin_exists' }, 409, origin);
+      const ensured = await ensureAuthAccount(admin, email, password);
+      if (ensured.error) return json({ error: ensured.error }, 400, origin);
+      const { error } = await admin.from('admins').insert({ username: email, email, password: null });
       if (error) return json({ error: error.code === '23505' ? 'admin_exists' : 'unable_to_add_admin' }, 409, origin);
-      return json({ ok: true }, 200, origin);
+      return json({ ok: true, created: ensured.created }, 200, origin);
     }
 
     if (body.action === 'delete_admin') {
       const adminId = clean(String(body.adminId ?? ''), 80);
       if (!adminId) return json({ error: 'invalid_admin' }, 400, origin);
-      const { data: target } = await admin.from('admins').select('username').eq('id', adminId).maybeSingle();
-      const { count } = await admin.from('admins').select('id', { count: 'exact', head: true });
+      const { data: target } = await admin.from('admins').select('email,username').eq('id', adminId).maybeSingle();
+      const { count } = await admin.from('admins').select('id', { count: 'exact', head: true }).not('email', 'is', null);
       if (!target) return json({ error: 'admin_not_found' }, 404, origin);
-      if (target.username === session.admin_username || Number(count || 0) <= 1) return json({ error: 'protected_admin' }, 409, origin);
+      // Não remove o próprio acesso nem o último admin que consegue entrar (com e-mail).
+      if (target.email === session.admin_username || (target.email && Number(count || 0) <= 1)) return json({ error: 'protected_admin' }, 409, origin);
       const { error } = await admin.from('admins').delete().eq('id', adminId);
       if (error) return json({ error: 'unable_to_delete_admin' }, 500, origin);
+      // Os navegadores conectados como esse admin perdem o acesso na hora.
+      await admin.from('admin_sessions').delete().eq('admin_username', target.email || target.username);
       return json({ ok: true }, 200, origin);
     }
 

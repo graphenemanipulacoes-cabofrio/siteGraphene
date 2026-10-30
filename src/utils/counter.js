@@ -15,8 +15,8 @@ export function readStaffSession(key) {
         return staffTokenPattern.test(session?.token || '') ? session : null;
     } catch { return null; }
 }
-// Quem já entrou no painel admin neste navegador entra direto no balcão e no farmacêutico.
-// O servidor confere a sessão em cada ação; isto só evita digitar a senha de novo.
+// Administrador conectado neste navegador entra direto no balcão e no farmacêutico.
+// O servidor confere a sessão em cada ação; isto só evita entrar de novo.
 export function adminStaffSession() {
     try {
         const admin = getSession();

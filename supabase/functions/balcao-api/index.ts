@@ -1,9 +1,9 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { allowedOrigin, json } from '../_shared/http.ts';
-import { adminUsernamePattern, hashPassword, hashToken, newToken, normalizeUsername, validUsername, validPassword, verifyAdminPassword, verifyPassword, orderStatuses, paymentStatuses, uuidPattern, requestIdPattern, prescriptionReferences, prescriptionLocation } from '../_shared/counter-security.ts';
+import { authAccount, ensureAuthAccount, hashToken, isAdminEmail, issueAdminSession, newToken, normalizeEmail, validEmail, validAccountPassword, orderStatuses, paymentStatuses, uuidPattern, requestIdPattern, prescriptionReferences, prescriptionLocation } from '../_shared/counter-security.ts';
 
 const text = (value: unknown, limit = 120) => typeof value === 'string' ? value.trim().slice(0, limit) : '';
-const accountFields = 'id,username,display_name,role,is_active,created_at,updated_at';
+const accountFields = 'id,email,username,display_name,role,is_active,created_at,updated_at';
 const orderFields = 'id,customer_email,customer_document,shipping_address,subtotal,shipping_amount,total,discount_code,discount_amount,status,payment_status,payment_reference,payment_method,paid_at,carrier,tracking_code,invoice_number,invoice_url,admin_notes,shipped_at,delivered_at,created_at,updated_at,order_items(id,product_id,product_name,unit_price,quantity,variant)';
 const requestFields = 'id,created_at,nome_cliente,whatsapp,status,observacoes';
 const adminActions = new Set(['list_accounts', 'save_account', 'revoke_account', 'delete_account']);
@@ -69,21 +69,6 @@ function cleanOptions(raw: unknown, flavorIds: Set<string>): ProductOptions | nu
 // Administradores entram em qualquer área da equipe com o login do painel admin.
 // O token é o mesmo formato do painel (43 caracteres); o da equipe tem 64.
 const adminTokenPattern = /^[A-Za-z0-9_-]{43}$/;
-const newAdminToken = () => btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
-// Mesma regra da função admin-login (tabela admins).
-// deno-lint-ignore no-explicit-any
-async function verifyAdmin(db: any, rawUsername: unknown, rawPassword: unknown) {
-  const username = typeof rawUsername === 'string' ? rawUsername.trim().slice(0, 80) : '';
-  const password = typeof rawPassword === 'string' ? rawPassword.trim().slice(0, 200) : '';
-  if (!username || !password || username.includes('*')) return null;
-  const { data: record } = await db.from('admins').select('id,username,password').ilike('username', adminUsernamePattern(username)).maybeSingle();
-  const match = record && String(record.username).toLowerCase() === username.toLowerCase() ? record : null;
-  const { valid, upgrade } = await verifyAdminPassword(password, match?.password);
-  if (!match || !valid) return null;
-  // Senhas antigas passam para o formato forte assim que o admin entra.
-  if (upgrade) await db.from('admins').update({ password: await hashPassword(password) }).eq('id', match.id);
-  return String(match.username);
-}
 
 Deno.serve(async (req: Request) => {
   const origin = allowedOrigin(req.headers.get('origin'));
@@ -113,55 +98,45 @@ Deno.serve(async (req: Request) => {
       }
       const id = text(body.id, 36);
       if (id && !uuidPattern.test(id)) return json({ error: 'invalid_account' }, 400, origin);
-      const username = normalizeUsername(body.username);
+      const email = normalizeEmail(body.email);
       const displayName = text(body.displayName, 100);
       const password = typeof body.password === 'string' ? body.password : '';
       const role = body.role === undefined ? 'balcao' : text(body.role, 20);
-      if (action === 'save_account' && (!validUsername(username) || displayName.length < 2 || !roles.has(role) || ((!id || password) && !validPassword(password)) || (id && typeof body.isActive !== 'boolean'))) return json({ error: 'invalid_account' }, 400, origin);
+      if (action === 'save_account' && (!validEmail(email) || displayName.length < 2 || !roles.has(role) || (password && !validAccountPassword(password)) || (id && typeof body.isActive !== 'boolean'))) return json({ error: 'invalid_account' }, 400, origin);
       if ((action === 'revoke_account' || action === 'delete_account') && !id) return json({ error: 'invalid_account' }, 400, origin);
-      const { data: savedId, error } = await admin.rpc('counter_manage_account', {
+      // A pessoa entra com a conta do site desse e-mail; se ainda não tiver, o admin define a senha inicial.
+      if (action === 'save_account') {
+        const ensured = await ensureAuthAccount(admin, email, password);
+        if (ensured.error) return json({ error: ensured.error }, 400, origin);
+      }
+      const { data: savedId, error } = await admin.rpc('staff_manage_account', {
         p_action: action === 'revoke_account' ? 'revoke' : action === 'delete_account' ? 'delete' : id ? 'save' : 'create', p_id: id || null, p_role: role,
-        p_username: username, p_display_name: displayName,
-        p_password_hash: password ? await hashPassword(password) : null,
-        p_is_active: body.isActive ?? true, p_admin_username: session.admin_username,
+        p_email: email, p_display_name: displayName,
+        p_is_active: body.isActive ?? true, p_admin_email: session.admin_username,
       });
-      if (error) return json({ error: error.code === '23505' ? 'username_exists' : 'unable_to_save_account' }, 400, origin);
+      if (error) return json({ error: error.code === '23505' ? 'email_exists' : 'unable_to_save_account' }, 400, origin);
       return json({ id: savedId, ok: true }, 200, origin);
     }
 
     if (action === 'login') {
-      const username = normalizeUsername(body.username);
-      const password = typeof body.password === 'string' ? body.password : '';
-      const ip = req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
-      const keys = ['ip:' + await hashToken(ip), 'user:' + await hashToken(username.slice(0, 100))];
-      const { data: allowed, error: rateError } = await admin.rpc('counter_take_login_attempt', { p_keys: keys });
-      if (rateError) return json({ error: 'login_unavailable' }, 503, origin);
-      if (!allowed) return json({ error: 'too_many_attempts' }, 429, origin);
-      const counterShaped = validUsername(username) && validPassword(password);
-      const { data: account } = counterShaped
-        ? await admin.from('counter_accounts').select('id,username,display_name,role,password_hash,auth_version,is_active').eq('username', username).maybeSingle()
-        : { data: null };
-      // Equal-cost verification prevents a missing account from being exposed by timing.
-      const dummyHash = 'pbkdf2-sha256$600000$00000000000000000000000000000000$0000000000000000000000000000000000000000000000000000000000000000';
-      const valid = await verifyPassword(password, account?.password_hash || dummyHash);
-      if (account?.is_active && valid) {
-        // A página do farmacêutico só aceita contas desse tipo; o balcão aceita as duas.
-        if (text(body.area, 20) === 'farmaceutico' && account.role !== 'farmaceutico') return json({ error: 'wrong_area' }, 403, origin);
-        const token = newToken();
-        const { error } = await admin.from('counter_sessions').insert({ token_hash: await hashToken(token), account_id: account.id, auth_version: account.auth_version, device_label: text(body.deviceLabel, 120) || (text(body.area, 20) === 'farmaceutico' ? 'Navegador do farmacêutico' : 'Navegador do balcão') });
-        if (error) return json({ error: 'login_unavailable' }, 503, origin);
-        await admin.from('counter_login_limits').delete().eq('key', keys[1]);
-        return json({ token, user: { username: account.username, displayName: account.display_name, role: account.role } }, 200, origin);
+      // Entrada pela conta do site (e-mail e senha ou Google). Senha errada e excesso de
+      // tentativas ficam por conta do Supabase Auth; aqui só se confere o papel do e-mail.
+      const signedIn = await authAccount(admin, req);
+      if (!signedIn) return json({ error: 'unauthorized' }, 401, origin);
+      if (await isAdminEmail(admin, signedIn.email)) {
+        // Administrador: mesma sessão do painel (8 horas), vale em todas as áreas.
+        const adminSession = await issueAdminSession(admin, signedIn.email);
+        if (!adminSession) return json({ error: 'login_unavailable' }, 503, origin);
+        return json({ token: adminSession.token, expiresAt: adminSession.expiresAt, user: { username: signedIn.email, email: signedIn.email, displayName: signedIn.email, role: 'admin' } }, 200, origin);
       }
-      // Não é conta da equipe: confere se é um administrador. Sessão igual à do painel (8 horas).
-      const adminUsername = await verifyAdmin(admin, body.username, body.password);
-      if (!adminUsername) return json({ error: 'invalid_credentials' }, 401, origin);
-      const adminToken = newAdminToken();
-      const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
-      const { error } = await admin.from('admin_sessions').insert({ token_hash: await hashToken(adminToken), admin_username: adminUsername, expires_at: expiresAt });
+      const { data: account } = await admin.from('counter_accounts').select('id,email,display_name,role,auth_version,is_active').eq('email', signedIn.email).maybeSingle();
+      if (!account?.is_active) return json({ error: 'not_staff' }, 403, origin);
+      // A página do farmacêutico só aceita contas desse tipo; o balcão aceita as duas.
+      if (text(body.area, 20) === 'farmaceutico' && account.role !== 'farmaceutico') return json({ error: 'wrong_area' }, 403, origin);
+      const token = newToken();
+      const { error } = await admin.from('counter_sessions').insert({ token_hash: await hashToken(token), account_id: account.id, auth_version: account.auth_version, device_label: text(body.deviceLabel, 120) || (text(body.area, 20) === 'farmaceutico' ? 'Navegador do farmacêutico' : 'Navegador do balcão') });
       if (error) return json({ error: 'login_unavailable' }, 503, origin);
-      await admin.from('counter_login_limits').delete().eq('key', keys[1]);
-      return json({ token: adminToken, expiresAt, user: { username: adminUsername, displayName: adminUsername, role: 'admin' } }, 200, origin);
+      return json({ token, user: { username: account.email, email: account.email, displayName: account.display_name, role: account.role } }, 200, origin);
     }
 
     if (!counterActions.has(action) && !productActions.has(action) && !materialActions.has(action) && !settingsActions.has(action)) return json({ error: 'invalid_action' }, 400, origin);
@@ -175,9 +150,10 @@ Deno.serve(async (req: Request) => {
       const { data, error } = await admin.from('admin_sessions').select('admin_username').eq('token_hash', tokenHash).gt('expires_at', new Date().toISOString()).maybeSingle();
       if (!error && data?.admin_username) account = { username: data.admin_username, display_name: data.admin_username, role: 'admin' };
     } else {
-      const { data: session, error } = await admin.from('counter_sessions').select('account_id,auth_version,counter_accounts!inner(username,display_name,role,is_active,auth_version)').eq('token_hash', tokenHash).is('revoked_at', null).maybeSingle();
-      const staff = session?.counter_accounts as unknown as { username: string; display_name: string; role: string; is_active: boolean; auth_version: number } | undefined;
-      if (!error && session && staff?.is_active && session.auth_version === staff.auth_version) account = staff;
+      const { data: session, error } = await admin.from('counter_sessions').select('account_id,auth_version,counter_accounts!inner(email,username,display_name,role,is_active,auth_version)').eq('token_hash', tokenHash).is('revoked_at', null).maybeSingle();
+      const staff = session?.counter_accounts as unknown as { email: string | null; username: string | null; display_name: string; role: string; is_active: boolean; auth_version: number } | undefined;
+      // Contas antigas (só usuário) seguem válidas nos navegadores já conectados até o admin trocar para e-mail.
+      if (!error && session && staff?.is_active && session.auth_version === staff.auth_version) account = { ...staff, username: staff.email || staff.username || '' };
     }
     if (!account) return json({ error: 'unauthorized' }, 401, origin);
     if (action === 'logout') {

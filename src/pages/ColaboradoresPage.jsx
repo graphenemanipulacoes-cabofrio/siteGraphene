@@ -3,11 +3,11 @@ import { ArrowLeft, ArrowRight, FlaskConical, Monitor, ShieldCheck, Users, Lock 
 import '../styles/staff.css';
 
 // Área da equipe: um ponto de entrada para todas as páginas de usuários.
-// Cada área tem o próprio login; esta página não guarda nem pede senha.
+// Todas usam a mesma conta do site (e-mail); esta página não guarda nem pede senha.
 const doors = [
     {
         to: '/login', icon: ShieldCheck, title: 'Administração', tag: 'Controle total', primary: true,
-        text: 'Pedidos, produtos, financeiro, parceiros e os acessos de toda a equipe: criar, trocar senha e excluir usuários.',
+        text: 'Pedidos, produtos, financeiro, parceiros, administradores e os acessos de toda a equipe por e-mail.',
     },
     {
         to: '/farmaceutico', icon: FlaskConical, title: 'Farmacêutico', tag: 'Catálogos',
@@ -32,7 +32,7 @@ export default function ColaboradoresPage() {
             </header>
             <section className="staff-intro">
                 <h1>Área da equipe</h1>
-                <p>Escolha a sua área de trabalho. Cada uma tem login e senha próprios; administradores entram em todas.</p>
+                <p>Escolha a sua área de trabalho. Todas usam o mesmo login do site, com o seu e-mail (senha ou Google); administradores entram em todas.</p>
             </section>
             <nav className="staff-doors" aria-label="Áreas da equipe">
                 {doors.map(door => {
@@ -47,7 +47,7 @@ export default function ColaboradoresPage() {
                     </Link>;
                 })}
             </nav>
-            <p className="staff-note"><Lock size={15} aria-hidden="true" /><span>Acesso restrito à equipe Graphène. Os logins do balcão e do farmacêutico são criados pelo administrador em Administração › Acessos da equipe. Administradores entram em todas as áreas com o mesmo login e senha do painel. Quer divulgar a Graphène? <Link to="/parceiros/cadastro">Cadastre-se como parceiro</Link>.</span></p>
+            <p className="staff-note"><Lock size={15} aria-hidden="true" /><span>Acesso restrito à equipe Graphène. Os e-mails do balcão e do farmacêutico são cadastrados pelo administrador em Administração › Acessos da equipe. Administradores entram em todas as áreas com o próprio e-mail. A senha é trocada em <Link to="/minha-conta">Minha conta</Link>. Quer divulgar a Graphène? <Link to="/parceiros/cadastro">Cadastre-se como parceiro</Link>.</span></p>
         </div>
     </main>;
 }

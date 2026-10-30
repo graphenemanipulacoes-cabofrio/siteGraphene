@@ -1,25 +1,27 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { ArrowLeft, LoaderCircle, LockKeyhole, LogOut, Monitor, LayoutGrid, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Chrome, LoaderCircle, LockKeyhole, LogOut, Monitor, LayoutGrid, ShieldCheck } from 'lucide-react';
 import AdminProducts from '../components/AdminProducts';
 import AdminMaterials from '../components/AdminMaterials';
 import { materialsApi } from '../lib/materialsApi';
-import { counterRequest } from '../lib/counterApi';
+import { counterRequest, enterStaffArea } from '../lib/counterApi';
+import { currentAccountEmail, signInWithEmail, startGoogleLogin } from '../lib/accountAuth';
+import { supabase } from '../lib/supabaseClient';
 import { pharmacistProductsApi } from '../lib/productsApi';
 import { PHARMACIST_SESSION_KEY, adminStaffSession, clearStaffSession, readStaffSession, staffRoleLabels } from '../utils/counter';
 import { destroySession } from '../utils/security';
 import '../styles/staff.css';
 
 // Página do farmacêutico: cadastro e revisão dos produtos da loja.
-// Login próprio (contas da equipe do tipo "farmacêutico", criadas pelo admin).
-// Administradores também entram, com o login do painel. O farmacêutico não
+// Entra com a conta do site (e-mail cadastrado pelo admin como farmacêutico).
+// Administradores também entram, com o e-mail deles. O farmacêutico não
 // tem acesso à administração; o servidor confere o tipo da conta em cada ação.
 const allowedRoles = ['farmaceutico', 'admin'];
 export default function FarmaceuticoPage() {
     const [session, setSession] = useState(() => readStaffSession(PHARMACIST_SESSION_KEY) || adminStaffSession());
     const [checked, setChecked] = useState(false);
-    const [credentials, setCredentials] = useState({ username: '', password: '' });
+    const [credentials, setCredentials] = useState({ email: '', password: '' });
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState('');
     const [view, setView] = useState('products');
@@ -41,11 +43,27 @@ export default function FarmaceuticoPage() {
             .catch(failure => {
                 if (!active) return;
                 if (failure.code !== 'unauthorized') { setChecked(true); return; }
-                if (session.borrowed) destroySession(); // A sessão do painel admin também acabou.
-                revoke(failure.message);
+                // Admin: o token do painel venceu e é renovado ao entrar de novo.
+                // Equipe: acesso encerrado pelo admin; sai também da conta do site neste navegador.
+                if (session.borrowed) { destroySession(); revoke(''); }
+                else supabase.auth.signOut({ scope: 'local' }).catch(() => {}).finally(() => revoke(failure.message));
             });
         return () => { active = false; };
     }, [session?.token, session?.borrowed, checked, revoke]);
+
+    // Conta do site já conectada (inclusive depois do Google): entra direto, se tiver acesso.
+    useEffect(() => {
+        if (session) return undefined;
+        let active = true;
+        (async () => {
+            if (!await currentAccountEmail() || !active) return;
+            setBusy(true);
+            try { const created = await enterStaffArea('farmaceutico', PHARMACIST_SESSION_KEY); if (active) { setMessage(''); setChecked(true); setSession(created); } }
+            catch (failure) { if (active) setMessage(failure.message); }
+            finally { if (active) setBusy(false); }
+        })();
+        return () => { active = false; };
+    }, [session]);
 
     useEffect(() => {
         const storage = event => { if (event.key === PHARMACIST_SESSION_KEY && !event.newValue) revoke('O acesso foi encerrado em outra aba.'); };
@@ -58,23 +76,26 @@ export default function FarmaceuticoPage() {
 
     const login = async event => {
         event.preventDefault(); setBusy(true); setMessage('');
-        let created;
         try {
-            created = await counterRequest({ action: 'login', area: 'farmaceutico', ...credentials, deviceLabel: `${navigator.platform || 'Computador'} · farmacêutico` });
-            localStorage.setItem(PHARMACIST_SESSION_KEY, JSON.stringify(created));
-            setCredentials({ username: '', password: '' }); setChecked(true); setSession(created);
-        } catch (failure) {
-            if (created?.token) {
-                counterRequest({ action: 'logout', sessionToken: created.token }).catch(() => {});
-                setMessage('O navegador não permite salvar a sessão. Habilite o armazenamento e tente de novo.');
-            } else setMessage(failure.message);
-        } finally { setBusy(false); }
+            await signInWithEmail(credentials.email, credentials.password);
+            const created = await enterStaffArea('farmaceutico', PHARMACIST_SESSION_KEY);
+            setCredentials({ email: '', password: '' }); setChecked(true); setSession(created);
+        } catch (failure) { setMessage(failure.message); }
+        finally { setBusy(false); }
     };
 
+    const loginWithGoogle = async () => {
+        setBusy(true); setMessage('');
+        try { await startGoogleLogin('/farmaceutico'); }
+        catch { setBusy(false); setMessage('Não foi possível iniciar o acesso com Google. Tente novamente.'); }
+    };
+
+    // Login único: sair daqui também sai da conta do site (e do painel admin) neste navegador.
     const logout = async () => {
         setBusy(true);
         try { await counterRequest({ action: 'logout', sessionToken: session.token }); } catch { /* A sessão local é encerrada de qualquer forma. */ }
-        if (session.borrowed) destroySession(); // Sair aqui também encerra o painel admin deste navegador.
+        if (session.borrowed) destroySession();
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
         revoke('Você saiu da área do farmacêutico.'); setChecked(false); setBusy(false);
     };
 
@@ -83,12 +104,13 @@ export default function FarmaceuticoPage() {
             <form className="staff-login-card" onSubmit={login}>
                 <img src="/assets/logo.png" alt="Graphène Farmácia de Manipulação" />
                 <h1>Área do farmacêutico</h1>
-                <p>Entre com o usuário e a senha criados pelo administrador. Administradores usam o mesmo login do painel.</p>
+                <p>Entre com o e-mail cadastrado pelo administrador (senha ou Google). Administradores usam o e-mail deles.</p>
                 {message && <div className="staff-error" role="alert">{message}</div>}
-                <label className="staff-field">Usuário<input autoComplete="username" required value={credentials.username} onChange={e => setCredentials({ ...credentials, username: e.target.value })} /></label>
+                <button type="button" className="staff-btn" onClick={loginWithGoogle} disabled={busy}><Chrome size={18} aria-hidden="true" /> Continuar com Google</button>
+                <label className="staff-field">E-mail<input type="email" autoComplete="email" required value={credentials.email} onChange={e => setCredentials({ ...credentials, email: e.target.value })} /></label>
                 <label className="staff-field">Senha<input type="password" autoComplete="current-password" required value={credentials.password} onChange={e => setCredentials({ ...credentials, password: e.target.value })} /></label>
                 <button className="staff-btn primary" disabled={busy}>{busy ? <LoaderCircle size={18} className="staff-spin" aria-hidden="true" /> : <LockKeyhole size={18} aria-hidden="true" />} {busy ? 'Entrando…' : 'Entrar'}</button>
-                <div className="staff-login-links"><Link to="/colaboradores"><ArrowLeft size={14} aria-hidden="true" /> Área da equipe</Link><span>Farmacêuticos e administradores</span></div>
+                <div className="staff-login-links"><Link to="/colaboradores"><ArrowLeft size={14} aria-hidden="true" /> Área da equipe</Link><Link to="/entrar">Esqueci minha senha</Link></div>
             </form>
         </div>
     </main>;

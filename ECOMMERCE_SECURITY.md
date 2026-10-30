@@ -17,7 +17,7 @@
 
 ## Antes de produção
 
-1. Habilite confirmação de e-mail e [proteção contra senhas vazadas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) no Supabase Auth (pendência já existente, não alterada nesta correção).
+1. Por decisão do dono (30/10/2026), o cadastro não pede código de confirmação de e-mail ("Confirm email" desligado no Supabase Auth). Por isso, e-mails de admin e da equipe sem conta só são cadastrados com senha inicial, criando a conta na hora. [Proteção contra senhas vazadas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) depende do plano Pro.
 2. Configure CAPTCHA no cadastro/login e limites de envio de e-mail no painel do Supabase.
 3. Aplique `supabase/migrations/202609020001_secure_ecommerce.sql`.
 4. Cadastre `SITE_URL`, `MERCADO_PAGO_ACCESS_TOKEN` e `MERCADO_PAGO_WEBHOOK_SECRET` como secrets das Edge Functions.
@@ -25,7 +25,7 @@
 6. Cadastre preços maiores que zero em todos os produtos vendáveis.
 7. Teste com credenciais de teste do Mercado Pago antes de trocar para produção.
 
-Depois de aplicar a migration, alterações de catálogo devem ser feitas no Dashboard do Supabase até o painel administrativo também ser migrado para Supabase Auth com função de administrador. O login administrativo antigo não deve receber uma chave privilegiada no navegador.
+O painel administrativo usa o Supabase Auth: `admin-login` confere a sessão da conta (`auth.getUser()`) e o e-mail em `admins` antes de emitir o token do painel. Nenhuma chave privilegiada vai para o navegador.
 
 Nunca coloque service-role key, access token ou webhook secret em `.env` do Vite ou em qualquer variável `VITE_*`.
 

@@ -20,6 +20,14 @@ Este arquivo é a fonte de contexto do projeto. Não há notas externas (Obsidia
 
 Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam em `src/data/business.js`. WhatsApp e limites de upload em `src/config.js`.
 
+## Login único por e-mail
+- Todos entram com a conta do site no Supabase Auth (e-mail e senha ou Google): clientes, parceiros, equipe e admin. Não existe mais usuário/senha próprios do admin ou do balcão.
+- O papel vem do e-mail: `admins.email` (admin, todas as áreas) e `counter_accounts.email` (balcão/farmacêutico). Parceiro = `partner_profiles.id` igual ao id da conta. Migração `20261030173953_login_por_email.sql`.
+- `admin-login` e a ação `login` do `balcao-api` recebem a sessão (Authorization) e devolvem os tokens internos de sempre (`x-admin-token` 8 h; token da equipe sem vencimento). `ensureAdminSession` (`src/lib/accountAuth.js`) renova o token do painel sozinho.
+- Admin cadastra admins e equipe pelo e-mail; e-mail sem conta exige senha inicial (cria a conta já confirmada, para ninguém se cadastrar antes com aquele e-mail). Cada um troca a senha em `/minha-conta`.
+- Admin abre o painel de qualquer parceiro (`/parceiros/painel?parceiro=id`, só leitura). Sair do admin, balcão ou farmacêutico sai também da conta do site.
+- Google sempre volta por `/entrar?oauth=google` e segue para o destino salvo em `graphene_oauth_intent`.
+
 ## Cupons de parceiros
 - `CouponPanel` fica sempre aberto no carrinho e na entrega, antes dos produtos/formulário. Busca a partir de 3 caracteres por prefixo do código ou primeiro nome do recebedor, com seleção por mouse/toque/teclado e digitação em maiúsculas. Não criar cupons de exemplo.
 - `CouponContext` mantém a escolha entre carrinho e checkout; só o código escolhido é salvo em localStorage separado por conta. Ao editar, o desconto anterior sai do resumo; o código é validado novamente quando o subtotal muda. Não aceitar um rascunho como cupom aplicado.
@@ -52,7 +60,7 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - `npm run dev`: ambiente local.
 - `npm run build`: build + páginas de SEO. `npm run lint`: lint (deve terminar sem erros).
 - `node scripts/verify-seo.mjs` e `node --experimental-vm-modules scripts/verify-counter.mjs`: verificações.
-- `node scripts/bundle-counter-function.mjs`: gera `supabase/deploy/balcao-api.ts` para publicar a função do balcão pelo editor do Supabase.
+- `node scripts/bundle-counter-function.mjs`: gera em `supabase/deploy/` arquivos únicos de `balcao-api`, `admin-login`, `admin-orders` e `partner-portal` (com `_shared`) para publicar pelo editor do Supabase.
 
 ## Armazenamento (Supabase)
 - `receitas` (público): só fotos de produto. Sem listagem e sem envio anônimo; o admin envia fotos por link assinado (ação `product_image_upload` da função `admin-orders`). Aceita JPG/PNG/WEBP até 5 MB.
@@ -60,7 +68,7 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 
 ## Pendências técnicas conhecidas
 - Publicar o site (Vercel) com o código atual: até lá, o envio de foto nova de produto pelo admin do site no ar não funciona (pelo site local funciona).
-- Senhas do admin usam SHA-256 sem sal (o balcão já usa PBKDF2).
+- Login por e-mail sem código de confirmação depende de desligar "Confirm email" no painel do Supabase (Authentication › Sign In / Providers › Email). Contas antigas do balcão (só usuário) e admins antigos (`thalesbxempresa`, `thales`, `rodrigo`) não entram mais até receberem e-mail no admin.
 - Proteção contra senhas vazadas no login de clientes exige o plano Pro do Supabase.
 - A função `migrar-receitas-antigas` está desativada (responde 410) e pode ser excluída no painel do Supabase.
 - O conector do Supabase está disponível. Em 23/10/2026, a migração de carrinho foi aplicada em duas partes (`customer_cart_storage`, `customer_cart_sync`) após erro de confirmação no arquivo completo; `checkout_retry` também foi aplicada. `create-checkout` v13 aceita os domínios oficiais e a publicação estável `https://site-graphene.vercel.app`, com retorno para a mesma origem HTTPS (preserva sessão). Nunca liberar `*.vercel.app` genericamente. Não repetir migrações antigas sem conferir o schema atual.

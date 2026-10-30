@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { productOptions, variantKey } from '../utils/productOptions';
 import { CustomerCartStore, syncCustomerCart } from '../utils/cartPersistence';
 import { CouponProvider } from './CouponContext';
+import { syncAdminSessionWithAccount } from '../utils/security';
 
 const StoreContext = createContext(null);
 
@@ -52,6 +53,8 @@ export const StoreProvider = ({ children }) => {
             void cartStore.activate(session?.user?.id || null);
             setCustomer(session?.user || null);
             setAuthReady(true);
+            // Login único: sem a conta do site (ou com outra conta), o painel admin também fecha.
+            syncAdminSessionWithAccount(session?.user?.email || '');
         });
 
         return () => { active = false; subscription.subscription.unsubscribe(); cartStore.deactivate(); };

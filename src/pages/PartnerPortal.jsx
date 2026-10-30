@@ -22,7 +22,6 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { Toaster, toast } from 'sonner';
-import { isAdminPreview } from '../utils/adminPreview';
 
 const DIRECTOR_WHATSAPP_PHONE = '5522998994412';
 const DIRECTOR_WHATSAPP_DISPLAY = '(22) 99899-4412';
@@ -33,45 +32,33 @@ const date = value => value ? new Date(value).toLocaleDateString('pt-BR', { date
 const PartnerPortal = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const adminPreview = isAdminPreview(location.search);
+  // Administradores escolhem um parceiro (?parceiro=id) e veem o painel dele, só para leitura.
+  const selectedPartner = new URLSearchParams(location.search).get('parceiro') || '';
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const adminView = Boolean(data?.adminView || data?.state === 'admin');
 
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError('');
-    if (adminPreview) {
-      setData({
-        profile: { full_name: 'Visualização administrativa', status: 'approved', referral_code: 'PREVIEW10', created_at: new Date().toISOString() },
-        coupon: { code: 'PREVIEW10', discount_type: 'percentage', discount_value: 10, redeemed_count: 0 },
-        metrics: { paidSalesCount: 0, paidSalesAmount: 0, pendingCommission: 0, availableCommission: 0, paidCommission: 0 },
-        productCredits: { granted: 0, used: 0, balance: 0, movements: [] },
-        orders: [],
-        commissions: [],
-      });
-      setLoading(false);
-      return;
-    }
+    // Login único: a conta do site é a mesma da loja; não sai dela aqui.
     const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
     const accessToken = refreshed.session?.access_token;
     if (refreshError || !accessToken) {
-      await supabase.auth.signOut();
       navigate('/parceiros/entrar');
       return;
     }
     const { data: response, error } = await supabase.functions.invoke('partner-portal', {
-      body: { action: 'dashboard' },
+      body: { action: 'dashboard', ...(selectedPartner ? { partnerId: selectedPartner } : {}) },
       headers: { Authorization: `Bearer ${accessToken}` }
     });
     if (response?.state === 'not_partner') {
-      await supabase.auth.signOut();
       navigate('/parceiros/entrar?reason=not_partner');
       return;
     }
     if (error || response?.error) {
       if (response?.error === 'unauthorized') {
-        await supabase.auth.signOut();
         navigate('/parceiros/entrar');
         return;
       }
@@ -80,7 +67,20 @@ const PartnerPortal = () => {
       setData(response);
     }
     setLoading(false);
-  }, [adminPreview, navigate]);
+  }, [navigate, selectedPartner]);
+
+  const choosePartner = id => navigate(id ? `/parceiros/painel?parceiro=${encodeURIComponent(id)}` : '/parceiros/painel');
+  const adminBar = adminView && (
+    <div className="admin-partner-preview-bar">
+      <Eye size={15}/>
+      <span>Visualização do administrador (somente leitura)</span>
+      <select aria-label="Escolher parceiro" value={selectedPartner} onChange={event => choosePartner(event.target.value)}>
+        <option value="">Escolher parceiro…</option>
+        {(data?.partners || []).map(partner => <option key={partner.id} value={partner.id}>{partner.full_name} · {partner.referral_code || partner.status}</option>)}
+      </select>
+      <button onClick={() => navigate('/admin')}>Voltar ao painel</button>
+    </div>
+  );
 
   useEffect(() => {
     const timer = window.setTimeout(load, 0);
@@ -131,13 +131,34 @@ const PartnerPortal = () => {
 
   const profile = data?.profile;
 
+  if (!loadError && data?.state === 'admin') {
+    const partners = data.partners || [];
+    return (
+      <div className="partner-portal-shell">
+        <Toaster richColors />
+        {adminBar}
+        <header className="partner-portal-header">
+          <strong>GRAPHÈNE <small>PARCEIROS</small></strong>
+          <button onClick={() => navigate('/admin')}><LogOut size={16}/> Voltar ao painel</button>
+        </header>
+        <main className="partner-status-card partner-admin-picker">
+          <BadgeCheck/>
+          <span>ÁREA DO PARCEIRO · ADMINISTRADOR</span>
+          <h1>Escolha o parceiro para ver o painel dele.</h1>
+          {partners.length ? <ul>{partners.map(partner => <li key={partner.id}><button onClick={() => choosePartner(partner.id)}><strong>{partner.full_name}</strong><small>{partner.referral_code || 'sem cupom'} · {partner.status === 'approved' ? 'aprovado' : partner.status === 'pending' ? 'em análise' : partner.status === 'rejected' ? 'não aprovado' : partner.status}</small></button></li>)}</ul> : <p>Nenhum parceiro cadastrado ainda.</p>}
+        </main>
+        <style>{styles}</style>
+      </div>
+    );
+  }
+
   if (loadError || !profile) {
     return (
       <div className="partner-portal-shell">
         <Toaster richColors />
         <header className="partner-portal-header">
           <strong>GRAPHÈNE <small>PARCEIROS</small></strong>
-          {adminPreview ? <button onClick={() => navigate('/admin')}><LogOut size={16}/> Voltar ao painel</button> : <button onClick={signOut}><LogOut size={16}/> Sair</button>}
+          {adminView ? <button onClick={() => navigate('/admin')}><LogOut size={16}/> Voltar ao painel</button> : <button onClick={signOut}><LogOut size={16}/> Sair</button>}
         </header>
         <main className="partner-status-card">
           <Clock3/>
@@ -175,9 +196,10 @@ const PartnerPortal = () => {
             >
               <MessageCircle size={15}/> Falar com Diretor {DIRECTOR_WHATSAPP_DISPLAY}
             </a>
-            {adminPreview ? <button onClick={() => navigate('/admin')}><LogOut size={16}/> Voltar ao painel</button> : <button onClick={signOut}><LogOut size={16}/> Sair</button>}
+            {adminView ? <button onClick={() => navigate('/admin')}><LogOut size={16}/> Voltar ao painel</button> : <button onClick={signOut}><LogOut size={16}/> Sair</button>}
           </div>
         </header>
+        {adminBar}
 
         <main className="partner-status-card">
           <Clock3/>
@@ -216,7 +238,7 @@ const PartnerPortal = () => {
   return (
     <div className="partner-portal-shell">
       <Toaster richColors />
-      {adminPreview && <div className="admin-partner-preview-bar"><Eye size={15}/><span>Visualização administrativa: dados e ações reais do parceiro estão protegidos.</span><button onClick={() => navigate('/admin')}>Voltar ao painel</button></div>}
+      {adminBar}
 
       {/* Top Portal Header */}
       <header className="partner-portal-header">
@@ -238,7 +260,7 @@ const PartnerPortal = () => {
             <span>WhatsApp Diretoria {DIRECTOR_WHATSAPP_DISPLAY}</span>
           </a>
 
-          {adminPreview ? <button onClick={() => navigate('/admin')} className="btn-portal-signout" title="Voltar ao painel administrativo"><LogOut size={16}/> Voltar ao painel</button> : <button onClick={signOut} className="btn-portal-signout" title="Sair da conta"><LogOut size={16}/> Sair</button>}
+          {adminView ? <button onClick={() => navigate('/admin')} className="btn-portal-signout" title="Voltar ao painel administrativo"><LogOut size={16}/> Voltar ao painel</button> : <button onClick={signOut} className="btn-portal-signout" title="Sair da conta"><LogOut size={16}/> Sair</button>}
         </div>
       </header>
 
@@ -506,7 +528,8 @@ const PartnerPortal = () => {
 const styles = `
 .partner-portal-shell,.partner-portal-loading{min-height:100vh;background:radial-gradient(circle at 90% 0,rgba(39,203,230,.1),transparent 32rem),radial-gradient(circle at 10% 80%,rgba(16,185,129,.05),transparent 28rem),#071018;color:#eaf2f8}
 .partner-portal-loading{display:flex;align-items:center;justify-content:center}
-.admin-partner-preview-bar{display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;background:#102a3b;border-bottom:1px solid rgba(103,220,243,.35);color:#c8f5fb;font-size:.72rem;font-weight:700}.admin-partner-preview-bar svg{color:#67dcf3}.admin-partner-preview-bar button{margin-left:8px;padding:5px 9px;border:1px solid rgba(103,220,243,.35);border-radius:6px;background:transparent;color:#e8fbff;font-size:.7rem;font-weight:800;cursor:pointer}.admin-partner-preview-bar button:hover{background:rgba(103,220,243,.1)}
+.admin-partner-preview-bar{display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;background:#102a3b;border-bottom:1px solid rgba(103,220,243,.35);color:#c8f5fb;font-size:.72rem;font-weight:700}.admin-partner-preview-bar svg{color:#67dcf3}.admin-partner-preview-bar button{margin-left:8px;padding:5px 9px;border:1px solid rgba(103,220,243,.35);border-radius:6px;background:transparent;color:#e8fbff;font-size:.7rem;font-weight:800;cursor:pointer}.admin-partner-preview-bar button:hover{background:rgba(103,220,243,.1)}.admin-partner-preview-bar{flex-wrap:wrap}.admin-partner-preview-bar select{max-width:min(320px,100%);padding:5px 8px;border:1px solid rgba(103,220,243,.35);border-radius:6px;background:#071321;color:#e8fbff;font-size:.72rem;font-weight:700}
+.partner-admin-picker ul{list-style:none;margin:22px 0 0;padding:0;display:grid;gap:8px;text-align:left}.partner-admin-picker li button{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border:1px solid rgba(203,213,225,.14);border-radius:10px;background:#071321;color:#fff;cursor:pointer;text-align:left}.partner-admin-picker li button:hover{border-color:#3ad4ea}.partner-admin-picker li small{color:#8ca1b3;font-size:.74rem;white-space:nowrap}
 .partner-loading-inner{display:flex;align-items:center;gap:12px;font-weight:700;color:#9fb2c3}
 
 /* Header */

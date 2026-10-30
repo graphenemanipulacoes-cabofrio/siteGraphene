@@ -21,7 +21,8 @@ assert.match(addressText({ name: 'Cliente teste', address: 'Rua teste', number: 
 let handler;
 const calls = [];
 const rpcCalls = [];
-const state = { session: null, adminSession: null, account: null, adminRecord: null, rateAllowed: true };
+const state = { session: null, adminSession: null, account: null, adminRecord: null, rateAllowed: true, authUsers: {}, existingAuthId: null };
+const authAdminCalls = [];
 class Query {
   constructor(table) { this.table = table; this.filters = []; this.operation = 'read'; calls.push(this); }
   select(columns, options) { this.columns = columns; this.options = options; return this; }
@@ -63,7 +64,15 @@ class Query {
   }
   then(resolve, reject) { return Promise.resolve(this.result()).then(resolve, reject); }
 }
-const client = { storage: { from: () => ({ createSignedUploadUrl: async path => ({ data: { path, token: 'upload-token' }, error: null }) }) }, from: table => new Query(table), rpc: async (name, body) => { rpcCalls.push({ name, body }); return { data: name === 'counter_take_login_attempt' ? state.rateAllowed : '11111111-1111-4111-8111-111111111111', error: null }; } };
+// Supabase Auth simulado: tokens de teste mapeados para contas sintéticas.
+const auth = {
+  getUser: async jwt => state.authUsers[jwt] ? { data: { user: state.authUsers[jwt] }, error: null } : { data: { user: null }, error: { message: 'invalid_jwt' } },
+  admin: {
+    createUser: async attributes => { authAdminCalls.push({ type: 'create', attributes }); return { data: { user: { id: '33333333-3333-4333-8333-333333333333', email: attributes.email } }, error: null }; },
+    updateUserById: async (id, attributes) => { authAdminCalls.push({ type: 'update', id, attributes }); return { data: { user: { id } }, error: null }; },
+  },
+};
+const client = { auth, storage: { from: () => ({ createSignedUploadUrl: async path => ({ data: { path, token: 'upload-token' }, error: null }) }) }, from: table => new Query(table), rpc: async (name, body) => { rpcCalls.push({ name, body }); return { data: name === 'counter_take_login_attempt' ? state.rateAllowed : name === 'auth_user_id_by_email' ? state.existingAuthId : '11111111-1111-4111-8111-111111111111', error: null }; } };
 const context = createContext({ Number, Array, Set, Math, Date, String, btoa, crypto: webcrypto, TextEncoder, Uint8Array, URL, Request, Response, console, Deno: { env: { get: name => name === 'SITE_URL' ? 'https://www.graphenemanipulacoes.com.br' : 'https://project.supabase.co' }, serve: fn => { handler = fn; } } });
 const securityModule = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/_shared/counter-security.ts', 'utf8')), { context });
 const httpModule = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/_shared/http.ts', 'utf8')), { context });
@@ -94,31 +103,53 @@ assert.equal((await send({ action: 'list_orders' })).status, 401);
 assert.equal((await send({ action: 'list_accounts', sessionToken: 'a'.repeat(64) })).status, 401);
 assert.equal((await send({ action: 'save_account' }, { 'x-admin-token': 'a'.repeat(64) })).status, 401);
 assert.equal((await send({ action: 'update_order', sessionToken: 'a'.repeat(64) })).status, 400);
-state.rateAllowed = false;
-assert.equal((await send({ action: 'login', username: 'balcao', password: 'senha-teste-segura' })).status, 429);
-state.rateAllowed = true;
+// Login pela conta do site (Supabase Auth): sem sessão válida não entra; o papel vem do e-mail.
 assert.equal((await send({ action: 'login', username: 'balcao', password: 'senha-teste-segura' })).status, 401);
-state.account = { id: '11111111-1111-4111-8111-111111111111', username: 'balcao', display_name: 'Equipe teste', password_hash: hashed, is_active: true, auth_version: 1 };
-const authenticated = await send({ action: 'login', username: ' BaLcao ', password: ' senha-teste-segura ' });
+assert.equal((await send({ action: 'login' }, { authorization: 'Bearer token-invalido' })).status, 401);
+state.authUsers['token-cliente'] = { id: '44444444-4444-4444-8444-444444444444', email: 'Cliente@Exemplo.com' };
+const customerLogin = await send({ action: 'login' }, { authorization: 'Bearer token-cliente' });
+assert.equal(customerLogin.status, 403);
+assert.equal(customerLogin.data.error, 'not_staff');
+state.authUsers['token-balcao'] = { id: '55555555-5555-4555-8555-555555555555', email: ' Balcao@Exemplo.com ' };
+state.account = { id: '11111111-1111-4111-8111-111111111111', email: 'balcao@exemplo.com', display_name: 'Equipe teste', role: 'balcao', is_active: true, auth_version: 1 };
+const authenticated = await send({ action: 'login' }, { authorization: 'Bearer token-balcao' });
 assert.equal(authenticated.status, 200);
 assert.match(authenticated.data.token, /^[a-f0-9]{64}$/);
-assert.equal(authenticated.data.user.username, 'balcao');
-assert.equal(authenticated.data.password_hash, undefined);
+assert.equal(authenticated.data.user.email, 'balcao@exemplo.com');
+assert.equal(calls.filter(call => call.table === 'counter_accounts').at(-1).filters.find(item => item[1] === 'email')[2], 'balcao@exemplo.com');
 const insertedSession = calls.filter(call => call.table === 'counter_sessions' && call.operation === 'insert').at(-1);
 assert.equal(insertedSession.value.token_hash, await security.hashToken(authenticated.data.token));
 assert.notEqual(insertedSession.value.token_hash, authenticated.data.token);
+state.account.is_active = false;
+assert.equal((await send({ action: 'login' }, { authorization: 'Bearer token-balcao' })).status, 403);
 state.account = null;
 state.adminSession = { admin_username: 'admin_teste' };
-assert.equal((await send({ action: 'list_accounts' }, { 'x-admin-token': 'b'.repeat(64) })).status, 200);
-assert.equal((await send({ action: 'save_account', displayName: 'Equipe teste', username: 'balcao', password: 'senha-teste-segura' }, { 'x-admin-token': 'b'.repeat(64) })).status, 200);
-const createAccount = rpcCalls.filter(call => call.name === 'counter_manage_account').at(-1).body;
+const adminHeaders = { 'x-admin-token': 'b'.repeat(64) };
+assert.equal((await send({ action: 'list_accounts' }, adminHeaders)).status, 200);
+// Cadastro da equipe por e-mail: sem conta no site, a senha inicial é obrigatória e cria a conta já confirmada.
+state.existingAuthId = null;
+const withoutPassword = await send({ action: 'save_account', displayName: 'Equipe teste', email: 'nova@exemplo.com' }, adminHeaders);
+assert.equal(withoutPassword.status, 400);
+assert.equal(withoutPassword.data.error, 'password_required');
+assert.equal((await send({ action: 'save_account', displayName: 'Equipe teste', email: 'sem-arroba' , password: 'senha-teste-segura' }, adminHeaders)).status, 400);
+assert.equal((await send({ action: 'save_account', displayName: 'Equipe teste', email: 'nova@exemplo.com', password: 'curta' }, adminHeaders)).status, 400);
+assert.equal((await send({ action: 'save_account', displayName: 'Equipe teste', email: ' Nova@Exemplo.com ', password: 'senha-teste-segura' }, adminHeaders)).status, 200);
+assert.equal(JSON.stringify(authAdminCalls.at(-1)), JSON.stringify({ type: 'create', attributes: { email: 'nova@exemplo.com', password: 'senha-teste-segura', email_confirm: true } }));
+const createAccount = rpcCalls.filter(call => call.name === 'staff_manage_account').at(-1).body;
 assert.equal(createAccount.p_action, 'create');
-assert.match(createAccount.p_password_hash, /^pbkdf2-sha256\$600000\$/);
-assert.equal(await security.verifyPassword('senha-teste-segura', createAccount.p_password_hash), true);
-assert.equal((await send({ action: 'save_account', id: '11111111-1111-4111-8111-111111111111', displayName: 'Equipe teste', username: 'balcao', password: '', isActive: false }, { 'x-admin-token': 'b'.repeat(64) })).status, 200);
-assert.equal(rpcCalls.at(-1).body.p_password_hash, null);
+assert.equal(createAccount.p_email, 'nova@exemplo.com');
+assert.equal(createAccount.p_admin_email, 'admin_teste');
+assert.equal('p_password_hash' in createAccount, false);
+// Conta que já existe: entra com a própria senha; só troca se o admin informar uma nova.
+state.existingAuthId = '22222222-2222-4222-8222-222222222222';
+const authCallsBefore = authAdminCalls.length;
+assert.equal((await send({ action: 'save_account', id: '11111111-1111-4111-8111-111111111111', displayName: 'Equipe teste', email: 'nova@exemplo.com', password: '', isActive: false }, adminHeaders)).status, 200);
+assert.equal(authAdminCalls.length, authCallsBefore);
+assert.equal(rpcCalls.at(-1).body.p_action, 'save');
 assert.equal(rpcCalls.at(-1).body.p_is_active, false);
-assert.equal((await send({ action: 'revoke_account', id: '11111111-1111-4111-8111-111111111111' }, { 'x-admin-token': 'b'.repeat(64) })).status, 200);
+assert.equal((await send({ action: 'save_account', id: '11111111-1111-4111-8111-111111111111', displayName: 'Equipe teste', email: 'nova@exemplo.com', password: 'outra-senha-segura', isActive: true }, adminHeaders)).status, 200);
+assert.equal(JSON.stringify(authAdminCalls.at(-1)), JSON.stringify({ type: 'update', id: '22222222-2222-4222-8222-222222222222', attributes: { password: 'outra-senha-segura' } }));
+assert.equal((await send({ action: 'revoke_account', id: '11111111-1111-4111-8111-111111111111' }, adminHeaders)).status, 200);
 assert.equal(rpcCalls.at(-1).body.p_action, 'revoke');
 state.adminSession = null;
 state.session = { auth_version: 1, account_id: 'test', counter_accounts: { is_active: true, auth_version: 1, username: 'balcao', display_name: 'Equipe teste' } };
@@ -136,18 +167,19 @@ assert.equal(ordersQuery.filters.find(item => item[0] === 'eq' && item[1] === 'p
 assert.equal((await send({ action: 'list_orders', sessionToken: 'a'.repeat(64), from: 'nonsense' })).status, 400);
 // Tipos de conta e cadastro de produtos (farmacêutico).
 state.adminSession = { admin_username: 'admin_teste' };
-assert.equal((await send({ action: 'save_account', displayName: 'Farmácia', username: 'farma', password: 'senha-teste-segura', role: 'farmaceutico' }, { 'x-admin-token': 'b'.repeat(64) })).status, 200);
+assert.equal((await send({ action: 'save_account', displayName: 'Farmácia', email: 'farma@exemplo.com', role: 'farmaceutico' }, { 'x-admin-token': 'b'.repeat(64) })).status, 200);
 assert.equal(rpcCalls.at(-1).body.p_role, 'farmaceutico');
-assert.equal((await send({ action: 'save_account', displayName: 'Farmácia', username: 'farma', password: 'senha-teste-segura', role: 'admin' }, { 'x-admin-token': 'b'.repeat(64) })).status, 400);
+assert.equal((await send({ action: 'save_account', displayName: 'Farmácia', email: 'farma@exemplo.com', role: 'admin' }, { 'x-admin-token': 'b'.repeat(64) })).status, 400);
 assert.equal((await send({ action: 'delete_account', id: '11111111-1111-4111-8111-111111111111' }, { 'x-admin-token': 'b'.repeat(64) })).status, 200);
 assert.equal(rpcCalls.at(-1).body.p_action, 'delete');
 assert.equal((await send({ action: 'delete_account' }, { 'x-admin-token': 'b'.repeat(64) })).status, 400);
 state.adminSession = null;
-state.account = { id: '11111111-1111-4111-8111-111111111111', username: 'balcao', display_name: 'Equipe teste', role: 'balcao', password_hash: hashed, is_active: true, auth_version: 1 };
-assert.equal((await send({ action: 'login', username: 'balcao', password: ' senha-teste-segura ', area: 'farmaceutico' })).status, 403);
-assert.equal((await send({ action: 'login', username: 'balcao', password: ' senha-teste-segura ' })).status, 200);
+state.account = { id: '11111111-1111-4111-8111-111111111111', email: 'balcao@exemplo.com', display_name: 'Equipe teste', role: 'balcao', is_active: true, auth_version: 1 };
+const staffAuth = { authorization: 'Bearer token-balcao' };
+assert.equal((await send({ action: 'login', area: 'farmaceutico' }, staffAuth)).status, 403);
+assert.equal((await send({ action: 'login' }, staffAuth)).status, 200);
 state.account.role = 'farmaceutico';
-const pharmacistLogin = await send({ action: 'login', username: 'balcao', password: ' senha-teste-segura ', area: 'farmaceutico' });
+const pharmacistLogin = await send({ action: 'login', area: 'farmaceutico' }, staffAuth);
 assert.equal(pharmacistLogin.status, 200);
 assert.equal(pharmacistLogin.data.user.role, 'farmaceutico');
 state.account = null;
@@ -221,37 +253,24 @@ assert.equal((await send({ action: 'product_delete', sessionToken: 'a'.repeat(64
 assert.equal((await send({ action: 'product_image_upload', sessionToken: 'a'.repeat(64), extension: 'exe' })).status, 400);
 assert.equal((await send({ action: 'product_image_upload', sessionToken: 'a'.repeat(64), extension: 'png' })).status, 200);
 state.session.counter_accounts.role = 'balcao';
-// Administradores entram em todas as áreas da equipe com o login do painel.
+// Administradores entram em todas as áreas da equipe com o próprio e-mail (conta do site).
 const sha = value => security.hashToken(value);
 state.account = null; state.adminSession = null;
-state.adminRecord = { id: 1, username: 'Thales', password: await sha('curta1') };
-const adminLogin = await send({ action: 'login', username: 'thales', password: ' curta1 ' });
+state.authUsers['token-admin'] = { id: '66666666-6666-4666-8666-666666666666', email: 'ThalesBX@Gmail.com' };
+state.adminRecord = { id: 1 };
+const adminAuth = { authorization: 'Bearer token-admin' };
+const adminLogin = await send({ action: 'login' }, adminAuth);
 assert.equal(adminLogin.status, 200);
 assert.equal(adminLogin.data.user.role, 'admin');
-assert.equal(adminLogin.data.user.username, 'Thales');
+assert.equal(adminLogin.data.user.email, 'thalesbx@gmail.com');
 assert.match(adminLogin.data.token, /^[A-Za-z0-9_-]{43}$/);
+assert.equal(calls.filter(call => call.table === 'admins').at(-1).filters.find(item => item[1] === 'email')[2], 'thalesbx@gmail.com');
 const adminInsert = calls.filter(call => call.table === 'admin_sessions' && call.operation === 'insert').at(-1);
 assert.equal(adminInsert.value.token_hash, await sha(adminLogin.data.token));
-assert.equal(adminInsert.value.admin_username, 'Thales');
-assert.equal((await send({ action: 'login', username: 'thales', password: 'curta1', area: 'farmaceutico' })).status, 200);
-assert.equal((await send({ action: 'login', username: 'thales', password: 'errada' })).status, 401);
-assert.equal((await send({ action: 'login', username: 'th*', password: 'curta1' })).status, 401);
-assert.equal((await send({ action: 'login', username: 'th_les', password: 'curta1' })).status, 401);
-assert.equal(calls.filter(call => call.table === 'admins').at(-1).filters.find(item => item[0] === 'ilike')[2], 'th\\_les');
-// Senhas antigas (SHA-256 ou texto puro) viram PBKDF2 no primeiro login certo.
-const upgradedHash = () => calls.filter(call => call.table === 'admins' && call.operation === 'update').at(-1)?.value.password;
-assert.match(upgradedHash(), /^pbkdf2-sha256\$600000\$/);
-assert.equal(await security.verifyPassword('curta1', upgradedHash()), true);
-state.adminRecord = { id: 2, username: 'legado', password: 'senha-antiga' };
-assert.equal((await send({ action: 'login', username: 'legado', password: 'senha-antiga' })).status, 200);
-assert.equal(await security.verifyPassword('senha-antiga', upgradedHash()), true);
-const updatesBefore = calls.filter(call => call.table === 'admins' && call.operation === 'update').length;
-state.adminRecord = { id: 3, username: 'forte', password: await security.hashPassword('senha forte do admin') };
-assert.equal((await send({ action: 'login', username: 'forte', password: 'senha forte do admin' })).status, 200);
-assert.equal((await send({ action: 'login', username: 'forte', password: 'senha errada do admin' })).status, 401);
-assert.equal(calls.filter(call => call.table === 'admins' && call.operation === 'update').length, updatesBefore);
-const noRecord = await security.verifyAdminPassword('qualquer', null);
-assert.equal(noRecord.valid, false); assert.equal(noRecord.upgrade, false);
+assert.equal(adminInsert.value.admin_username, 'thalesbx@gmail.com');
+assert.equal((await send({ action: 'login', area: 'farmaceutico' }, adminAuth)).status, 200);
+// Usuário/senha antigos não entram mais em lugar nenhum.
+assert.equal((await send({ action: 'login', username: 'thales', password: 'curta1' })).status, 401);
 state.adminRecord = null;
 const adminToken = 'c'.repeat(43);
 assert.equal((await send({ action: 'session', sessionToken: adminToken })).status, 401);
@@ -277,33 +296,32 @@ const adminClient = new SyntheticModule(['createClient'], function() { this.setE
 const adminLoginModule = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/admin-login/index.ts', 'utf8')), { context: adminContext });
 await adminLoginModule.link(specifier => specifier.includes('supabase-js') ? adminClient : specifier.includes('counter-security') ? adminSecurity : adminHttp);
 await adminLoginModule.evaluate();
-const panelLogin = async (body, origin = 'https://www.graphenemanipulacoes.com.br') => {
-  const response = await adminLoginHandler(new Request('https://project.supabase.co/functions/v1/admin-login', { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: JSON.stringify(body) }));
+const panelLogin = async (headers = {}, origin = 'https://www.graphenemanipulacoes.com.br') => {
+  const response = await adminLoginHandler(new Request('https://project.supabase.co/functions/v1/admin-login', { method: 'POST', headers: { origin, 'content-type': 'application/json', ...headers }, body: JSON.stringify({ username: 'thales', password: 'curta1' }) }));
   return { status: response.status, data: await response.json() };
 };
-assert.equal((await panelLogin({ username: 'thales', password: 'curta1' }, 'https://attacker.example')).status, 403);
-state.rateAllowed = false;
-assert.equal((await panelLogin({ username: 'thales', password: 'curta1' })).status, 429);
-assert.equal(rpcCalls.at(-1).name, 'counter_take_login_attempt');
-assert.equal(rpcCalls.at(-1).body.p_keys[1], 'user:' + await sha('thales'));
-state.rateAllowed = true;
+assert.equal((await panelLogin(adminAuth, 'https://attacker.example')).status, 403);
+assert.equal((await panelLogin()).status, 401); // Usuário e senha no corpo não valem.
+assert.equal((await panelLogin({ authorization: 'Bearer token-invalido' })).status, 401);
 state.adminRecord = null;
-assert.equal((await panelLogin({ username: 'thales', password: 'curta1' })).status, 401);
-state.adminRecord = { id: 1, username: 'Thales', password: await sha('curta1') };
-assert.equal((await panelLogin({ username: 'thales', password: 'errada' })).status, 401);
-assert.equal((await panelLogin({ username: 'th*', password: 'curta1' })).status, 401);
-assert.equal((await panelLogin({ username: 'outro', password: 'curta1' })).status, 401);
-const panelSession = await panelLogin({ username: ' THALES ', password: ' curta1 ' });
+const notAdmin = await panelLogin({ authorization: 'Bearer token-cliente' });
+assert.equal(notAdmin.status, 403);
+assert.equal(notAdmin.data.error, 'not_admin');
+state.adminRecord = { id: 1 };
+const panelSession = await panelLogin(adminAuth);
 assert.equal(panelSession.status, 200);
 assert.match(panelSession.data.token, /^[A-Za-z0-9_-]{43}$/);
-assert.equal(panelSession.data.user, 'Thales');
-assert.equal(await security.verifyPassword('curta1', upgradedHash()), true);
+assert.equal(panelSession.data.user, 'thalesbx@gmail.com');
 assert.equal(calls.filter(call => call.table === 'admin_sessions' && call.operation === 'insert').at(-1).value.token_hash, await sha(panelSession.data.token));
-assert.equal(calls.filter(call => call.table === 'counter_login_limits' && call.operation === 'delete').at(-1).filters[0][2], 'user:' + await sha('thales'));
 state.adminRecord = null;
 const adminOrders = readFileSync('supabase/functions/admin-orders/index.ts', 'utf8');
-assert.match(adminOrders, /const passwordHash = await hashAdminPassword\(password\);/);
-assert.match(adminOrders, /iterations: 600_000/);
+assert.match(adminOrders, /const ensured = await ensureAuthAccount\(admin, email, password\);/);
+assert.match(adminOrders, /insert\(\{ username: email, email, password: null \}\)/);
+assert.doesNotMatch(adminOrders, /hashAdminPassword/);
+const emailLogin = readFileSync('supabase/migrations/20261030173953_login_por_email.sql', 'utf8');
+assert.match(emailLogin, /revoke all on function public\.auth_user_id_by_email\(text\) from public, anon, authenticated/);
+assert.match(emailLogin, /revoke all on function public\.staff_manage_account\(text,uuid,text,text,boolean,text,text\) from public, anon, authenticated/);
+assert.match(emailLogin, /grant execute on function public\.current_staff_role\(\) to authenticated/);
 // Regras de frete: só administrador altera; valores validados.
 const shippingWrite = () => calls.filter(call => call.table === 'loja_config' && call.operation === 'update').at(-1)?.value;
 assert.equal((await send({ action: 'shipping_save', sessionToken: 'a'.repeat(64), frete: { free_min: 150 } })).status, 403);
@@ -335,7 +353,7 @@ const migration = readFileSync('supabase/migrations/202610080001_counter_portal.
 assert.match(migration, /revoke all on public\.counter_accounts, public\.counter_sessions, public\.counter_login_limits from public, anon, authenticated/);
 assert.match(migration, /auth_version = auth_version \+ 1/);
 assert.equal(/expires_at/.test(migration), false);
-console.log('Counter checks passed: shipping rules, product sizes/flavors, admin login rate limit and strong admin passwords, admin access to staff areas, staff roles (balcão/farmacêutico), pharmacist product actions, account deletion, password hashing, persistent-session storage, server authorization, account revocation, rate limiting, pagination, preparation filter, read-only access and safe document links. SQL checks are structural; production integration requires deployment.');
+console.log('Counter checks passed: e-mail login through Supabase Auth (staff, admin and admin panel), staff accounts by e-mail with initial passwords, shipping rules, product sizes/flavors, admin access to staff areas, staff roles (balcão/farmacêutico), pharmacist product actions, account deletion, password hashing, persistent-session storage, server authorization, account revocation, rate limiting, pagination, preparation filter, read-only access and safe document links. SQL checks are structural; production integration requires deployment.');
 const checkout = readFileSync('supabase/functions/create-checkout/index.ts', 'utf8');
 assert.match(checkout, /admin\.rpc\('create_checkout_order_v2'/);
 assert.doesNotMatch(checkout, /admin\.rpc\([^\n]*'create_checkout_order'/, 'All checkouts must use authoritative variant + delivery pricing');

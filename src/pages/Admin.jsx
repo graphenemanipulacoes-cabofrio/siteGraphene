@@ -13,6 +13,7 @@ import AdminPartners from '../components/AdminPartners';
 import AdminCounterAccess from '../components/AdminCounterAccess';
 import AdminShipping from '../components/AdminShipping';
 import { getSession, destroySession } from '../utils/security';
+import { ensureAdminSession } from '../lib/accountAuth';
 
 const Admin = () => {
     const [requests, setRequests] = useState([]);
@@ -23,12 +24,13 @@ const Admin = () => {
     const [zoomLevel, setZoomLevel] = useState(1);
     const [view, setView] = useState(localStorage.getItem('admin_view') || 'active');
     const [admins, setAdmins] = useState([]);
-    const [newAdminUser, setNewAdminUser] = useState('');
+    const [newAdminEmail, setNewAdminEmail] = useState('');
     const [newAdminPass, setNewAdminPass] = useState('');
+    const [adminEmail, setAdminEmail] = useState(() => String(getSession()?.user || '').toLowerCase());
     const navigate = useNavigate();
 
     const invokeAdmin = useCallback(async (body) => {
-        const session = getSession();
+        const session = getSession() || await ensureAdminSession();
         if (!session) {
             navigate('/login');
             throw new Error('Sua sessão administrativa expirou. Entre novamente.');
@@ -37,8 +39,12 @@ const Admin = () => {
             body,
             headers: { 'x-admin-token': session.token },
         });
-        if (error || data?.error) throw new Error(data?.error || error?.message || 'Não foi possível concluir a solicitação.');
-        return data;
+        let payload = data;
+        if (error && !payload && error.context?.json) {
+            try { payload = await error.context.json(); } catch { /* Resposta sem JSON. */ }
+        }
+        if (error || payload?.error) throw new Error(payload?.error || error?.message || 'Não foi possível concluir a solicitação.');
+        return payload;
     }, [navigate]);
 
     const fetchRequests = useCallback(async () => {
@@ -61,11 +67,13 @@ const Admin = () => {
     }, [view]);
 
     useEffect(() => {
-        const session = getSession();
-        if (!session) {
-            navigate('/login');
-            return;
-        }
+        let active = true;
+        ensureAdminSession().then(session => {
+            if (!active) return;
+            if (!session) navigate('/login');
+            else setAdminEmail(String(session.user || '').toLowerCase());
+        });
+        return () => { active = false; };
     }, [navigate]);
 
     useEffect(() => {
@@ -77,11 +85,20 @@ const Admin = () => {
         return undefined;
     }, [view, fetchRequests]);
 
+    const fetchAdmins = useCallback(async () => {
+        try {
+            const data = await invokeAdmin({ action: 'list_admins' });
+            setAdmins(data.admins || []);
+        } catch {
+            toast.error('Erro ao carregar administradores');
+        }
+    }, [invokeAdmin]);
+
     useEffect(() => {
         if (view === 'admins') {
             fetchAdmins();
         }
-    }, [view]);
+    }, [view, fetchAdmins]);
 
     const updateStatus = async (id, newStatus) => {
         try {
@@ -152,32 +169,25 @@ const Admin = () => {
         setZoomLevel(1);
     };
 
-    const fetchAdmins = async () => {
-        const session = getSession();
-        const { data, error } = await supabase.functions.invoke('admin-orders', {
-            body: { action: 'list_admins' }, headers: { 'x-admin-token': session?.token || '' }
-        });
-        if (error || data?.error) toast.error('Erro ao carregar administradores');
-        else setAdmins(data.admins || []);
+    const addAdminErrors = {
+        admin_exists: 'Esse e-mail já é administrador.',
+        invalid_admin: 'Confira o e-mail. A senha inicial, se preenchida, precisa ter de 10 a 128 caracteres.',
+        password_required: 'Esse e-mail ainda não tem conta no site. Defina uma senha inicial para criar a conta.',
+        invalid_password: 'O Supabase recusou essa senha. Use uma senha mais forte (10 caracteres ou mais).',
     };
-
     const handleAddAdmin = async (e) => {
         e.preventDefault();
-        if (!newAdminUser || !newAdminPass) return toast.error('Preencha usuário e senha');
-
-        if (newAdminPass.length < 10) return toast.error('Use uma senha com pelo menos 10 caracteres');
-        const session = getSession();
-        const { data, error } = await supabase.functions.invoke('admin-orders', {
-            body: { action: 'add_admin', username: newAdminUser, password: newAdminPass },
-            headers: { 'x-admin-token': session?.token || '' }
-        });
-        if (error || data?.error) {
-            toast.error(data?.error === 'admin_exists' ? 'Esse usuário já existe' : 'Erro ao adicionar admin');
-        } else {
-            toast.success('Admin adicionado!');
-            setNewAdminUser('');
+        const email = newAdminEmail.trim().toLowerCase();
+        if (!email) return toast.error('Informe o e-mail do novo administrador');
+        if (newAdminPass && newAdminPass.length < 10) return toast.error('Use uma senha com pelo menos 10 caracteres');
+        try {
+            const data = await invokeAdmin({ action: 'add_admin', email, password: newAdminPass });
+            toast.success(data.created ? 'Administrador adicionado e conta criada com a senha inicial.' : 'Administrador adicionado. Ele entra com a conta que já tem no site.');
+            setNewAdminEmail('');
             setNewAdminPass('');
             fetchAdmins();
+        } catch (error) {
+            toast.error(addAdminErrors[error.message] || 'Erro ao adicionar administrador');
         }
     };
 
@@ -194,7 +204,8 @@ const Admin = () => {
         }
     };
 
-    const handleLogout = useCallback(() => {
+    // Login único: sair do painel também sai da conta do site neste navegador.
+    const handleLogout = useCallback(async () => {
         const session = getSession();
         if (session?.token) {
             supabase.functions.invoke('admin-orders', {
@@ -202,6 +213,13 @@ const Admin = () => {
                 headers: { 'x-admin-token': session.token }
             }).catch(() => {});
         }
+        destroySession();
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+        navigate('/login');
+    }, [navigate]);
+
+    // Token do painel vencido: o login renova sozinho se a conta do site continuar conectada.
+    const handleUnauthorized = useCallback(() => {
         destroySession();
         navigate('/login');
     }, [navigate]);
@@ -468,7 +486,7 @@ const Admin = () => {
                         <span>Visualizar áreas</span>
                         <Link to="/?adminPreview=1"><Eye size={14}/> Loja</Link>
                         <Link to="/minha-conta?adminPreview=1"><UserRound size={14}/> Cliente</Link>
-                        <Link to="/parceiros/painel?adminPreview=1"><Users size={14}/> Parceiro</Link>
+                        <Link to="/parceiros/painel"><Users size={14}/> Parceiro</Link>
                         <Link to="/checkout?adminPreview=1"><ShoppingBag size={14}/> Checkout</Link>
                         <Link to="/balcaographene"><Monitor size={14}/> Balcão</Link>
                         <Link to="/farmaceutico"><FlaskConical size={14}/> Farmacêutico</Link>
@@ -477,46 +495,47 @@ const Admin = () => {
                 </header>
 
                 {view === 'orders' ? (
-                    <AdminOrders onUnauthorized={handleLogout} />
+                    <AdminOrders onUnauthorized={handleUnauthorized} />
                 ) : view === 'counter' ? (
-                    <AdminCounterAccess onUnauthorized={handleLogout} />
+                    <AdminCounterAccess onUnauthorized={handleUnauthorized} />
                 ) : view === 'finance' ? (
-                    <AdminFinance onUnauthorized={handleLogout} />
+                    <AdminFinance onUnauthorized={handleUnauthorized} />
                 ) : view === 'products' ? (
                     <AdminProducts />
                 ) : view === 'materials' ? (
                     <AdminMaterials />
                 ) : view === 'shipping' ? (
-                    <AdminShipping onUnauthorized={handleLogout} />
+                    <AdminShipping onUnauthorized={handleUnauthorized} />
                 ) : view === 'partners' ? (
-                    <AdminPartners onUnauthorized={handleLogout} />
+                    <AdminPartners onUnauthorized={handleUnauthorized} />
                 ) : view === 'admins' ? (
                     <div className="admin-settings-stack">
                         <Card>
-                            <div className="admin-section-heading"><strong>Novo administrador</strong><span>Acesso seguro ao painel</span></div>
+                            <div className="admin-section-heading"><strong>Novo administrador</strong><span>Entra com o e-mail, em todas as áreas do site</span></div>
                             <form className="admin-admin-form" onSubmit={handleAddAdmin}>
                                 <div className="admin-admin-field">
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Usuário</label>
-                                    <input type="text" value={newAdminUser} onChange={e => setNewAdminUser(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }} />
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>E-mail</label>
+                                    <input type="email" autoComplete="off" required value={newAdminEmail} onChange={e => setNewAdminEmail(e.target.value)} placeholder="pessoa@exemplo.com" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }} />
                                 </div>
                                 <div className="admin-admin-field">
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Senha</label>
-                                    <input type="password" autoComplete="new-password" value={newAdminPass} onChange={e => setNewAdminPass(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }} />
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Senha inicial (só se a pessoa ainda não tiver conta no site)</label>
+                                    <input type="password" autoComplete="new-password" minLength={10} maxLength={128} value={newAdminPass} onChange={e => setNewAdminPass(e.target.value)} placeholder="Mínimo de 10 caracteres" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }} />
                                 </div>
                                 <Button type="submit" variant="primary" className="admin-admin-submit" style={{ justifyContent: 'center' }}>Adicionar administrador</Button>
                             </form>
+                            <p style={{ marginTop: '0.9rem', fontSize: '0.82rem', opacity: 0.75, lineHeight: 1.5 }}>Quem já tem conta no site continua com a própria senha ou com o Google. Se você preencher a senha para uma conta que já existe, ela passa a ser a nova senha dessa conta. Cada um troca a própria senha em <Link to="/minha-conta" style={{ color: 'var(--primary-blue)' }}>Minha conta</Link>.</p>
                         </Card>
 
                         <Card>
-                            <div className="admin-section-heading"><strong>Administradores ativos</strong><span>{admins.length} com acesso</span></div>
+                            <div className="admin-section-heading"><strong>Administradores</strong><span>{admins.filter(admin => admin.email).length} com acesso por e-mail</span></div>
                             <ul style={{ listStyle: 'none' }}>
                                 {admins.map(admin => (
-                                    <li key={admin.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'center' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            <Shield size={20} color="var(--primary-blue)" />
-                                            <span>{admin.username}</span>
+                                    <li key={admin.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'center', gap: '1rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: 0 }}>
+                                            <Shield size={20} color="var(--primary-blue)" style={{ flexShrink: 0 }} />
+                                            <span style={{ overflowWrap: 'anywhere' }}>{admin.email || <>{admin.username} <small style={{ opacity: 0.65 }}>· login antigo sem e-mail, não entra mais</small></>}{admin.email && admin.email === adminEmail && <small style={{ opacity: 0.65 }}> · você</small>}</span>
                                         </div>
-                                        <Button variant="outline" onClick={() => handleDeleteAdmin(admin.id)} style={{ borderColor: '#FF4D4D', color: '#FF4D4D', padding: '5px 10px', fontSize: '0.8rem' }}>Remover</Button>
+                                        {admin.email !== adminEmail && <Button variant="outline" onClick={() => handleDeleteAdmin(admin.id)} style={{ borderColor: '#FF4D4D', color: '#FF4D4D', padding: '5px 10px', fontSize: '0.8rem' }}>Remover</Button>}
                                     </li>
                                 ))}
                             </ul>

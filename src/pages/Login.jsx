@@ -1,51 +1,62 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
-import { createSession, clearFailedAttempts } from '../utils/security';
+import { clearFailedAttempts } from '../utils/security';
+import { currentAccountEmail, ensureAdminSession, sendPasswordReset, signInWithEmail, startGoogleLogin } from '../lib/accountAuth';
 import { Toaster, toast } from 'sonner';
-import { Lock, User, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { Chrome, Lock, Mail, ArrowLeft, ShieldCheck } from 'lucide-react';
 
+// Administração: mesma conta do site (e-mail e senha ou Google). O e-mail precisa
+// estar cadastrado como administrador; quem já está conectado entra direto.
 const Login = () => {
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [notice, setNotice] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Remove locks created by the former browser-only rate limiter. The
-        // server is now responsible for validating administrator credentials.
         clearFailedAttempts();
-    }, []);
+        let active = true;
+        (async () => {
+            const signedEmail = await currentAccountEmail();
+            const session = signedEmail ? await ensureAdminSession() : null;
+            if (!active) return;
+            if (session) { navigate('/admin', { replace: true }); return; }
+            if (signedEmail) setNotice(`A conta ${signedEmail} não tem acesso de administrador. Entre com um e-mail de administrador.`);
+            setLoading(false);
+        })();
+        return () => { active = false; };
+    }, [navigate]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        setLoading(true);
-
+        setLoading(true); setNotice('');
         try {
-            const { data, error } = await supabase.functions.invoke('admin-login', {
-                body: { username, password }
-            });
-
-            if (error) {
-                // Senha errada (401) e bloqueio por tentativas (429) chegam como erro da função.
-                const status = error.context?.status;
-                if (status === 401) toast.error('Usuário ou senha inválidos.');
-                else if (status === 429) toast.error('Muitas tentativas erradas. Por segurança, aguarde 15 minutos e tente de novo.');
-                else toast.error('Não foi possível conectar ao servidor de login. Tente novamente em instantes.');
-            } else if (!data?.token) {
-                toast.error(data?.error === 'invalid_credentials' ? 'Usuário ou senha inválidos.' : 'Não foi possível concluir o login.');
-            } else {
-                clearFailedAttempts();
-                createSession(data);
-                toast.success('Login realizado com sucesso!');
-                navigate('/admin');
+            await signInWithEmail(email, password);
+            const session = await ensureAdminSession();
+            if (!session) {
+                setNotice('Este e-mail entrou na conta do site, mas não tem acesso de administrador.');
+                return;
             }
+            toast.success('Login realizado com sucesso!');
+            navigate('/admin');
         } catch (error) {
-            console.error('Login error:', error);
-            toast.error('Erro ao fazer login.');
+            toast.error(error.message || 'Não foi possível entrar agora. Tente novamente.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleGoogle = async () => {
+        setLoading(true);
+        try { await startGoogleLogin('/login'); }
+        catch { setLoading(false); toast.error('Não foi possível iniciar o acesso com Google. Tente novamente.'); }
+    };
+
+    const handleReset = async () => {
+        if (!email) return toast.error('Digite seu e-mail para receber o link de nova senha.');
+        try { await sendPasswordReset(email); toast.success('Se o e-mail estiver cadastrado, você receberá o link para criar uma nova senha.'); }
+        catch (error) { toast.error(error.message); }
     };
 
     return (
@@ -64,14 +75,20 @@ const Login = () => {
                     <p>Painel Administrativo da Graphène Farmácia</p>
                 </div>
 
+                <button type="button" className="login-google-btn" onClick={handleGoogle} disabled={loading}>
+                    <Chrome size={18} /> Continuar com Google
+                </button>
+                <div className="login-divider"><span>ou use seu e-mail</span></div>
+
                 <form onSubmit={handleLogin} className="login-form">
                     <div className="login-input-group">
-                        <label><User size={14} /> Usuário</label>
+                        <label><Mail size={14} /> E-mail</label>
                         <input
-                            type="text"
-                            placeholder="Seu usuário"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            type="email"
+                            autoComplete="email"
+                            placeholder="voce@exemplo.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             required
                         />
                     </div>
@@ -80,6 +97,7 @@ const Login = () => {
                         <label><Lock size={14} /> Senha</label>
                         <input
                             type="password"
+                            autoComplete="current-password"
                             placeholder="Sua senha"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
@@ -87,14 +105,18 @@ const Login = () => {
                         />
                     </div>
 
-                    <button 
-                        type="submit" 
-                        disabled={loading} 
+                    {notice && <p className="login-notice" role="alert">{notice}</p>}
+
+                    <button
+                        type="submit"
+                        disabled={loading}
                         className="btn-primary-lux login-submit-btn"
                     >
-                        {loading ? 'Validando credenciais...' : 'Acessar Painel'}
+                        {loading ? 'Validando acesso...' : 'Acessar Painel'}
                     </button>
                 </form>
+
+                <button type="button" className="login-reset-link" onClick={handleReset}>Esqueci minha senha</button>
 
                 <div className="login-security-footer">
                     <ShieldCheck size={14} color="#10b981" />
@@ -223,6 +245,77 @@ const Login = () => {
                 .login-submit-btn:disabled {
                     cursor: wait;
                     opacity: 0.7;
+                }
+
+                .login-google-btn {
+                    width: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 10px;
+                    padding: 13px;
+                    border-radius: 10px;
+                    border: 1.5px solid #cbd5e1;
+                    background: #ffffff;
+                    color: #0f172a;
+                    font-size: 0.92rem;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: border-color 0.2s ease, background 0.2s ease;
+                }
+
+                .login-google-btn:hover:not(:disabled) {
+                    border-color: #0284c7;
+                    background: #f8fafc;
+                }
+
+                .login-google-btn:disabled {
+                    cursor: wait;
+                    opacity: 0.7;
+                }
+
+                .login-divider {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin: 18px 0;
+                    color: #64748b;
+                    font-size: 0.76rem;
+                    font-weight: 600;
+                }
+
+                .login-divider::before,
+                .login-divider::after {
+                    content: '';
+                    flex: 1;
+                    height: 1px;
+                    background: #e2e8f0;
+                }
+
+                .login-notice {
+                    margin: 0;
+                    padding: 10px 12px;
+                    border-radius: 8px;
+                    background: #fff7ed;
+                    border: 1px solid #fed7aa;
+                    color: #9a3412;
+                    font-size: 0.82rem;
+                    line-height: 1.45;
+                }
+
+                .login-reset-link {
+                    display: block;
+                    margin: 16px auto 0;
+                    border: 0;
+                    background: none;
+                    color: #0284c7;
+                    font-size: 0.84rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                }
+
+                .login-reset-link:hover {
+                    text-decoration: underline;
                 }
 
                 .login-security-footer {

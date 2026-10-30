@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, ArrowLeft, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, Copy, ExternalLink, FileText, Inbox, LoaderCircle, LockKeyhole, LogOut, MapPin, MessageCircle, Moon, PackageCheck, Printer, Receipt, RefreshCw, Search, ShieldCheck, StickyNote, Sun, Truck, UserRound, X, XCircle } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Chrome, Clock, Copy, ExternalLink, FileText, Inbox, LoaderCircle, LockKeyhole, LogOut, MapPin, MessageCircle, Moon, PackageCheck, Printer, Receipt, RefreshCw, Search, ShieldCheck, StickyNote, Sun, Truck, UserRound, X, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { counterRequest } from '../lib/counterApi';
+import { counterRequest, enterStaffArea } from '../lib/counterApi';
+import { currentAccountEmail, signInWithEmail, startGoogleLogin } from '../lib/accountAuth';
+import { supabase } from '../lib/supabaseClient';
 import { COUNTER_SESSION_KEY, addressText, adminStaffSession, clearCounterSession, dateTime, money, paymentStatusLabels, readCounterSession, safeLink, staffRoleLabels, whatsappLink } from '../utils/counter';
 import { destroySession } from '../utils/security';
 import '../styles/counter-page.css';
@@ -193,7 +195,7 @@ export default function CounterPage() {
     // Administradores entram com o login do painel (ou direto, se já entraram nele).
     const [session, setSession] = useState(() => readCounterSession() || adminStaffSession());
     const [theme, setTheme] = useState(readTheme);
-    const [credentials, setCredentials] = useState({ username: '', password: '' });
+    const [credentials, setCredentials] = useState({ email: '', password: '' });
     const [loginBusy, setLoginBusy] = useState(false);
     const [logoutBusy, setLogoutBusy] = useState(false);
     const [loginError, setLoginError] = useState('');
@@ -231,7 +233,12 @@ export default function CounterPage() {
     const invoke = useCallback(async body => {
         try { return await counterRequest({ ...body, sessionToken: session?.token }); }
         catch (failure) {
-            if (failure.code === 'unauthorized') { if (session?.borrowed) destroySession(); revokeLocalAccess(failure.message); }
+            if (failure.code === 'unauthorized') {
+                // Admin: o token do painel venceu e é renovado ao entrar de novo.
+                // Equipe: acesso encerrado pelo admin; sai também da conta do site neste navegador.
+                if (session?.borrowed) { destroySession(); revokeLocalAccess(''); }
+                else supabase.auth.signOut({ scope: 'local' }).catch(() => {}).finally(() => revokeLocalAccess(failure.message));
+            }
             throw failure;
         }
     }, [session?.token, session?.borrowed, revokeLocalAccess]);
@@ -267,21 +274,42 @@ export default function CounterPage() {
     }, [load, revokeLocalAccess]);
     useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(''), 4000); return () => clearTimeout(timer); }, [notice]);
 
+    // Conta do site já conectada (inclusive depois do Google): entra direto, se tiver acesso.
+    useEffect(() => {
+        if (session) return undefined;
+        let active = true;
+        (async () => {
+            if (!await currentAccountEmail() || !active) return;
+            setLoginBusy(true);
+            try { const created = await enterStaffArea('balcao', COUNTER_SESSION_KEY); if (active) { setLoginError(''); setSession(created); } }
+            catch (failure) { if (active) setLoginError(failure.message); }
+            finally { if (active) setLoginBusy(false); }
+        })();
+        return () => { active = false; };
+    }, [session]);
     const login = async event => {
         event.preventDefault(); setLoginBusy(true); setLoginError('');
-        let newSession;
         try {
-            newSession = await counterRequest({ action: 'login', ...credentials, deviceLabel: `${navigator.platform || 'Computador'} · balcão` });
-            localStorage.setItem(COUNTER_SESSION_KEY, JSON.stringify(newSession));
-            setSession(newSession); setCredentials({ username: '', password: '' });
-        } catch (failure) {
-            if (newSession?.token) { counterRequest({ action: 'logout', sessionToken: newSession.token }).catch(() => {}); setLoginError('O navegador não permite salvar a sessão. Habilite o armazenamento para usar o balcão.'); }
-            else setLoginError(failure.message);
-        } finally { setLoginBusy(false); }
+            await signInWithEmail(credentials.email, credentials.password);
+            const created = await enterStaffArea('balcao', COUNTER_SESSION_KEY);
+            setSession(created); setCredentials({ email: '', password: '' });
+        } catch (failure) { setLoginError(failure.message); }
+        finally { setLoginBusy(false); }
     };
+    const loginWithGoogle = async () => {
+        setLoginBusy(true); setLoginError('');
+        try { await startGoogleLogin('/balcaographene'); }
+        catch { setLoginBusy(false); setLoginError('Não foi possível iniciar o acesso com Google. Tente novamente.'); }
+    };
+    // Login único: sair do balcão também sai da conta do site neste navegador.
     const logout = async () => {
         setLogoutBusy(true);
-        try { await invoke({ action: 'logout' }); if (session?.borrowed) destroySession(); revokeLocalAccess('Você saiu do balcão. O acesso deste navegador foi encerrado.'); }
+        try {
+            await invoke({ action: 'logout' });
+            if (session?.borrowed) destroySession();
+            await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+            revokeLocalAccess('Você saiu do balcão. O acesso deste navegador foi encerrado.');
+        }
         catch (failure) { if (failure.code !== 'unauthorized') setError('Não foi possível confirmar a saída no servidor. Tente de novo para encerrar o acesso.'); }
         finally { setLogoutBusy(false); }
     };
@@ -335,11 +363,13 @@ export default function CounterPage() {
         </div>
         <form className="counter-login-form" onSubmit={login}>
             <h2>Entrar no balcão</h2>
-            <p>Use o usuário e a senha criados no painel admin. Administradores entram com o login do painel.</p>
-            <label htmlFor="counter-username">Usuário<input id="counter-username" autoComplete="username" autoCapitalize="none" spellCheck={false} required value={credentials.username} onChange={e => setCredentials({ ...credentials, username: e.target.value })}/></label>
+            <p>Entre com o e-mail cadastrado pelo administrador (senha ou Google). Administradores usam o e-mail deles.</p>
+            <button type="button" className="counter-button large" onClick={loginWithGoogle} disabled={loginBusy}><Chrome size={18} aria-hidden="true"/> Continuar com Google</button>
+            <label htmlFor="counter-email">E-mail<input id="counter-email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required value={credentials.email} onChange={e => setCredentials({ ...credentials, email: e.target.value })}/></label>
             <label htmlFor="counter-password">Senha<input id="counter-password" type="password" autoComplete="current-password" required value={credentials.password} onChange={e => setCredentials({ ...credentials, password: e.target.value })}/></label>
             {loginError && <div className="counter-error" role="alert">{loginError}</div>}
             <button className="counter-button primary large" disabled={loginBusy}>{loginBusy ? <LoaderCircle className="counter-spin" size={18} aria-hidden="true"/> : <LockKeyhole size={18} aria-hidden="true"/>}{loginBusy ? 'Entrando…' : 'Entrar no balcão'}</button>
+            <p className="counter-muted">Esqueceu a senha? Use “Esqueci minha senha” em <Link to="/entrar">Entrar</Link>.</p>
             <p className="counter-muted">O acesso fica salvo neste navegador até você clicar em “Sair”. Use só computadores da loja.</p>
             <Link to="/" className="counter-back"><ArrowLeft size={14} aria-hidden="true"/> Voltar ao site</Link>
         </form>
@@ -353,7 +383,7 @@ export default function CounterPage() {
                 <button className={tab === 'requests' ? 'active' : ''} aria-current={tab === 'requests' ? 'page' : undefined} onClick={() => switchTab('requests')}><Inbox size={20} aria-hidden="true"/>Orçamentos{metrics.requests > 0 && <span title="Orçamentos para responder">{metrics.requests}</span>}</button>
             </nav>
             <div className="counter-sidebar-bottom">
-                <span className="counter-user"><UserRound size={17} aria-hidden="true"/><span><strong>{session.user?.displayName}</strong><small>{session.user?.role === 'admin' ? staffRoleLabels.admin : session.user?.username}</small></span></span>
+                <span className="counter-user"><UserRound size={17} aria-hidden="true"/><span><strong>{session.user?.displayName}</strong><small>{session.user?.role === 'admin' ? staffRoleLabels.admin : session.user?.email || session.user?.username}</small></span></span>
                 {session.user?.role === 'admin' && <Link to="/admin"><ShieldCheck size={17} aria-hidden="true"/>Administração</Link>}
                 <button onClick={logout} disabled={logoutBusy}><LogOut size={17} aria-hidden="true"/>{logoutBusy ? 'Saindo…' : 'Sair do balcão'}</button>
             </div>
