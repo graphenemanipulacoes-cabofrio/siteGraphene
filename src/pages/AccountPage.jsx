@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
-import { FlaskConical, KeyRound, LogOut, Monitor, PackageCheck, ShieldCheck, ShoppingBag, UserRound, Users } from 'lucide-react';
+import { FlaskConical, KeyRound, LayoutGrid, LogOut, Monitor, PackageCheck, ShieldCheck, ShoppingBag, UserRound, Users } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { supabase } from '../lib/supabaseClient';
 import StoreLayout from '../components/StoreLayout';
 import { useStore } from '../context/StoreContext';
 import { isAdminPreview } from '../utils/adminPreview';
-import { currentStaffRole } from '../lib/accountAuth';
 
 const money = value => Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const statusLabel = status => ({ awaiting_payment: 'Aguardando pagamento', paid: 'Pagamento aprovado', processing: 'Em preparação', shipped: 'Enviado', delivered: 'Entregue', cancelled: 'Cancelado' })[status] || status;
@@ -48,9 +47,8 @@ const PasswordChange = () => {
 };
 
 const AccountPage = () => {
-    const { customer, authReady } = useStore();
+    const { customer, authReady, staffRole } = useStore();
     const [orderState, setOrderState] = useState({ customerId: null, orders: [] });
-    const [staffRole, setStaffRole] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
     const adminPreview = isAdminPreview(location.search);
@@ -61,7 +59,6 @@ const AccountPage = () => {
         supabase.from('orders').select('id,total,status,payment_status,created_at').order('created_at', { ascending: false }).then(({ data }) => {
             if (active) setOrderState({ customerId: customer.id, orders: data || [] });
         });
-        currentStaffRole().then(role => { if (active) setStaffRole(role); });
         return () => { active = false; };
     }, [customer]);
 
@@ -74,7 +71,7 @@ const AccountPage = () => {
 
     return <StoreLayout><section className="account-page"><Toaster position="top-right" richColors /><div className="container account-container">
         <div className="account-hero"><div><span className="eyebrow">Minha conta</span><h1>Olá, {customer.email.split('@')[0]}</h1><p>Gerencie seus pedidos e informações de compra.</p></div><button onClick={logout}><LogOut size={16}/> Sair</button></div>
-        <div className="account-grid"><aside className="account-profile store-card"><div className="account-avatar">{customer.email.slice(0,1).toUpperCase()}</div><h2>Seus dados</h2><p>{customer.email}</p><small>Conta criada em {new Date(customer.created_at).toLocaleDateString('pt-BR')}</small>{staffRole && <nav className="account-staff-links" aria-label="Áreas da equipe"><strong>{staffRole === 'admin' ? 'Administrador' : staffRole === 'farmaceutico' ? 'Farmacêutico' : 'Balcão'}</strong>{staffRole === 'admin' && <Link to="/admin"><ShieldCheck size={15}/> Administração</Link>}{(staffRole === 'admin' || staffRole === 'farmaceutico') && <Link to="/farmaceutico"><FlaskConical size={15}/> Farmacêutico</Link>}<Link to="/balcaographene"><Monitor size={15}/> Balcão</Link>{staffRole === 'admin' && <Link to="/parceiros/painel"><Users size={15}/> Parceiros</Link>}</nav>}</aside>
+        <div className="account-grid"><aside className="account-profile store-card"><div className="account-avatar">{customer.email.slice(0,1).toUpperCase()}</div><h2>Seus dados</h2><p>{customer.email}</p><small>Conta criada em {new Date(customer.created_at).toLocaleDateString('pt-BR')}</small>{staffRole && <nav className="account-staff-links" aria-label="Áreas da equipe"><strong>{staffRole === 'admin' ? 'Administrador' : staffRole === 'farmaceutico' ? 'Farmacêutico' : 'Balcão'}</strong><Link to="/colaboradores"><LayoutGrid size={15}/> Área da equipe</Link>{staffRole === 'admin' && <Link to="/admin"><ShieldCheck size={15}/> Administração</Link>}{(staffRole === 'admin' || staffRole === 'farmaceutico') && <Link to="/farmaceutico"><FlaskConical size={15}/> Farmacêutico</Link>}<Link to="/balcaographene"><Monitor size={15}/> Balcão</Link>{staffRole === 'admin' && <Link to="/parceiros/painel"><Users size={15}/> Parceiros</Link>}</nav>}</aside>
             <div className="account-orders"><h2><PackageCheck size={21}/> Meus pedidos</h2>{ordersLoading ? <div className="orders-empty store-card"><p>Carregando pedidos...</p></div> : orders.length === 0 ? <div className="orders-empty store-card"><ShoppingBag size={30}/><h3>Ainda não há pedidos</h3><p>Quando você finalizar uma compra, ela aparecerá aqui.</p><Link to="/#produtos">Ir para a loja</Link></div> : <div className="orders-list">{orders.map(order => <article className="order-card store-card" key={order.id}><div><span>Pedido #{order.id.slice(-6).toUpperCase()}</span><small>{new Date(order.created_at).toLocaleDateString('pt-BR')}</small></div><strong>{money(order.total)}</strong><p>{statusLabel(order.status)}</p></article>)}</div>}<PasswordChange /></div>
         </div>
     </div><style>{accountStyles}</style></section></StoreLayout>;

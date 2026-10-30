@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, MessageCircle, FileUp, Search, Truck, MapPin, Clock, Phone, ShoppingBag, UserRound, LockKeyhole, ChevronRight } from 'lucide-react';
+import { Menu, X, MessageCircle, FileUp, Search, Truck, MapPin, Clock, Phone, ShoppingBag, UserRound, LockKeyhole, ChevronRight, ShieldCheck } from 'lucide-react';
 import { getWhatsAppUrl } from '../config';
 import { useStore } from '../context/StoreContext';
 import '../styles/header.css';
@@ -55,7 +55,9 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
     const { scrolled, condensed } = useScrollState();
     const [menuOpen, setMenuOpen] = useState(false);
     const location = useLocation();
-    const { itemCount, customer } = useStore();
+    const { itemCount, customer, staffRole } = useStore();
+    // Admin e equipe entram pelo login normal do site; este botão leva à área da equipe.
+    const staffLabel = staffRole === 'admin' ? 'Painel admin' : 'Área da equipe';
     const closeButton = useRef(null);
 
     // Fecha o menu ao trocar de página.
@@ -115,6 +117,7 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                     <Link to="/" className="gh-brand" aria-label="Graphène — página inicial"><Logo className="gh-logo" /></Link>
                     {search}
                     <nav className="gh-actions" aria-label="Sua conta">
+                        {staffRole && <Link to="/colaboradores" className="gh-staff-btn" aria-label={staffLabel}><ShieldCheck size={17} aria-hidden="true" /><span>{staffLabel}</span></Link>}
                         <Link to={accountPath} className="gh-icon-link" aria-label={accountLabel}><UserRound size={20} aria-hidden="true" /><span>{accountLabel}</span></Link>
                         <Link to="/carrinho" className="gh-icon-link gh-cart" aria-label={cartLabel}>
                             <span className="gh-cart-icon"><ShoppingBag size={20} aria-hidden="true" />{itemCount > 0 && <b aria-hidden="true">{itemCount > 9 ? '9+' : itemCount}</b>}</span>
@@ -142,6 +145,7 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                     <button type="button" ref={closeButton} className="gh-drawer-close" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"><X size={22} /></button>
                 </div>
                 <div className="gh-drawer-quick">
+                    {staffRole && <Link to="/colaboradores" className="gh-drawer-staff"><ShieldCheck size={18} aria-hidden="true" /> {staffLabel}</Link>}
                     <Link to={accountPath}><UserRound size={18} aria-hidden="true" /> {customer ? 'Minha conta' : 'Entrar ou criar conta'}</Link>
                     <Link to="/carrinho"><ShoppingBag size={18} aria-hidden="true" /> Carrinho{itemCount ? ` (${itemCount})` : ''}</Link>
                 </div>

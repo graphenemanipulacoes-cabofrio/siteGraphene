@@ -59,7 +59,13 @@
 .staff-field { display: grid; gap: 7px; font-size: 14px; font-weight: 600; color: var(--text-dim); }
 .staff-field input { width: 100%; min-height: 48px; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--border-card); background: var(--bg-surface); color: var(--text-main); font: inherit; font-weight: 500; outline: none; }
 .staff-field input:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(34, 199, 232, .16); }
-.staff-error { padding: 12px 14px; border-radius: 10px; background: rgba(251, 113, 133, .10); border: 1px solid rgba(251, 113, 133, .35); color: #fecdd3; font-size: 14px; line-height: 1.5; }
+/* Colaboradores: quem está conectado pelo login do site. */
+.staff-session { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-card); background: var(--bg-card-elevated); color: var(--text-dim); font-size: 14px; line-height: 1.5; }
+.staff-session > span { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.staff-session strong { color: var(--text-main); }
+.staff-session .staff-btn.primary { min-height: 42px; }
+.staff-session-error { margin-bottom: 18px; }
+.staff-error {padding: 12px 14px; border-radius: 10px; background: rgba(251, 113, 133, .10); border: 1px solid rgba(251, 113, 133, .35); color: #fecdd3; font-size: 14px; line-height: 1.5; }
 .staff-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--border-card); background: var(--bg-card-elevated); color: var(--text-main); font: inherit; font-size: 14px; font-weight: 700; text-decoration: none; cursor: pointer; white-space: nowrap; }
 .staff-btn:hover { border-color: var(--border-blue); }
 .staff-btn:disabled { opacity: .55; cursor: not-allowed; }

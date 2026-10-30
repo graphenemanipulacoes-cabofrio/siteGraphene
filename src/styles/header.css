@@ -49,6 +49,12 @@
 .gh-cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 0 18px; margin-left: 8px; border-radius: 11px; border: 1px solid rgba(86, 212, 231, .45); background: rgba(86, 212, 231, .1); color: #c4f3f9; font-size: .84rem; font-weight: 650; white-space: nowrap; transition: background .2s, color .2s, border-color .2s; }
 .gh-cta:hover { background: var(--gh-accent); border-color: var(--gh-accent); color: #04202a; }
 
+/* Admin/equipe conectados: atalho destacado para a área da equipe. */
+.gh-staff-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 0 14px; margin-right: 6px; border-radius: 11px; border: 1px solid #f5c04e; background: #f5c04e; color: #1d1404; font-size: .82rem; font-weight: 800; white-space: nowrap; box-shadow: 0 6px 18px rgba(245, 192, 78, .22); transition: background .2s, border-color .2s, transform .2s; }
+.gh-staff-btn:hover { background: #ffd370; border-color: #ffd370; transform: translateY(-1px); }
+.gh-drawer-quick .gh-drawer-staff { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: center; border-color: #f5c04e; background: #f5c04e; color: #1d1404; font-weight: 800; }
+.gh-drawer-quick .gh-drawer-staff svg { color: #1d1404; }
+
 .gh-menu-toggle { display: none; align-items: center; justify-content: center; width: 44px; height: 44px; margin-right: -8px; border: 0; border-radius: 10px; background: none; color: var(--gh-text); cursor: pointer; }
 .gh-menu-toggle:hover { background: rgba(130, 183, 209, .08); }
 
@@ -112,6 +118,11 @@
   .gh-menu-toggle { display: inline-flex; }
   .gh-logo { height: 42px; }
   .gh-actions { gap: 2px; }
+}
+
+@media (max-width: 520px) {
+  .gh-staff-btn { padding: 0 10px; margin-right: 2px; }
+  .gh-staff-btn span { display: none; }
 }
 
 @media (max-width: 380px) {

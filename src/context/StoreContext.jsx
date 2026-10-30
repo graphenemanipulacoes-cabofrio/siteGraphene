@@ -76,7 +76,22 @@ export const StoreProvider = ({ children }) => {
         };
     }, [authReady, customer?.id, cartStore]);
 
-    // choice = { size, sizeLabel, flavor, flavorLabel, price } quando o produto tem opções.
+    // Papel da conta conectada (admin, farmacêutico ou balcão) para mostrar o acesso da equipe.
+    // Só serve para a interface: as funções do servidor conferem o papel em cada ação.
+    const [roleState, setRoleState] = useState({ userId: null, role: null });
+    useEffect(() => {
+        if (!customer?.id) return undefined;
+        let active = true;
+        const userId = customer.id;
+        supabase.rpc('current_staff_role')
+            .then(({ data, error }) => { if (active) setRoleState({ userId, role: error ? null : data || null }); })
+            .catch(() => { if (active) setRoleState({ userId, role: null }); });
+        return () => { active = false; };
+    }, [customer?.id]);
+    const staffRoleReady = !customer?.id || roleState.userId === customer.id;
+    const staffRole = customer?.id && staffRoleReady ? roleState.role : null;
+
+    // choice ={ size, sizeLabel, flavor, flavorLabel, price } quando o produto tem opções.
     const addItem = useCallback((product, choice = {}, units = 1) => {
         const amount = Math.max(1, Math.min(20, Number.isInteger(units) ? units : 1));
         const options = productOptions(product);
@@ -129,9 +144,9 @@ export const StoreProvider = ({ children }) => {
         .filter(item => Number.isSafeInteger(item.productId) && item.productId > 0), [cart]);
 
     const value = useMemo(() => ({
-        cart, customer, authReady, cartReady, cartSyncing, cartSyncError, syncCart, itemCount, subtotal, zip, setZip,
+        cart, customer, authReady, staffRole, staffRoleReady, cartReady, cartSyncing, cartSyncError, syncCart, itemCount, subtotal, zip, setZip,
         addItem, updateQuantity, removeItem, clearCart, settleCart,
-    }), [cart, customer, authReady, cartReady, cartSyncing, cartSyncError, syncCart, itemCount, subtotal, zip, setZip, addItem, updateQuantity, removeItem, clearCart, settleCart]);
+    }), [cart, customer, authReady, staffRole, staffRoleReady, cartReady, cartSyncing, cartSyncError, syncCart, itemCount, subtotal, zip, setZip, addItem, updateQuantity, removeItem, clearCart, settleCart]);
 
     return <StoreContext.Provider value={value}><CouponProvider key={customer?.id || 'guest'} userId={customer?.id} items={couponItems}>{children}</CouponProvider></StoreContext.Provider>;
 };

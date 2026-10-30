@@ -4,6 +4,7 @@ import { Chrome, KeyRound, LoaderCircle, ShieldCheck, UserPlus } from 'lucide-re
 import { supabase } from '../lib/supabaseClient';
 import StoreLayout from '../components/StoreLayout';
 import { useStore } from '../context/StoreContext';
+import { currentStaffRole } from '../lib/accountAuth';
 
 const CustomerAccessPage = () => {
     const [mode, setMode] = useState('login');
@@ -16,22 +17,21 @@ const CustomerAccessPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { addItem, authReady, customer } = useStore();
-    const returnTo = location.state?.returnTo || '/minha-conta';
+    // Sem destino pedido (login pelo cabeçalho), admin e equipe vão direto para a área da equipe.
+    const requestedReturn = location.state?.returnTo;
     const intent = location.state?.intent;
     const pendingProduct = location.state?.pendingProduct;
+    const destinationAfterLogin = async target => target || (await currentStaffRole() ? '/colaboradores' : '/minha-conta');
 
     useEffect(() => {
         if (!authReady || !customer) return;
         const savedIntent = sessionStorage.getItem('graphene_oauth_intent');
         if (!savedIntent) return;
         sessionStorage.removeItem('graphene_oauth_intent');
-        try {
-            const intentData = JSON.parse(savedIntent);
-            if (intentData.pendingProduct) addItem(intentData.pendingProduct);
-            navigate(intentData.returnTo || '/minha-conta', { replace: true });
-        } catch {
-            navigate('/minha-conta', { replace: true });
-        }
+        let intentData = {};
+        try { intentData = JSON.parse(savedIntent) || {}; } catch { /* Intenção inválida: segue o destino padrão. */ }
+        if (intentData.pendingProduct) addItem(intentData.pendingProduct);
+        destinationAfterLogin(intentData.returnTo).then(target => navigate(target, { replace: true }));
     }, [addItem, authReady, customer, navigate]);
 
     const submit = async event => {
@@ -48,7 +48,7 @@ const CustomerAccessPage = () => {
             return;
         }
         if (pendingProduct) addItem(pendingProduct);
-        navigate(returnTo, { replace: true });
+        navigate(await destinationAfterLogin(requestedReturn), { replace: true });
     };
 
     const resetPassword = async () => {
@@ -61,7 +61,7 @@ const CustomerAccessPage = () => {
 
     const continueWithGoogle = async () => {
         setLoading(true); setError(''); setMessage('');
-        sessionStorage.setItem('graphene_oauth_intent', JSON.stringify({ returnTo, intent, pendingProduct }));
+        sessionStorage.setItem('graphene_oauth_intent', JSON.stringify({ returnTo: requestedReturn, intent, pendingProduct }));
         const { error: oauthError } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: { redirectTo: `${window.location.origin}/entrar?oauth=google` },
