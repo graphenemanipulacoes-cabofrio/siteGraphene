@@ -499,7 +499,7 @@ const AdminPartners = ({ onUnauthorized }) => {
                       O que ela gastou / Produtos *
                       <input 
                         type="text" 
-                        placeholder="Ex.: 2x Whey Isolado Baunilha + Creatina 200g" 
+                        placeholder="Ex.: 2x Whey Isolado Chocolate + Creatina 200g" 
                         value={creditUsageForm.description} 
                         onChange={e => setCreditUsageForm({ ...creditUsageForm, description: e.target.value })}
                         required 

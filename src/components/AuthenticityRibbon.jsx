@@ -7,7 +7,6 @@ const suppliers = [
     'Lemma Supply',
     'AQIA Biotec',
     'Biodiversité',
-    'Florien',
 ];
 
 const AuthenticityRibbon = () => {
