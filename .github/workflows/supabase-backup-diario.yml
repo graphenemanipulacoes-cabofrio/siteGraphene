@@ -1,0 +1,116 @@
+# Backup diário do banco: tabelas do site (public) e contas de login (auth).
+# O repositório é público, então o arquivo sai criptografado e nenhum dado vai para o log.
+# Os arquivos de receitas e fotos (Storage) não entram aqui. Como configurar e restaurar: BACKUP.md.
+name: Supabase - backup diário
+
+on:
+  schedule:
+    - cron: '41 9 * * *' # 06h41 em Brasília
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PGUSER: postgres.ngphbcrdphluuphctvpr
+  PGDATABASE: postgres
+  PGPORT: '5432'
+  PGSSLMODE: require
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Conferir as senhas
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$PGPASSWORD" ]; then
+            echo "::error::Falta o segredo SUPABASE_DB_PASSWORD. Veja BACKUP.md."
+            exit 1
+          fi
+          if [ "${#BACKUP_PASSPHRASE}" -lt 20 ]; then
+            echo "::error::O segredo BACKUP_PASSPHRASE precisa ter pelo menos 20 caracteres. Veja BACKUP.md."
+            exit 1
+          fi
+
+      - name: Instalar o cliente do Postgres 17
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+          echo /usr/lib/postgresql/17/bin >> "$GITHUB_PATH"
+
+      # A conexão direta do Supabase é só IPv6, que o GitHub não tem. O pooler em modo sessão
+      # (porta 5432) aceita o pg_dump, mas o endereço dele varia de projeto para projeto.
+      - name: Encontrar o servidor do banco
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          for prefixo in aws-1 aws-0 aws-2; do
+            servidor="$prefixo-sa-east-1.pooler.supabase.com"
+            if saida=$(PGHOST="$servidor" psql --no-psqlrc --tuples-only --command='select 1' 2>&1); then
+              echo "PGHOST=$servidor" >> "$GITHUB_ENV"
+              echo "Conectado em $servidor."
+              exit 0
+            fi
+            case "$saida" in
+              *"password authentication failed"*)
+                echo "::error::A senha em SUPABASE_DB_PASSWORD está incorreta. Veja BACKUP.md."
+                exit 1
+                ;;
+            esac
+            echo "$servidor não atendeu: $saida"
+          done
+          echo "::error::Nenhum servidor do banco respondeu. Confira no painel se o projeto está ativo."
+          exit 1
+
+      # As permissões e os donos ficam no arquivo de propósito: sem eles, uma restauração
+      # deixaria abertas as funções que hoje só o servidor pode executar.
+      - name: Gerar, conferir e criptografar o backup
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          umask 077
+          origem="$RUNNER_TEMP/banco.dump"
+          destino="backup/banco-$(date -u +%F).dump.gpg"
+          mkdir -p backup
+
+          pg_dump --format=custom --schema=public --schema=auth --file="$origem"
+
+          conteudo=$(pg_restore --list "$origem")
+          for tabela in 'public orders' 'public order_items' 'public produtos' 'public solicitacoes' 'auth users'; do
+            if ! grep -q "TABLE DATA $tabela " <<<"$conteudo"; then
+              echo "::error::O backup saiu sem a tabela $tabela."
+              exit 1
+            fi
+          done
+
+          gpg --batch --yes --quiet --pinentry-mode loopback --passphrase-fd 3 \
+            --symmetric --cipher-algo AES256 \
+            --s2k-mode 3 --s2k-digest-algo SHA512 --s2k-count 65011712 \
+            --output "$destino" "$origem" 3<<<"$BACKUP_PASSPHRASE"
+
+          original=$(sha256sum "$origem" | cut -d' ' -f1)
+          decifrado=$(gpg --batch --quiet --pinentry-mode loopback --passphrase-fd 3 \
+            --decrypt "$destino" 3<<<"$BACKUP_PASSPHRASE" | sha256sum | cut -d' ' -f1)
+          if [ "$original" != "$decifrado" ]; then
+            echo "::error::O arquivo criptografado não abriu igual ao original."
+            exit 1
+          fi
+
+          shred -u "$origem"
+          echo "Backup conferido e criptografado: $(du -h "$destino" | cut -f1)."
+
+      - name: Guardar o arquivo criptografado por 30 dias
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backup-banco-${{ github.run_number }}
+          path: backup/
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error

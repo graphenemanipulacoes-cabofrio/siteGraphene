@@ -1,0 +1,46 @@
+# Consulta diária ao Supabase para o plano grátis não pausar o projeto por inatividade.
+# Não usa senha: pergunta à função do balcão por uma sessão que não existe, o que faz uma
+# leitura real no banco sem alterar nada. A resposta certa é 401 (sessão não encontrada).
+name: Supabase - consulta diária
+
+on:
+  schedule:
+    - cron: '17 9 * * *' # 06h17 em Brasília
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/supabase-consulta-diaria.yml
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  consulta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Consultar o banco pela função do balcão
+        run: |
+          token=$(printf '0%.0s' {1..64})
+          status=$(curl --silent --show-error --max-time 60 --retry 3 --retry-delay 30 \
+            --output /dev/null --write-out '%{http_code}' \
+            --request POST 'https://ngphbcrdphluuphctvpr.supabase.co/functions/v1/balcao-api' \
+            --header 'Origin: https://www.graphenemanipulacoes.com.br' \
+            --header 'Content-Type: application/json' \
+            --data "{\"action\":\"session\",\"sessionToken\":\"$token\"}")
+          if [ "$status" != "401" ]; then
+            echo "::error::O Supabase respondeu $status em vez de 401. Confira no painel se o projeto está ativo."
+            exit 1
+          fi
+          echo "Supabase ativo: a função e o banco responderam."
+
+      # Em repositório público, o GitHub desliga rotinas agendadas após 60 dias sem atividade.
+      - name: Manter as rotinas agendadas ligadas
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for rotina in supabase-consulta-diaria.yml supabase-backup-diario.yml; do
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/actions/workflows/$rotina/enable"
+          done
