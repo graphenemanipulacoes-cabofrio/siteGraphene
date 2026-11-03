@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, ArrowLeft, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Chrome, Clock, Copy, ExternalLink, FileText, Inbox, LoaderCircle, LockKeyhole, LogOut, MapPin, MessageCircle, Moon, PackageCheck, Printer, Receipt, RefreshCw, Search, ShieldCheck, StickyNote, Sun, Truck, UserRound, X, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PasswordField from '../components/PasswordField';
+import PrescriptionFiles from '../components/PrescriptionFiles';
 import { counterRequest, enterStaffArea } from '../lib/counterApi';
 import { currentAccountEmail, signInWithEmail, startGoogleLogin } from '../lib/accountAuth';
 import { supabase } from '../lib/supabaseClient';
@@ -162,7 +163,7 @@ function OrderDetail({ order, products, onCopy }) {
     </>;
 }
 
-function RequestDetail({ request, files, onRefresh }) {
+function RequestDetail({ request, loadFiles }) {
     return <>
         <StageBanner stage={requestStage}/>
         <div className="counter-pair">
@@ -179,15 +180,9 @@ function RequestDetail({ request, files, onRefresh }) {
                 <p className="counter-preline">{request.observacoes || <span className="counter-missing">O cliente não escreveu nada. Veja os anexos.</span>}</p>
             </Block>
         </div>
-        <Block title="Receitas e anexos" icon={ShieldCheck} action={<button type="button" className="counter-button small" onClick={onRefresh}><RefreshCw size={15} aria-hidden="true"/>Gerar links de novo</button>}>
-            {files.length ? <div className="counter-files">
-                {files.map((file, index) => <a className="counter-file" key={`${file.name}-${index}`} href={safeLink(file.url) || '#'} target="_blank" rel="noreferrer">
-                    <FileText size={22} aria-hidden="true"/>
-                    <span><strong>Abrir anexo {index + 1}</strong><small>{file.name?.toLowerCase().endsWith('.pdf') ? 'PDF' : 'Imagem'}</small></span>
-                    <ExternalLink size={15} aria-hidden="true"/>
-                </a>)}
-            </div> : <p className="counter-missing">Nenhum anexo nesta solicitação.</p>}
-            <p className="counter-muted">Por segurança, cada link abre por 5 minutos. Se expirar, clique em “Gerar links de novo”. Não encaminhe receitas para fora da equipe.</p>
+        <Block title="Receitas e anexos" icon={ShieldCheck}>
+            <PrescriptionFiles key={request.id} clientName={request.nome_cliente} loadFiles={loadFiles}/>
+            <p className="counter-muted">Clique na miniatura para ampliar ou baixar. Não encaminhe receitas para fora da equipe.</p>
         </Block>
     </>;
 }
@@ -243,6 +238,7 @@ export default function CounterPage() {
             throw failure;
         }
     }, [session?.token, session?.borrowed, revokeLocalAccess]);
+    const loadRequestFiles = async id => (await invoke({ action: 'request_detail', id })).files || [];
     const load = useCallback(async (foreground = true) => {
         if (!session?.token) return;
         const sequence = ++loadSequence.current;
@@ -440,7 +436,7 @@ export default function CounterPage() {
                         : rows.map(row => {
                             const stage = tab === 'orders' ? orderStage(row) : requestStage;
                             const isSelected = selected?.id === row.id && selected?.type === tab;
-                            return <button className={`counter-item tone-${stage.tone} ${isSelected ? 'selected' : ''}`} key={row.id} onClick={() => open(row)} aria-current={isSelected ? 'true' : undefined}>
+                            const item = <button className={`counter-item tone-${stage.tone} ${isSelected ? 'selected' : ''}`} key={row.id} onClick={() => open(row)} aria-current={isSelected ? 'true' : undefined}>
                                 <span className="counter-item-top"><strong>{tab === 'orders' ? row.shipping_address?.name || row.customer_email : row.nome_cliente}</strong><time>{dateTime(row.created_at)}</time></span>
                                 <StagePill stage={stage}/>
                                 <span className="counter-item-meta">{tab === 'orders'
@@ -448,6 +444,11 @@ export default function CounterPage() {
                                     : <><span>Solicitação {row.id}</span>{row.whatsapp && <span>{row.whatsapp}</span>}</>}
                                 </span>
                             </button>;
+                            if (tab === 'orders') return item;
+                            return <div className={`counter-item-group tone-${stage.tone} ${isSelected ? 'selected' : ''}`} key={row.id}>
+                                {item}
+                                <PrescriptionFiles compact clientName={row.nome_cliente} loadFiles={() => loadRequestFiles(row.id)}/>
+                            </div>;
                         })}
                     <footer className="counter-pagination"><span>{total ? `${offset + 1} a ${Math.min(offset + 50, total)} de ${total}` : 'Nenhum registro'}</span><div><button aria-label="Página anterior" disabled={loading || offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}><ChevronLeft size={18}/></button><button aria-label="Próxima página" disabled={loading || offset + 50 >= total} onClick={() => setOffset(offset + 50)}><ChevronRight size={18}/></button></div></footer>
                 </section>
@@ -466,7 +467,7 @@ export default function CounterPage() {
                             {detailLoading ? <div className="counter-empty" role="status"><LoaderCircle className="counter-spin" aria-hidden="true"/>Abrindo ficha…</div>
                                 : detailError ? <div className="counter-error" role="alert">{detailError}<button type="button" onClick={() => open(selected, selected.type)}>Tentar de novo</button></div>
                                 : detail?.order ? <OrderDetail order={detail.order} products={detail.products || []} onCopy={copy}/>
-                                : detail?.request ? <RequestDetail request={detail.request} files={detail.files || []} onRefresh={() => open(selected, selected.type)}/>
+                                : detail?.request ? <RequestDetail request={detail.request} loadFiles={() => loadRequestFiles(detail.request.id)}/>
                                 : null}
                             <div className="counter-print-footer">Graphène · ficha interna impressa em {dateTime(new Date().toISOString())}. Não é nota fiscal nem comprovante de pagamento.</div>
                         </div>

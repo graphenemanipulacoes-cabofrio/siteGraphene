@@ -1,0 +1,64 @@
+/* Miniaturas e visualizador de receitas (admin e balcão). O fundo claro da miniatura
+   vale nos dois temas porque a maioria das receitas é papel branco. */
+.prescription-files { display: grid; gap: 8px; }
+.prescription-files-label,
+.prescription-files-note { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; font-size: 13px; line-height: 1.4; }
+.prescription-files-label { font-weight: 700; }
+.prescription-files-note { opacity: .75; }
+.prescription-files button.prescription-files-retry { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
+.prescription-files-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.prescription-files button.prescription-thumb {
+  position: relative; width: 132px; height: 170px; min-height: 0; margin: 0; padding: 0; overflow: hidden;
+  display: grid; place-items: center; border: 1px solid rgba(148, 163, 184, .55); border-radius: 8px;
+  background: #fff; color: #475569; font-size: 15px; font-weight: 800; box-shadow: none; cursor: zoom-in;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.prescription-files button.prescription-thumb:hover { border-color: #0284c7; box-shadow: 0 0 0 2px rgba(2, 132, 199, .25); }
+.prescription-files button.prescription-thumb:focus-visible { outline: 3px solid #0284c7; outline-offset: 2px; }
+.prescription-thumb-media { display: block; width: 100%; height: 100%; object-fit: contain; object-position: top center; }
+canvas.prescription-thumb-media { height: auto; align-self: start; }
+.prescription-thumb-media[hidden] { display: none; }
+.prescription-thumb-badge { position: absolute; left: 6px; bottom: 6px; padding: 2px 6px; border-radius: 4px; background: #b91c1c; color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .04em; }
+.prescription-thumb-open { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: rgba(15, 23, 42, .75); color: #fff; }
+
+.prescription-files.compact button.prescription-thumb { width: 72px; height: 92px; }
+.prescription-files.compact .prescription-thumb-badge { left: 4px; bottom: 4px; padding: 1px 4px; font-size: 10px; }
+.prescription-files.compact .prescription-thumb-open { display: none; }
+
+.prescription-spin { animation: prescription-spin 1s linear infinite; }
+@keyframes prescription-spin { to { transform: rotate(360deg); } }
+
+.prescription-viewer { position: fixed; inset: 0; z-index: 10000; display: flex; flex-direction: column; background: rgba(5, 10, 16, .97); color: #f1f5f9; }
+.prescription-viewer-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; background: #0d1a26; border-bottom: 1px solid rgba(148, 163, 184, .25); }
+.prescription-viewer-bar strong { margin-right: auto; font-size: 15px; }
+.prescription-viewer-group { display: inline-flex; gap: 2px; }
+.prescription-viewer-bar button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 42px; height: 42px; margin: 0; padding: 0 10px;
+  border: 1px solid rgba(148, 163, 184, .35); border-radius: 8px; background: rgba(255, 255, 255, .06); color: #f1f5f9;
+  font-size: 14px; font-weight: 700; box-shadow: none; cursor: pointer;
+}
+.prescription-viewer-bar button:hover:not(:disabled) { background: rgba(255, 255, 255, .15); }
+.prescription-viewer-bar button:disabled { opacity: .5; cursor: default; }
+.prescription-viewer-bar button:focus-visible { outline: 2px solid #56d4e7; outline-offset: 2px; }
+.prescription-viewer-bar .prescription-viewer-zoom { min-width: 62px; }
+.prescription-viewer-bar .prescription-viewer-download { background: #065b98; border-color: #065b98; }
+.prescription-viewer-bar .prescription-viewer-download:hover:not(:disabled) { background: #0a70b8; }
+.prescription-viewer-problem { margin: 0; padding: 8px 14px; background: #7f1d1d; color: #fff; font-size: 14px; }
+.prescription-viewer-stage { flex: 1; min-height: 0; display: flex; overflow: auto; cursor: grab; touch-action: pan-x pan-y; }
+.prescription-viewer-stage:active { cursor: grabbing; }
+.prescription-viewer-page { position: relative; flex: none; margin: auto; min-width: 40px; min-height: 40px; display: grid; place-items: center; }
+.prescription-viewer-page img { position: absolute; top: 50%; left: 50%; max-width: none; background: #fff; user-select: none; }
+.prescription-viewer-page img[hidden] { display: none; }
+.prescription-viewer-pdf { flex: none; margin: 0 auto; padding: 12px 0; display: grid; gap: 12px; align-content: start; }
+.prescription-viewer-pdf canvas { display: block; width: 100%; height: auto; background: #fff; }
+.prescription-viewer-pdf p { margin: 0; text-align: center; font-size: 14px; opacity: .8; }
+
+@media (max-width: 520px) {
+  .prescription-viewer-bar { padding: 8px 10px; gap: 6px; }
+  .prescription-viewer-bar strong { width: 100%; }
+}
+
+@media print {
+  .prescription-files, .prescription-viewer { display: none !important; }
+}

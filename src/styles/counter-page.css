@@ -217,6 +217,12 @@
 .counter-item-top strong { font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
 .counter-item-top time { flex: none; color: var(--c-muted); font-size: 12px; }
 .counter-item-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--c-muted); font-size: 13px; }
+/* Orçamento: a linha continua clicável e os anexos ficam logo abaixo, no mesmo cartão. */
+.counter-item-group { background: var(--c-surface); color: var(--c-text); border-bottom: 1px solid var(--c-border); border-left: 5px solid var(--tone-line, var(--c-neutral-line)); }
+.counter-item-group .counter-item { border-bottom: 0; border-left: 0; padding-bottom: 8px; background: transparent; }
+.counter-item-group .prescription-files { padding: 0 16px 14px 14px; }
+.counter-item-group:hover { background: var(--c-surface-2); }
+.counter-item-group.selected { background: var(--c-brand-soft); }
 
 .counter-pill {
   justify-self: start; display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px;
@@ -304,17 +310,6 @@
 .counter-catalog-item small { color: var(--c-muted); font-weight: 500; margin-left: 6px; }
 .counter-catalog-item p { color: var(--c-text-2); }
 
-.counter-files { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
-.counter-root .counter-file {
-  display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--c-border-strong);
-  border-radius: 10px; background: var(--c-surface-2); color: var(--c-text); text-decoration: none;
-}
-.counter-root .counter-file:hover { border-color: var(--c-brand); }
-.counter-file > svg:first-child { color: var(--c-brand); flex: none; }
-.counter-file > svg:last-child { margin-left: auto; color: var(--c-muted); }
-.counter-file strong { display: block; font-size: 15px; }
-.counter-file small { color: var(--c-muted); font-size: 13px; }
-
 .counter-root .counter-detail-meta { color: var(--c-muted); font-size: 13px; line-height: 1.7; }
 .counter-detail-meta span { overflow-wrap: anywhere; }
 .counter-print-footer { display: none; }
@@ -395,7 +390,7 @@
   .counter-workspace { display: block !important; }
   .counter-sidebar, .counter-header, .counter-mobile-tabs, .counter-queues, .counter-search, .counter-list,
   .counter-footer, .counter-notice, .counter-error, .counter-detail-heading button, .counter-detail-body button,
-  .counter-catalog, .counter-files, .privacy-notice { display: none !important; }
+  .counter-catalog, .privacy-notice { display: none !important; }
   .counter-main { padding: 0; max-width: none; }
   .counter-split { display: block; }
   .counter-detail { display: block !important; border: 0; box-shadow: none; overflow: visible; }

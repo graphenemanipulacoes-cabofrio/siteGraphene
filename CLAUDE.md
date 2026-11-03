@@ -81,6 +81,7 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 ## Armazenamento (Supabase)
 - `receitas` (público): só fotos de produto. Sem listagem e sem envio anônimo; o admin envia fotos por link assinado (ação `product_image_upload` da função `admin-orders`). Aceita JPG/PNG/WEBP até 5 MB.
 - `receitas-privadas`: receitas de clientes. `intake/` = formulário atual (envio por link assinado da `receita-intake`); `legacy/` = receitas do formulário antigo, movidas do bucket público em 20/10/2026. Admin e balcão abrem com links de 5 minutos; as referências antigas no banco (URLs públicas) são convertidas para `legacy/` pelas funções.
+- Na tela, os anexos aparecem sempre por `PrescriptionFiles`: miniaturas na lista e na ficha, com visualizador (zoom, girar, baixar). Os links só são pedidos quando a linha aparece na tela e são renovados depois de 4 minutos. PDF é desenhado pelo `pdfjs-dist` (`src/lib/pdfPreview.js`), sem iframe, porque a CSP não libera frames do Storage. Receitas não saem na ficha impressa. Verificação: `node scripts/verify-prescription-files.mjs`.
 
 ## Rotinas automáticas (plano grátis do Supabase)
 - O projeto fica no plano grátis por decisão do dono até haver fluxo. `.github/workflows/supabase-consulta-diaria.yml` evita a pausa por inatividade (sem senha) e `supabase-backup-diario.yml` gera um backup criptografado de `public` e `auth`, guardado por 30 dias. Configuração e restauração: `BACKUP.md`.

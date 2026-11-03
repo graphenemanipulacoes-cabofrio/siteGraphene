@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Package, PackageCheck, MessageCircle, FileText, LogOut, ChevronDown, ChevronUp, Download, Maximize2, X, ZoomIn, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink, WalletCards, Eye, UserRound, ShoppingBag, Monitor, FlaskConical, LayoutGrid, Truck } from 'lucide-react';
+import { Package, PackageCheck, MessageCircle, FileText, LogOut, X, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink, WalletCards, Eye, UserRound, ShoppingBag, Monitor, FlaskConical, LayoutGrid, Truck } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { Link, useNavigate } from 'react-router-dom';
@@ -13,6 +13,8 @@ import AdminPartners from '../components/AdminPartners';
 import AdminCounterAccess from '../components/AdminCounterAccess';
 import AdminShipping from '../components/AdminShipping';
 import PasswordField from '../components/PasswordField';
+import PrescriptionFiles from '../components/PrescriptionFiles';
+import { hasAttachments } from '../utils/prescriptionFiles';
 import { getSession, destroySession } from '../utils/security';
 import { ensureAdminSession } from '../lib/accountAuth';
 
@@ -29,10 +31,6 @@ const auditLabels = {
 const Admin = () => {
     const [requests, setRequests] = useState([]);
     const [expandedId, setExpandedId] = useState(null);
-    const [requestFiles, setRequestFiles] = useState({});
-    const [loadingFilesId, setLoadingFilesId] = useState(null);
-    const [fullscreenImage, setFullscreenImage] = useState(null);
-    const [zoomLevel, setZoomLevel] = useState(1);
     const [view, setView] = useState(localStorage.getItem('admin_view') || 'active');
     const [admins, setAdmins] = useState([]);
     const [auditEntries, setAuditEntries] = useState([]);
@@ -90,6 +88,7 @@ const Admin = () => {
 
     useEffect(() => {
         if (view === 'active' || view === 'trash') {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- só altera o estado depois do await.
             fetchRequests();
             const refreshTimer = window.setInterval(fetchRequests, 60_000);
             return () => window.clearInterval(refreshTimer);
@@ -109,6 +108,7 @@ const Admin = () => {
 
     useEffect(() => {
         if (view === 'admins') {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- só altera o estado depois do await.
             fetchAdmins();
         }
     }, [view, fetchAdmins]);
@@ -118,11 +118,6 @@ const Admin = () => {
             await invokeAdmin({ action: 'update_request_status', requestId: id, status: newStatus });
 
             setRequests(prev => prev.filter(req => req.id !== id));
-            setRequestFiles(prev => {
-                const next = { ...prev };
-                delete next[id];
-                return next;
-            });
             toast.success(newStatus === 'trash' ? 'Movido para lixeira' : 'Restaurado com sucesso');
 
         } catch (error) {
@@ -138,48 +133,11 @@ const Admin = () => {
             await invokeAdmin({ action: 'delete_request', requestId: id });
 
             setRequests(prev => prev.filter(req => req.id !== id));
-            setRequestFiles(prev => {
-                const next = { ...prev };
-                delete next[id];
-                return next;
-            });
             toast.success('Excluído permanentemente.');
         } catch (error) {
             console.error('Error deleting:', error);
             toast.error('Erro ao excluir: ' + (error.message || 'Erro desconhecido'));
         }
-    };
-
-    const toggleExpand = async (id) => {
-        if (expandedId === id) {
-            setExpandedId(null);
-            return;
-        }
-        setExpandedId(id);
-
-        setLoadingFilesId(id);
-        try {
-            const data = await invokeAdmin({ action: 'get_request_files', requestId: id });
-            setRequestFiles(prev => ({ ...prev, [id]: data.files || [] }));
-        } catch (error) {
-            console.error('Error loading request files:', error);
-            toast.error(error.message || 'Não foi possível abrir os anexos.');
-        } finally {
-            setLoadingFilesId(null);
-        }
-    };
-
-    const handleWheel = (e) => {
-        if (fullscreenImage) {
-            e.preventDefault();
-            const delta = e.deltaY * -0.01;
-            setZoomLevel(prev => Math.min(Math.max(0.5, prev + delta), 4));
-        }
-    };
-
-    const closeFullscreen = () => {
-        setFullscreenImage(null);
-        setZoomLevel(1);
     };
 
     const addAdminErrors = {
@@ -603,13 +561,6 @@ const Admin = () => {
                                                                 </Button>
                                                             </a>
 
-                                                            {req.arquivo_url && (
-                                                                <Button variant="primary" onClick={() => toggleExpand(req.id)} style={{ flex: 1, justifyContent: 'center', padding: '8px 12px', boxShadow: 'none' }}>
-                                                                    <FileText size={18} /> <span className="lg-visible">Ver Arquivos</span>
-                                                                    {expandedId === req.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                                                </Button>
-                                                            )}
-
                                                             <Button
                                                                 variant="glass"
                                                                 onClick={() => updateStatus(req.id, 'trash')}
@@ -634,47 +585,12 @@ const Admin = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Expanded Content */}
-                                            {expandedId === req.id && req.arquivo_url && (
-                                                <div style={{ background: 'rgba(0, 229, 255, 0.05)', padding: '1.5rem', margin: '0 1rem 1rem 1rem', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                                    <p style={{ opacity: 0.7, marginBottom: '0.5rem' }}>Arquivos Anexados:</p>
-                                                    {loadingFilesId === req.id ? (
-                                                        <p>Carregando anexos protegidos…</p>
-                                                    ) : requestFiles[req.id]?.length ? (
-                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
-                                                            {requestFiles[req.id].map((file, idx) => (
-                                                                <div key={`${file.name}-${idx}`} style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '10px' }}>
-                                                                    {file.name.toLowerCase().endsWith('.pdf') ? (
-                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', textAlign: 'center' }}>
-                                                                            <FileText size={48} opacity={0.5} />
-                                                                            <p style={{ fontSize: '0.9rem' }}>Documento PDF</p>
-                                                                            <a href={file.url} target="_blank" download rel="noopener noreferrer">
-                                                                                <Button variant="outline" style={{ width: '100%', justifyContent: 'center' }}><Download size={16} /> Baixar</Button>
-                                                                            </a>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                                                            <div style={{ position: 'relative', cursor: 'zoom-in', height: '150px', width: '100%' }} onClick={() => setFullscreenImage(file.url)}>
-                                                                                <img
-                                                                                    src={file.url}
-                                                                                    alt="Anexo da solicitação"
-                                                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.1)' }}
-                                                                                />
-                                                                                <div style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(0,0,0,0.7)', padding: '3px', borderRadius: '3px' }}>
-                                                                                    <Maximize2 size={14} color="white" />
-                                                                                </div>
-                                                                            </div>
-                                                                            <a href={file.url} target="_blank" download rel="noopener noreferrer">
-                                                                                <Button variant="outline" style={{ width: '100%', justifyContent: 'center' }}><Download size={16} /> Baixar</Button>
-                                                                            </a>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        <p>Nenhum anexo disponível.</p>
-                                                    )}
+                                            {hasAttachments(req.arquivo_url) && (
+                                                <div style={{ padding: '0 1rem 1rem' }}>
+                                                    <PrescriptionFiles
+                                                        clientName={req.nome_cliente}
+                                                        loadFiles={async () => (await invokeAdmin({ action: 'get_request_files', requestId: req.id })).files || []}
+                                                    />
                                                 </div>
                                             )}
                                         </li>
@@ -685,45 +601,6 @@ const Admin = () => {
                     </div>
                 )}
 
-
-                {/* Lightbox / Fullscreen Viewer */}
-                {fullscreenImage && (
-                    <div
-                        style={{
-                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                            background: 'rgba(0,0,0,0.95)', zIndex: 9999,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            overflow: 'hidden'
-                        }}
-                        onWheel={handleWheel}
-                    >
-                        {/* Controls */}
-                        <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '1rem', zIndex: 10000 }}>
-                            <a href={fullscreenImage} download target="_blank" rel="noopener noreferrer">
-                                <Button variant="glass"><Download size={24} /></Button>
-                            </a>
-                            <Button variant="glass" onClick={closeFullscreen}><X size={24} /></Button>
-                        </div>
-
-                        <div style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 10000, pointerEvents: 'none' }}>
-                            <span style={{ background: 'rgba(0,0,0,0.5)', padding: '5px 10px', borderRadius: '5px' }}>
-                                Zoom: {Math.round(zoomLevel * 100)}% (Scroll para ajustar)
-                            </span>
-                        </div>
-
-                        <img
-                            src={fullscreenImage}
-                            style={{
-                                maxWidth: '100vw',
-                                maxHeight: '100vh',
-                                transform: `scale(${zoomLevel})`,
-                                transition: 'transform 0.1s ease-out',
-                                cursor: 'grab'
-                            }}
-                            draggable={false}
-                        />
-                    </div>
-                )}
                 </div>
             </main>
         </div >

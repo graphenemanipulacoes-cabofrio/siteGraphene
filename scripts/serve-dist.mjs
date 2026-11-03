@@ -7,7 +7,7 @@ import { extname, join, normalize } from 'node:path';
 const root = join(process.cwd(), 'dist');
 const port = Number(process.argv[2]) || 5180;
 const { headers, rewrites } = JSON.parse(readFileSync('vercel.json', 'utf8'));
-const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.txt': 'text/plain', '.xml': 'text/xml' };
+const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.txt': 'text/plain', '.xml': 'text/xml' };
 // upgrade-insecure-requests faria o navegador pedir os arquivos locais por https.
 const localCsp = value => value.replace(/;\s*upgrade-insecure-requests/, '');
 
