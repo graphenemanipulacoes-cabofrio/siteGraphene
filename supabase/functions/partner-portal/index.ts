@@ -25,6 +25,7 @@ Deno.serve(async (req: Request) => {
     let partners: unknown[] | undefined;
     if (requestedPartner || !ownProfile) {
       if (!await isAdminEmail(admin, account.email)) return ownProfile ? json({ error: 'forbidden' }, 403, origin) : json({ state: 'not_partner' }, 200, origin);
+      if (account.aal !== 'aal2') return json({ state: 'mfa_required' }, 200, origin);
       const { data: list, error: listError } = await admin.from('partner_profiles').select('id,full_name,email,status,referral_code,created_at').order('created_at', { ascending: false }).limit(500);
       if (listError) return json({ error: 'unable_to_load_profile' }, 500, origin);
       partners = list || [];

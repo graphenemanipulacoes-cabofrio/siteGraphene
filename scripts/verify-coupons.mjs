@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import { createContext, SourceTextModule, SyntheticModule } from 'node:vm';
+import { webcrypto } from 'node:crypto';
 import { couponOrdersCsv, filterCouponOrders, summarizeCouponOrders } from '../src/utils/couponReporting.js';
 
 let handler;
@@ -11,20 +12,22 @@ let user = { id: 'synthetic-user' };
 let lookupError = null;
 let rows = [];
 let rates = [];
+let rateLimited = false;
 const calls = [];
 const env = { SITE_URL: 'https://www.graphenemanipulacoes.com.br', SUPABASE_URL: 'https://mock.supabase.co', SUPABASE_ANON_KEY: 'mock-anon', SUPABASE_SERVICE_ROLE_KEY: 'mock-service' };
-const context = createContext({ Request, Response, URL, console, Deno: { serve: callback => { handler = callback; }, env: { get: key => env[key] } } });
+const context = createContext({ Request, Response, URL, console, TextEncoder, Uint8Array, btoa, atob, crypto: webcrypto, Deno: { serve: callback => { handler = callback; }, env: { get: key => env[key] } } });
 const sdk = new SyntheticModule(['createClient'], function () {
     this.setExport('createClient', () => ({
         auth: { getUser: async () => ({ data: { user }, error: null }) },
-        rpc: async (name, args) => { calls.push({ name, args }); return { data: name === 'checkout_coupon_product_rates' ? rates : rows, error: lookupError }; },
+        rpc: async (name, args) => { if (name === 'take_rate_limit') return { data: !rateLimited, error: null }; calls.push({ name, args }); return { data: name === 'checkout_coupon_product_rates' ? rates : rows, error: lookupError }; },
         from: () => { throw new Error('No direct table writes or reads allowed in this handler'); },
     }));
 }, { context });
 const http = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/_shared/http.ts', 'utf8')), { context });
 await http.link(() => { throw new Error('Unexpected HTTP import'); });
+const security = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/_shared/counter-security.ts', 'utf8')), { context });
 const module = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/customer-coupons/index.ts', 'utf8')), { context });
-await module.link(name => name.startsWith('npm:') ? sdk : http);
+await module.link(name => name.startsWith('npm:') ? sdk : name.includes('counter-security') ? security : http);
 await module.evaluate();
 const invoke = async ({ payload = { action: 'search', query: 'syn' }, origin = env.SITE_URL, auth = true, method = 'POST' } = {}) => {
     calls.length = 0;
@@ -91,4 +94,7 @@ assert.equal(filterCouponOrders(orders, { from: '2026-10-23', to: '2026-10-23' }
 assert.deepEqual(summarizeCouponOrders(filterCouponOrders(orders, { attributedOnly: true })), { paidCount: 1, gross: 85, discounts: 15, pendingCount: 1 });
 const csv = couponOrdersCsv([{ ...orders[0], customer_email: '=SUM(1;1)', commission_recipients: { name: '@formula' } }]);
 assert.ok(csv.startsWith('\uFEFF')); assert.ok(csv.includes('"\'=SUM(1;1)"')); assert.ok(csv.includes('"\'@formula"')); assert.ok(csv.includes('"81,00"')); assert.ok(csv.includes('SYNTHETIC15'));
+rateLimited = true;
+assert.equal((await invoke({ payload: { action: 'validate', query: 'SYN10' }, auth: false })).response.status, 429, 'muitas tentativas de cupom são barradas');
+rateLimited = false;
 console.log('Coupon checks passed: authenticated search, guest exact validation, per-product rates, safe projection, min 3 characters, uppercase, CORS, limits, exact validation, minimum, rounding, fixed/percentage/cap, failures, paid attribution filters, Brasília dates and CSV formula safety.');

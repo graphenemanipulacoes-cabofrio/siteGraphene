@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.87.1';
 import { allowedOrigin, json } from '../_shared/http.ts';
+import { logAdminAction } from '../_shared/counter-security.ts';
 
 // Cupons dos parceiros no admin: desconto geral e % por produto.
 // Mesmo login do painel (x-admin-token), conferido em admin_sessions.
@@ -44,6 +45,7 @@ Deno.serve(async (req: Request) => {
       const { data, error } = await admin.from('discount_coupons').update({ discount_value: Math.round(discountValue * 100) / 100, updated_at: now })
         .eq('id', id).select('*,commission_recipients(name)').single();
       if (error) return json({ error: 'unable_to_update_coupon' }, 500, origin);
+      await logAdminAction(admin, session.admin_username, body.action, id, { discountValue });
       return json({ coupon: data }, 200, origin);
     }
 
@@ -74,6 +76,7 @@ Deno.serve(async (req: Request) => {
       }
       const { data, error } = await admin.from('coupon_product_discounts').select('coupon_id,product_id,discount_percent').eq('coupon_id', couponId);
       if (error) return json({ error: 'unable_to_load' }, 500, origin);
+      await logAdminAction(admin, session.admin_username, body.action, couponId, { products: keep.length });
       return json({ productDiscounts: data || [] }, 200, origin);
     }
 

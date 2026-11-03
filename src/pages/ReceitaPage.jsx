@@ -8,6 +8,23 @@ import Footer from '../components/Footer';
 import FloatingWhatsApp from '../components/FloatingWhatsApp';
 import { UploadCloud, X, MessageCircle, User, Phone, FileText, FileUp } from 'lucide-react';
 
+const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+const intakeErrors = {
+    too_many_requests: 'Muitos envios neste momento. Aguarde um pouco ou envie pelo WhatsApp.',
+    invalid_files: 'Use arquivos JPG, PNG ou PDF.',
+};
+
+// O envio passa pela função receita-intake, que aplica os limites no servidor.
+const intakeRequest = async body => {
+    const { data, error } = await supabase.functions.invoke('receita-intake', { body });
+    let payload = data;
+    if (error && !payload && error.context?.json) {
+        try { payload = await error.context.json(); } catch { /* Resposta sem JSON. */ }
+    }
+    if (error || payload?.error) throw new Error(intakeErrors[payload?.error] || 'Erro no envio. Envie pelo WhatsApp.');
+    return payload;
+};
+
 const ReceitaPage = () => {
     const [loading, setLoading] = useState(false);
     const [files, setFiles] = useState([]);
@@ -56,22 +73,21 @@ const ReceitaPage = () => {
         if (!firstName.trim() || !lastName.trim() || !phone || phone.length < 14) { toast.error('Preencha nome e WhatsApp válido.'); setLoading(false); return; }
         if (!files.length && !notes.trim()) { toast.error('Anexe a prescrição ou informe os dados para análise.'); setLoading(false); return; }
         try {
+            const extensions = files.map(f => f.name.split('.').pop().toLowerCase());
+            if (extensions.some(ext => !allowedExtensions.includes(ext))) throw new Error(intakeErrors.invalid_files);
             const filePaths = [];
-            for (const f of files) {
-                const ext = f.name.split('.').pop().toLowerCase();
-                const safeName = `intake/${crypto.randomUUID()}.${ext}`;
-                const { error } = await supabase.storage.from('receitas-privadas').upload(safeName, f.file, { upsert: false });
-                if (error) throw error;
-                filePaths.push(safeName);
+            if (files.length) {
+                const { uploads } = await intakeRequest({ action: 'prepare', extensions });
+                for (const [index, upload] of uploads.entries()) {
+                    const { error } = await supabase.storage.from('receitas-privadas').uploadToSignedUrl(upload.path, upload.token, files[index].file, { contentType: upload.contentType });
+                    if (error) throw new Error('Erro no envio. Envie pelo WhatsApp.');
+                    filePaths.push(upload.path);
+                }
             }
-            const { error } = await supabase.from('solicitacoes').insert([{
-                nome_cliente: `${firstName.trim()} ${lastName.trim()}`, whatsapp: phone,
-                arquivo_url: JSON.stringify(filePaths), observacoes: notes.trim() || null
-            }]);
-            if (error) throw error;
+            await intakeRequest({ action: 'submit', name: `${firstName.trim()} ${lastName.trim()}`, phone, notes: notes.trim(), paths: filePaths });
             toast.success('Solicitação recebida! Nossa equipe entrará em contato pelo WhatsApp.');
             setFiles([]); setFirstName(''); setLastName(''); setPhone(''); setNotes('');
-        } catch (err) { console.error(err); toast.error('Erro no envio. Envie pelo WhatsApp.'); }
+        } catch (err) { console.error(err); toast.error(err.message || 'Erro no envio. Envie pelo WhatsApp.'); }
         finally { setLoading(false); }
     };
 

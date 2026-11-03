@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { allowedOrigin, json } from '../_shared/http.ts';
-import { authAccount, ensureAuthAccount, hashToken, isAdminEmail, issueAdminSession, newToken, normalizeEmail, validEmail, validAccountPassword, orderStatuses, paymentStatuses, uuidPattern, requestIdPattern, prescriptionReferences, prescriptionLocation } from '../_shared/counter-security.ts';
+import { authAccount, ensureAuthAccount, hashToken, isAdminEmail, issueAdminSession, logAdminAction, newToken, normalizeEmail, validEmail, validAccountPassword, orderStatuses, paymentStatuses, uuidPattern, requestIdPattern, prescriptionReferences, prescriptionLocation } from '../_shared/counter-security.ts';
 
 const text = (value: unknown, limit = 120) => typeof value === 'string' ? value.trim().slice(0, limit) : '';
 const accountFields = 'id,email,username,display_name,role,is_active,created_at,updated_at';
@@ -115,6 +115,7 @@ Deno.serve(async (req: Request) => {
         p_is_active: body.isActive ?? true, p_admin_email: session.admin_username,
       });
       if (error) return json({ error: error.code === '23505' ? 'email_exists' : 'unable_to_save_account' }, 400, origin);
+      await logAdminAction(admin, session.admin_username, action, email || id, { role: action === 'save_account' ? role : undefined, passwordSet: Boolean(password) });
       return json({ id: savedId, ok: true }, 200, origin);
     }
 
@@ -124,6 +125,7 @@ Deno.serve(async (req: Request) => {
       const signedIn = await authAccount(admin, req);
       if (!signedIn) return json({ error: 'unauthorized' }, 401, origin);
       if (await isAdminEmail(admin, signedIn.email)) {
+        if (signedIn.aal !== 'aal2') return json({ error: 'mfa_required' }, 403, origin);
         // Administrador: mesma sessão do painel (8 horas), vale em todas as áreas.
         const adminSession = await issueAdminSession(admin, signedIn.email);
         if (!adminSession) return json({ error: 'login_unavailable' }, 503, origin);

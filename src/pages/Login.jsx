@@ -1,50 +1,66 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { clearFailedAttempts } from '../utils/security';
-import { currentAccountEmail, ensureAdminSession, sendPasswordReset, signInWithEmail, startGoogleLogin } from '../lib/accountAuth';
+import { currentAccountEmail, requestAdminSession, sendPasswordReset, signInWithEmail, signOutAccount, startGoogleLogin } from '../lib/accountAuth';
+import AdminMfaStep from '../components/AdminMfaStep';
 import { Toaster, toast } from 'sonner';
 import { Chrome, Lock, Mail, ArrowLeft, ShieldCheck } from 'lucide-react';
 
-// Administração: mesma conta do site (e-mail e senha ou Google). O e-mail precisa
-// estar cadastrado como administrador; quem já está conectado entra direto.
+// Administração: mesma conta do site (e-mail e senha ou Google), mais o código em duas
+// etapas. O e-mail precisa estar cadastrado como administrador.
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(true);
     const [notice, setNotice] = useState('');
+    const [mfaStep, setMfaStep] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
+    const requested = location.state?.returnTo;
+    const returnTo = typeof requested === 'string' && /^\/(?!\/)/.test(requested) ? requested : '/admin';
+
+    // Devolve false quando a conta conectada não é de administrador.
+    const enterPanel = useCallback(async () => {
+        const result = await requestAdminSession();
+        if (result.session) { navigate(returnTo, { replace: true }); return true; }
+        if (result.mfaRequired) { setMfaStep(true); return true; }
+        return false;
+    }, [navigate, returnTo]);
 
     useEffect(() => {
         clearFailedAttempts();
         let active = true;
         (async () => {
             const signedEmail = await currentAccountEmail();
-            const session = signedEmail ? await ensureAdminSession() : null;
+            const entered = signedEmail ? await enterPanel() : false;
             if (!active) return;
-            if (session) { navigate('/admin', { replace: true }); return; }
-            if (signedEmail) setNotice(`A conta ${signedEmail} não tem acesso de administrador. Entre com um e-mail de administrador.`);
+            if (signedEmail && !entered) setNotice(`A conta ${signedEmail} não tem acesso de administrador. Entre com um e-mail de administrador.`);
             setLoading(false);
         })();
         return () => { active = false; };
-    }, [navigate]);
+    }, [enterPanel]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true); setNotice('');
         try {
             await signInWithEmail(email, password);
-            const session = await ensureAdminSession();
-            if (!session) {
-                setNotice('Este e-mail entrou na conta do site, mas não tem acesso de administrador.');
-                return;
-            }
-            toast.success('Login realizado com sucesso!');
-            navigate('/admin');
+            setPassword('');
+            if (!await enterPanel()) setNotice('Este e-mail entrou na conta do site, mas não tem acesso de administrador.');
         } catch (error) {
             toast.error(error.message || 'Não foi possível entrar agora. Tente novamente.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleMfaVerified = async () => {
+        if (!await enterPanel()) throw new Error('Não foi possível abrir o painel. Tente novamente.');
+    };
+
+    const handleSwitchAccount = async () => {
+        await signOutAccount();
+        setMfaStep(false); setNotice('');
     };
 
     const handleGoogle = async () => {
@@ -75,6 +91,7 @@ const Login = () => {
                     <p>Painel Administrativo da Graphène Farmácia</p>
                 </div>
 
+                {mfaStep ? <AdminMfaStep onVerified={handleMfaVerified} onCancel={handleSwitchAccount} /> : <>
                 <button type="button" className="login-google-btn" onClick={handleGoogle} disabled={loading}>
                     <Chrome size={18} /> Continuar com Google
                 </button>
@@ -117,6 +134,7 @@ const Login = () => {
                 </form>
 
                 <button type="button" className="login-reset-link" onClick={handleReset}>Esqueci minha senha</button>
+                </>}
 
                 <div className="login-security-footer">
                     <ShieldCheck size={14} color="#10b981" />
@@ -316,6 +334,70 @@ const Login = () => {
 
                 .login-reset-link:hover {
                     text-decoration: underline;
+                }
+
+                .login-mfa h3 {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    margin: 0 0 10px;
+                    color: #0f172a;
+                    font-size: 1.05rem;
+                    font-weight: 800;
+                }
+
+                .login-mfa-text {
+                    margin: 0 0 14px;
+                    color: #475569;
+                    font-size: 0.86rem;
+                    line-height: 1.5;
+                }
+
+                .login-mfa-qr {
+                    display: block;
+                    margin: 0 auto 12px;
+                    padding: 8px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    background: #ffffff;
+                }
+
+                .login-mfa-secret {
+                    margin-bottom: 16px;
+                    color: #475569;
+                    font-size: 0.8rem;
+                }
+
+                .login-mfa-secret summary {
+                    cursor: pointer;
+                    font-weight: 600;
+                }
+
+                .login-mfa-secret p {
+                    margin: 8px 0 4px;
+                }
+
+                .login-mfa-secret code {
+                    display: block;
+                    overflow-wrap: anywhere;
+                    padding: 8px 10px;
+                    border-radius: 8px;
+                    background: #f1f5f9;
+                    color: #0f172a;
+                    font-size: 0.78rem;
+                }
+
+                .login-mfa .login-notice {
+                    margin-top: 14px;
+                }
+
+                .login-mfa-spin {
+                    animation: login-mfa-spin 1s linear infinite;
+                }
+
+                @keyframes login-mfa-spin {
+                    to { transform: rotate(360deg); }
                 }
 
                 .login-security-footer {

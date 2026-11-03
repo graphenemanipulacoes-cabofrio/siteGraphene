@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, ChevronDown, ChevronUp, ClipboardList, CreditCard, ExternalLink, FileText, LoaderCircle, MapPin, PackageCheck, RefreshCw, Search, Truck, UserRound } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { getSession } from '../utils/security';
+import { safeLink } from '../utils/counter';
 import { toast } from 'sonner';
 
 const money = value => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -157,7 +158,7 @@ const AdminOrders = ({ onUnauthorized }) => {
                                 <label className="span-2">Observações internas<textarea value={draft.adminNotes || ''} onChange={event => setDraft(order.id, 'adminNotes', event.target.value)} rows="3" placeholder="Separação, embalagem, contato com cliente..." /></label>
                             </div>
                             <div className="logistics-actions">
-                                {draft.invoiceUrl && <a href={draft.invoiceUrl} target="_blank" rel="noreferrer"><ExternalLink size={16}/> Abrir nota</a>}
+                                {safeLink(draft.invoiceUrl) && <a href={safeLink(draft.invoiceUrl)} target="_blank" rel="noreferrer"><ExternalLink size={16}/> Abrir nota</a>}
                                 <button onClick={() => saveOrder(order)} disabled={saving === order.id}>{saving === order.id ? <LoaderCircle className="spin"/> : <CheckCircle2/>} Salvar andamento</button>
                             </div>
                         </section>

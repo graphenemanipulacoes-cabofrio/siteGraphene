@@ -15,6 +15,16 @@ import AdminShipping from '../components/AdminShipping';
 import { getSession, destroySession } from '../utils/security';
 import { ensureAdminSession } from '../lib/accountAuth';
 
+const auditLabels = {
+    add_admin: 'Adicionou administrador', delete_admin: 'Removeu administrador',
+    save_account: 'Salvou acesso da equipe', revoke_account: 'Encerrou sessões da equipe', delete_account: 'Excluiu acesso da equipe',
+    approve_partner: 'Aprovou parceiro', reject_partner: 'Recusou parceiro',
+    create_recipient: 'Criou recebedor', update_recipient: 'Alterou recebedor', settle_recipient_commissions: 'Registrou repasse',
+    create_coupon: 'Criou cupom', toggle_coupon: 'Ativou ou pausou cupom', update_coupon_discount: 'Alterou desconto do cupom', save_product_discounts: 'Alterou desconto por produto',
+    add_partner_product_credit: 'Concedeu crédito de produtos', record_partner_product_usage: 'Registrou uso de crédito', delete_partner_credit_entry: 'Apagou lançamento de crédito',
+    update_request_status: 'Moveu solicitação', delete_request: 'Excluiu solicitação', update: 'Atualizou pedido',
+};
+
 const Admin = () => {
     const [requests, setRequests] = useState([]);
     const [expandedId, setExpandedId] = useState(null);
@@ -24,6 +34,7 @@ const Admin = () => {
     const [zoomLevel, setZoomLevel] = useState(1);
     const [view, setView] = useState(localStorage.getItem('admin_view') || 'active');
     const [admins, setAdmins] = useState([]);
+    const [auditEntries, setAuditEntries] = useState([]);
     const [newAdminEmail, setNewAdminEmail] = useState('');
     const [newAdminPass, setNewAdminPass] = useState('');
     const [adminEmail, setAdminEmail] = useState(() => String(getSession()?.user || '').toLowerCase());
@@ -87,8 +98,9 @@ const Admin = () => {
 
     const fetchAdmins = useCallback(async () => {
         try {
-            const data = await invokeAdmin({ action: 'list_admins' });
+            const [data, audit] = await Promise.all([invokeAdmin({ action: 'list_admins' }), invokeAdmin({ action: 'list_audit' })]);
             setAdmins(data.admins || []);
+            setAuditEntries(audit.entries || []);
         } catch {
             toast.error('Erro ao carregar administradores');
         }
@@ -539,6 +551,22 @@ const Admin = () => {
                                     </li>
                                 ))}
                             </ul>
+                        </Card>
+
+                        <Card>
+                            <div className="admin-section-heading"><strong>Registro de ações</strong><span>Últimas 100 ações sensíveis</span></div>
+                            {auditEntries.length === 0 ? <p style={{ padding: '1rem', opacity: 0.7 }}>Nenhuma ação registrada ainda.</p> : (
+                                <ul style={{ listStyle: 'none' }}>
+                                    {auditEntries.map(entry => (
+                                        <li key={entry.id} style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.86rem', overflowWrap: 'anywhere' }}>
+                                            <strong>{auditLabels[entry.action] || entry.action}</strong>
+                                            {entry.target && <span style={{ opacity: 0.75 }}> · {entry.target}</span>}
+                                            {entry.details?.passwordSet && <span style={{ color: '#f5c04e' }}> · senha definida</span>}
+                                            <div style={{ opacity: 0.6, fontSize: '0.78rem', marginTop: '2px' }}>{entry.actor} · {new Date(entry.created_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </Card>
                     </div>
                 ) : (

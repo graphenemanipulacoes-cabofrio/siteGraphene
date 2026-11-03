@@ -29,14 +29,35 @@ export const normalizeEmail = (value: unknown) => typeof value === 'string' ? va
 export const validEmail = (value: string) => value.length <= 320 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value);
 // Senha definida pelo admin ao cadastrar alguém sem conta (mesmo mínimo da tela de cadastro).
 export const validAccountPassword = (value: unknown): value is string => typeof value === 'string' && value.length >= 10 && value.length <= 128;
-// Conta conectada (cabeçalho Authorization enviado pelo supabase-js). Sem sessão: null.
+// Nível da sessão: aal2 = passou pela verificação em duas etapas. Só leia depois de
+// getUser, que é quem valida o token.
+const sessionAssurance = (jwt: string) => {
+  try { return String(JSON.parse(atob(jwt.split('.')[1].replaceAll('-', '+').replaceAll('_', '/'))).aal || 'aal1'); }
+  catch { return 'aal1'; }
+};
+// Conta conectada (cabeçalho Authorization enviado pelo supabase-js).
+// Sem sessão, ou com e-mail ainda não confirmado: null.
 // deno-lint-ignore no-explicit-any
 export async function authAccount(db: any, req: Request) {
   const jwt = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
   if (!jwt) return null;
   const { data, error } = await db.auth.getUser(jwt);
   const email = normalizeEmail(data?.user?.email);
-  return error || !data?.user || !email ? null : { id: String(data.user.id), email };
+  if (error || !data?.user || !email || !data.user.email_confirmed_at) return null;
+  return { id: String(data.user.id), email, aal: sessionAssurance(jwt) };
+}
+export const clientIp = (req: Request) => req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
+// Limite de uso no servidor. Devolve false ao passar do limite e null se o banco não responder.
+// deno-lint-ignore no-explicit-any
+export async function takeRateLimit(db: any, scope: string, identity: string, max: number, windowSeconds: number, amount = 1) {
+  const { data, error } = await db.rpc('take_rate_limit', { p_key: `${scope}:${await hashToken(identity)}`, p_max: max, p_window_seconds: windowSeconds, p_amount: amount });
+  return error ? null : data === true;
+}
+// Registro de ações sensíveis da administração. Nunca guardar senhas ou dados de saúde aqui.
+// deno-lint-ignore no-explicit-any
+export async function logAdminAction(db: any, actor: string, action: string, target: unknown, details: Record<string, unknown> = {}) {
+  const { error } = await db.from('admin_audit_log').insert({ actor, action, target: target == null ? null : String(target).slice(0, 200), details });
+  if (error) console.error('admin_audit_failed', action);
 }
 // deno-lint-ignore no-explicit-any
 export async function isAdminEmail(db: any, email: string) {

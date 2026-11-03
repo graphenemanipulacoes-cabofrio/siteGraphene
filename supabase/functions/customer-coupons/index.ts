@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.87.1';
 import { allowedOrigin, json } from '../_shared/http.ts';
+import { clientIp, takeRateLimit } from '../_shared/counter-security.ts';
 
 type Line = { productId: number; amount: number };
 
@@ -49,6 +50,8 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+    // Evita descobrir cupons por tentativa. Se o limite falhar, a compra não é bloqueada.
+    if (await takeRateLimit(admin, 'cupom', clientIp(req), 120, 300) === false) return json({ error: 'too_many_requests' }, 429, origin);
     const { data, error } = await admin.rpc('lookup_checkout_coupons', { p_query: query, p_exact: body.action === 'validate' });
     if (error) throw new Error('lookup_failed');
     // Explicit projection: never return recipient IDs, contacts or commissions.

@@ -24,3 +24,15 @@ verify_jwt = false
 [functions.balcao-api]
 verify_jwt = false
 
+
+[functions.admin-login]
+# The handler validates the account session and the verified second factor.
+verify_jwt = false
+
+[functions.partner-register]
+# The handler validates the account with auth.getUser() and requires a confirmed e-mail.
+verify_jwt = false
+
+[functions.receita-intake]
+# Public form: no login. The handler applies server-side rate limits.
+verify_jwt = false

@@ -57,6 +57,10 @@ const PartnerPortal = () => {
       navigate('/parceiros/entrar?reason=not_partner');
       return;
     }
+    if (response?.state === 'mfa_required') {
+      navigate('/login', { state: { returnTo: `/parceiros/painel${selectedPartner ? `?parceiro=${encodeURIComponent(selectedPartner)}` : ''}` } });
+      return;
+    }
     if (error || response?.error) {
       if (response?.error === 'unauthorized') {
         navigate('/parceiros/entrar');

@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { allowedOrigin, json } from '../_shared/http.ts';
-import { ensureAuthAccount, hashToken, normalizeEmail, requestIdPattern, uuidPattern, validAccountPassword, validEmail } from '../_shared/counter-security.ts';
+import { ensureAuthAccount, hashToken, logAdminAction, normalizeEmail, requestIdPattern, uuidPattern, validAccountPassword, validEmail } from '../_shared/counter-security.ts';
 
 const sha256 = hashToken;
 const clean = (value: unknown, max: number) => typeof value === 'string' ? value.trim().slice(0, max) : '';
@@ -15,6 +15,8 @@ const allowedStatuses = new Set(['awaiting_payment', 'paid', 'processing', 'ship
 const recipientRoles = new Set(['influencer', 'marketing', 'development', 'other']);
 const commissionTypes = new Set(['percentage', 'fixed']);
 const attributionScopes = new Set(['coupon', 'all_paid_orders']);
+// Ações que entram no registro da administração quando dão certo.
+const auditedActions = new Set(['add_admin', 'delete_admin', 'approve_partner', 'reject_partner', 'create_recipient', 'update_recipient', 'create_coupon', 'toggle_coupon', 'settle_recipient_commissions', 'add_partner_product_credit', 'record_partner_product_usage', 'delete_partner_credit_entry', 'update_request_status', 'delete_request', 'update']);
 
 Deno.serve(async (req: Request) => {
   const origin = allowedOrigin(req.headers.get('origin'));
@@ -34,6 +36,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
+    const handle = async () => {
     if (body.action === 'logout') {
       await admin.from('admin_sessions').delete().eq('token_hash', tokenHash);
       return json({ ok: true }, 200, origin);
@@ -362,6 +365,12 @@ Deno.serve(async (req: Request) => {
       return json({ admins: data || [], me: session.admin_username }, 200, origin);
     }
 
+    if (body.action === 'list_audit') {
+      const { data, error } = await admin.from('admin_audit_log').select('id,created_at,actor,action,target,details').order('created_at', { ascending: false }).limit(100);
+      if (error) return json({ error: 'unable_to_load_audit' }, 500, origin);
+      return json({ entries: data || [] }, 200, origin);
+    }
+
     // Qualquer admin cadastra outro pelo e-mail. Quem ainda não tem conta no site recebe
     // a senha inicial informada aqui; quem já tem continua com a própria senha (ou Google).
     if (body.action === 'add_admin') {
@@ -420,6 +429,13 @@ Deno.serve(async (req: Request) => {
     }
 
     return json({ error: 'invalid_action' }, 400, origin);
+    };
+    const response = await handle();
+    if (response.ok && auditedActions.has(body.action)) {
+      const target = body.email || body.adminId || body.partnerId || body.recipientId || body.orderId || body.requestId || body.entryId || body.code || body.id;
+      await logAdminAction(admin, session.admin_username, body.action, target, { status: body.status, passwordSet: body.action === 'add_admin' ? Boolean(body.password) : undefined });
+    }
+    return response;
   } catch {
     return json({ error: 'internal_error' }, 500, origin);
   }

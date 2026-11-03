@@ -73,7 +73,7 @@ const auth = {
   },
 };
 const client = { auth, storage: { from: () => ({ createSignedUploadUrl: async path => ({ data: { path, token: 'upload-token' }, error: null }) }) }, from: table => new Query(table), rpc: async (name, body) => { rpcCalls.push({ name, body }); return { data: name === 'counter_take_login_attempt' ? state.rateAllowed : name === 'auth_user_id_by_email' ? state.existingAuthId : '11111111-1111-4111-8111-111111111111', error: null }; } };
-const context = createContext({ Number, Array, Set, Math, Date, String, btoa, crypto: webcrypto, TextEncoder, Uint8Array, URL, Request, Response, console, Deno: { env: { get: name => name === 'SITE_URL' ? 'https://www.graphenemanipulacoes.com.br' : 'https://project.supabase.co' }, serve: fn => { handler = fn; } } });
+const context = createContext({ Number, Array, Set, Math, Date, String, btoa, atob, crypto: webcrypto, TextEncoder, Uint8Array, URL, Request, Response, console, Deno: { env: { get: name => name === 'SITE_URL' ? 'https://www.graphenemanipulacoes.com.br' : 'https://project.supabase.co' }, serve: fn => { handler = fn; } } });
 const securityModule = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/_shared/counter-security.ts', 'utf8')), { context });
 const httpModule = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/_shared/http.ts', 'utf8')), { context });
 const clientModule = new SyntheticModule(['createClient'], function() { this.setExport('createClient', () => client); }, { context });
@@ -106,11 +106,11 @@ assert.equal((await send({ action: 'update_order', sessionToken: 'a'.repeat(64) 
 // Login pela conta do site (Supabase Auth): sem sessão válida não entra; o papel vem do e-mail.
 assert.equal((await send({ action: 'login', username: 'balcao', password: 'senha-teste-segura' })).status, 401);
 assert.equal((await send({ action: 'login' }, { authorization: 'Bearer token-invalido' })).status, 401);
-state.authUsers['token-cliente'] = { id: '44444444-4444-4444-8444-444444444444', email: 'Cliente@Exemplo.com' };
+state.authUsers['token-cliente'] = { id: '44444444-4444-4444-8444-444444444444', email: 'Cliente@Exemplo.com', email_confirmed_at: '2026-01-01' };
 const customerLogin = await send({ action: 'login' }, { authorization: 'Bearer token-cliente' });
 assert.equal(customerLogin.status, 403);
 assert.equal(customerLogin.data.error, 'not_staff');
-state.authUsers['token-balcao'] = { id: '55555555-5555-4555-8555-555555555555', email: ' Balcao@Exemplo.com ' };
+state.authUsers['token-balcao'] = { id: '55555555-5555-4555-8555-555555555555', email: ' Balcao@Exemplo.com ', email_confirmed_at: '2026-01-01' };
 state.account = { id: '11111111-1111-4111-8111-111111111111', email: 'balcao@exemplo.com', display_name: 'Equipe teste', role: 'balcao', is_active: true, auth_version: 1 };
 const authenticated = await send({ action: 'login' }, { authorization: 'Bearer token-balcao' });
 assert.equal(authenticated.status, 200);
@@ -256,9 +256,17 @@ state.session.counter_accounts.role = 'balcao';
 // Administradores entram em todas as áreas da equipe com o próprio e-mail (conta do site).
 const sha = value => security.hashToken(value);
 state.account = null; state.adminSession = null;
-state.authUsers['token-admin'] = { id: '66666666-6666-4666-8666-666666666666', email: 'ThalesBX@Gmail.com' };
+const jwtWith = aal => `h.${btoa(JSON.stringify({ aal }))}.s`;
+const adminUser = { id: '66666666-6666-4666-8666-666666666666', email: 'ThalesBX@Gmail.com', email_confirmed_at: '2026-01-01' };
+state.authUsers[jwtWith('aal2')] = adminUser;
+state.authUsers[jwtWith('aal1')] = adminUser;
 state.adminRecord = { id: 1 };
-const adminAuth = { authorization: 'Bearer token-admin' };
+const adminAuth = { authorization: `Bearer ${jwtWith('aal2')}` };
+const adminWithoutSecondFactor = { authorization: `Bearer ${jwtWith('aal1')}` };
+// Senha sem o código em duas etapas não abre nenhuma área de administrador.
+const withoutMfa = await send({ action: 'login' }, adminWithoutSecondFactor);
+assert.equal(withoutMfa.status, 403);
+assert.equal(withoutMfa.data.error, 'mfa_required');
 const adminLogin = await send({ action: 'login' }, adminAuth);
 assert.equal(adminLogin.status, 200);
 assert.equal(adminLogin.data.user.role, 'admin');
@@ -289,7 +297,7 @@ assert.equal(calls.filter(call => call.table === 'admin_sessions').at(-1).operat
 state.adminSession = null;
 // Login do painel admin (admin-login): limite de tentativas no servidor e senha forte.
 let adminLoginHandler;
-const adminContext = createContext({ Number, Array, Set, Math, Date, String, btoa, crypto: webcrypto, TextEncoder, Uint8Array, URL, Request, Response, console, Deno: { env: { get: name => name === 'SITE_URL' ? 'https://www.graphenemanipulacoes.com.br' : 'https://project.supabase.co' }, serve: fn => { adminLoginHandler = fn; } } });
+const adminContext = createContext({ Number, Array, Set, Math, Date, String, btoa, atob, crypto: webcrypto, TextEncoder, Uint8Array, URL, Request, Response, console, Deno: { env: { get: name => name === 'SITE_URL' ? 'https://www.graphenemanipulacoes.com.br' : 'https://project.supabase.co' }, serve: fn => { adminLoginHandler = fn; } } });
 const adminSecurity = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/_shared/counter-security.ts', 'utf8')), { context: adminContext });
 const adminHttp = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/_shared/http.ts', 'utf8')), { context: adminContext });
 const adminClient = new SyntheticModule(['createClient'], function() { this.setExport('createClient', () => client); }, { context: adminContext });
@@ -303,11 +311,17 @@ const panelLogin = async (headers = {}, origin = 'https://www.graphenemanipulaco
 assert.equal((await panelLogin(adminAuth, 'https://attacker.example')).status, 403);
 assert.equal((await panelLogin()).status, 401); // Usuário e senha no corpo não valem.
 assert.equal((await panelLogin({ authorization: 'Bearer token-invalido' })).status, 401);
+const panelWithoutMfa = await panelLogin(adminWithoutSecondFactor);
+assert.equal(panelWithoutMfa.status, 403);
+assert.equal(panelWithoutMfa.data.error, 'not_admin', 'sem cadastro de admin nesta etapa, nega antes');
 state.adminRecord = null;
 const notAdmin = await panelLogin({ authorization: 'Bearer token-cliente' });
 assert.equal(notAdmin.status, 403);
 assert.equal(notAdmin.data.error, 'not_admin');
 state.adminRecord = { id: 1 };
+const panelMfa = await panelLogin(adminWithoutSecondFactor);
+assert.equal(panelMfa.status, 403);
+assert.equal(panelMfa.data.error, 'mfa_required');
 const panelSession = await panelLogin(adminAuth);
 assert.equal(panelSession.status, 200);
 assert.match(panelSession.data.token, /^[A-Za-z0-9_-]{43}$/);

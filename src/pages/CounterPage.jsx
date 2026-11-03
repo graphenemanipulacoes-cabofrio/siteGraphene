@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, ArrowLeft, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Chrome, Clock, Copy, ExternalLink, FileText, Inbox, LoaderCircle, LockKeyhole, LogOut, MapPin, MessageCircle, Moon, PackageCheck, Printer, Receipt, RefreshCw, Search, ShieldCheck, StickyNote, Sun, Truck, UserRound, X, XCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { counterRequest, enterStaffArea } from '../lib/counterApi';
 import { currentAccountEmail, signInWithEmail, startGoogleLogin } from '../lib/accountAuth';
 import { supabase } from '../lib/supabaseClient';
@@ -195,6 +195,7 @@ export default function CounterPage() {
     // Administradores entram com o login do painel (ou direto, se já entraram nele).
     const [session, setSession] = useState(() => readCounterSession() || adminStaffSession());
     const [theme, setTheme] = useState(readTheme);
+    const navigate = useNavigate();
     const [credentials, setCredentials] = useState({ email: '', password: '' });
     const [loginBusy, setLoginBusy] = useState(false);
     const [logoutBusy, setLogoutBusy] = useState(false);
@@ -282,18 +283,26 @@ export default function CounterPage() {
             if (!await currentAccountEmail() || !active) return;
             setLoginBusy(true);
             try { const created = await enterStaffArea('balcao', COUNTER_SESSION_KEY); if (active) { setLoginError(''); setSession(created); } }
-            catch (failure) { if (active) setLoginError(failure.message); }
+            catch (failure) {
+                if (!active) return;
+                // Admin ainda sem o código em duas etapas: confirma no login e volta para cá.
+                if (failure.code === 'mfa_required') navigate('/login', { state: { returnTo: '/balcaographene' } });
+                else setLoginError(failure.message);
+            }
             finally { if (active) setLoginBusy(false); }
         })();
         return () => { active = false; };
-    }, [session]);
+    }, [session, navigate]);
     const login = async event => {
         event.preventDefault(); setLoginBusy(true); setLoginError('');
         try {
             await signInWithEmail(credentials.email, credentials.password);
             const created = await enterStaffArea('balcao', COUNTER_SESSION_KEY);
             setSession(created); setCredentials({ email: '', password: '' });
-        } catch (failure) { setLoginError(failure.message); }
+        } catch (failure) {
+            if (failure.code === 'mfa_required') navigate('/login', { state: { returnTo: '/balcaographene' } });
+            else setLoginError(failure.message);
+        }
         finally { setLoginBusy(false); }
     };
     const loginWithGoogle = async () => {

@@ -13,11 +13,15 @@
 - O checkout aceita somente as origens oficiais com e sem `www`, a publicação estável desta mesma loja em `https://site-graphene.vercel.app`, a origem configurada em `SITE_URL` e localhost para desenvolvimento. Não aceita outros projetos/subdomínios Vercel. O pagamento retorna à mesma origem HTTPS que iniciou a compra para preservar a sessão.
 - Novas tentativas reaproveitam o pedido e a URL de pagamento já salva; pedidos concluídos não recebem outra preferência. Falhas recebem uma referência de diagnóstico, sem expor CPF, endereço ou credenciais nos logs da aplicação.
 - O webhook valida a assinatura HMAC, consulta o pagamento no Mercado Pago e compara o valor antes de marcar como pago.
-- A aplicação recebe cabeçalhos contra MIME sniffing, clickjacking e permissões desnecessárias.
+- A aplicação recebe cabeçalhos contra MIME sniffing, clickjacking e permissões desnecessárias, além de CSP sem script inline ou de terceiros.
+- Admin entra com segunda etapa (código do autenticador); as funções exigem sessão `aal2` antes de liberar qualquer área de administrador.
+- O envio público de receitas passa por `receita-intake`, com links assinados e limites por endereço e por dia. O bucket privado e `solicitacoes` não aceitam gravação direta do navegador.
+- A solicitação de parceria exige conta com e-mail confirmado e nunca cria contas.
+- A busca de cupons tem limite por endereço, e ações administrativas ficam em `admin_audit_log`, sem acesso pelo navegador.
 
 ## Antes de produção
 
-1. Por decisão do dono (30/10/2026), o cadastro não pede código de confirmação de e-mail ("Confirm email" desligado no Supabase Auth). Por isso, e-mails de admin e da equipe sem conta só são cadastrados com senha inicial, criando a conta na hora. [Proteção contra senhas vazadas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) depende do plano Pro.
+1. Mantenha "Confirm email" ligado no Supabase Auth: desligado, qualquer pessoa cria conta com o e-mail de outra. Configure [SMTP próprio](https://supabase.com/docs/guides/auth/auth-smtp), porque o envio padrão só entrega para a equipe do projeto. E-mails de admin e da equipe sem conta são cadastrados com senha inicial, criando a conta na hora. [Proteção contra senhas vazadas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) depende do plano Pro.
 2. Configure CAPTCHA no cadastro/login e limites de envio de e-mail no painel do Supabase.
 3. Aplique `supabase/migrations/202609020001_secure_ecommerce.sql`.
 4. Cadastre `SITE_URL`, `MERCADO_PAGO_ACCESS_TOKEN` e `MERCADO_PAGO_WEBHOOK_SECRET` como secrets das Edge Functions.
@@ -25,7 +29,7 @@
 6. Cadastre preços maiores que zero em todos os produtos vendáveis.
 7. Teste com credenciais de teste do Mercado Pago antes de trocar para produção.
 
-O painel administrativo usa o Supabase Auth: `admin-login` confere a sessão da conta (`auth.getUser()`) e o e-mail em `admins` antes de emitir o token do painel. Nenhuma chave privilegiada vai para o navegador.
+O painel administrativo usa o Supabase Auth: `admin-login` confere a sessão da conta (`auth.getUser()`), a segunda etapa (`aal2`) e o e-mail em `admins` antes de emitir o token do painel. Nenhuma chave privilegiada vai para o navegador.
 
 Nunca coloque service-role key, access token ou webhook secret em `.env` do Vite ou em qualquer variável `VITE_*`.
 
