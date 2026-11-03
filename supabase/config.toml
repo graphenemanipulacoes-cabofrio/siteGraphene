@@ -36,3 +36,7 @@ verify_jwt = false
 [functions.receita-intake]
 # Public form: no login. The handler applies server-side rate limits.
 verify_jwt = false
+
+[functions.customer-signup]
+# Public sign-up: no login yet. The handler applies server-side rate limits.
+verify_jwt = false

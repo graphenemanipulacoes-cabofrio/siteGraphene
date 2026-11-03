@@ -7,21 +7,28 @@ import PasswordField from '../components/PasswordField';
 import { useStore } from '../context/StoreContext';
 import { currentStaffRole } from '../lib/accountAuth';
 
-// Mensagens do Supabase Auth em português: o código do erro não muda com o idioma.
+// Mensagens do login e do cadastro em português: o código do erro não muda com o idioma.
 const tooManyAttempts = 'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.';
-const existingAccount = 'Este e-mail já tem conta. Entre com sua senha ou use "Esqueci minha senha".';
 const authErrorMessages = {
     over_request_rate_limit: tooManyAttempts,
-    over_email_send_rate_limit: tooManyAttempts,
-    user_already_exists: existingAccount,
-    email_exists: existingAccount,
+    too_many_requests: tooManyAttempts,
+    already_registered: 'Este e-mail já tem conta. Entre com sua senha ou use "Esqueci minha senha".',
     weak_password: 'Essa senha é fraca demais. Use pelo menos 10 caracteres, misturando letras, números e símbolos.',
-    email_address_invalid: 'Confira o e-mail digitado e tente de novo.',
-    email_not_confirmed: 'Confirme seu e-mail antes de entrar. Procure a mensagem de confirmação na caixa de entrada e no spam.',
-    email_address_not_authorized: 'Não foi possível enviar o e-mail de confirmação agora. Continue com Google ou tente mais tarde.',
+    invalid_signup: 'Confira o nome, o e-mail e a senha (mínimo de 10 caracteres).',
 };
-const authErrorMessage = (error, mode) => authErrorMessages[error.code]
-    || (error.status === 429 ? tooManyAttempts : mode === 'login' ? 'E-mail ou senha inválidos.' : 'Não foi possível criar a conta agora. Tente novamente.');
+const authErrorMessage = (code, mode) => authErrorMessages[code]
+    || (mode === 'login' ? 'E-mail ou senha inválidos.' : 'Não foi possível criar a conta agora. Tente novamente.');
+
+// O cadastro passa pela função customer-signup: cria a conta sem confirmação de e-mail
+// e aplica o limite de tentativas no servidor.
+const createAccount = async (email, password, fullName) => {
+    const { data, error } = await supabase.functions.invoke('customer-signup', { body: { email, password, fullName } });
+    let payload = data;
+    if (error && !payload && error.context?.json) {
+        try { payload = await error.context.json(); } catch { /* Resposta sem JSON. */ }
+    }
+    return error || payload?.error ? payload?.error || 'signup_unavailable' : null;
+};
 
 const CustomerAccessPage = () => {
     const [mode, setMode] = useState('login');
@@ -58,13 +65,18 @@ const CustomerAccessPage = () => {
         if (mode === 'signup' && password !== confirmPassword) { setError('As duas senhas não são iguais. Digite de novo.'); return; }
         setLoading(true);
         try {
-            const redirectTo = `${window.location.origin}/minha-conta`;
-            const result = mode === 'login'
-                ? await supabase.auth.signInWithPassword({ email, password })
-                : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo, data: { full_name: fullName.trim() } } });
-            if (result.error) { setError(authErrorMessage(result.error, mode)); return; }
-            if (mode === 'signup' && !result.data.session) {
-                setMessage(`Conta criada. Enviamos o link de confirmação para ${email}. Se não aparecer em alguns minutos, confira o spam.`);
+            if (mode === 'signup') {
+                const signupError = await createAccount(email.trim(), password, fullName.trim());
+                if (signupError) { setError(authErrorMessage(signupError, mode)); return; }
+            }
+            const { error: loginError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+            if (loginError) {
+                if (mode === 'signup') {
+                    setMode('login'); setConfirmPassword('');
+                    setMessage('Conta criada. Entre com seu e-mail e senha.');
+                    return;
+                }
+                setError(loginError.status === 429 ? tooManyAttempts : authErrorMessage(loginError.code, mode));
                 return;
             }
             if (pendingProduct) addItem(pendingProduct);

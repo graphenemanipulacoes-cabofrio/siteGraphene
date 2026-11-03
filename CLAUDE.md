@@ -33,11 +33,11 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - **Segunda etapa do admin:** `admin-login`, o login de admin em `balcao-api` e a visão de admin em `partner-portal` exigem sessão `aal2` (código do autenticador, TOTP do Supabase); sem isso respondem `mfa_required`. A tela é `AdminMfaStep` (QR no primeiro acesso, código nos seguintes). Celular perdido: remover o fator em Supabase › Authentication › Users.
 - **Envio de receita:** `/receita` passa pela função pública `receita-intake` (`prepare` gera links assinados em `receitas-privadas/intake/`; `submit` grava em `solicitacoes`). Limites no servidor: 6 por hora por endereço e 60 por dia no total; sem o banco de limites, recusa o envio. Não reabrir política pública de envio nem insert em `solicitacoes`.
 - **Parceria:** `partner-register` não cria contas. Exige conta com e-mail confirmado e usa o e-mail e o id da conta, nunca os do formulário.
-- **Cadastro sem confirmação de e-mail** (decisão do dono em 03/11/2026; "Confirm email" desligado no painel). Quem cria conta entra na hora, então o e-mail da conta não prova a posse. Travas da migração `contas_sem_confirmacao`, que não devem ser removidas enquanto a confirmação estiver desligada:
+- **Cadastro sem confirmação de e-mail** (decisão do dono em 03/11/2026). `/entrar` cria a conta pela função `customer-signup`, já confirmada, com até 10 cadastros por hora por endereço; depois entra com `signInWithPassword`. Não voltar a usar `auth.signUp` no site. "Confirm email" continua ligado no painel de propósito: assim o cadastro direto pela API pública não gera conta utilizável e não contorna o limite, e a troca de e-mail da conta segue exigindo confirmação. Como o e-mail da conta não prova a posse, valem estas travas (migração `contas_sem_confirmacao`):
   - Gatilho `protect_staff_email`: nenhuma conta nova ou troca de e-mail pode usar um e-mail de `admins` ou `counter_accounts`. Por isso as funções criam a conta antes de gravar o e-mail nessas tabelas. Se a conta de alguém da equipe for apagada, remova e cadastre a pessoa de novo.
   - `ensureAuthAccount`: conta com senha que ainda não é da equipe só recebe papel com senha nova; sessões e códigos do celular antigos são apagados (`reset_account_access`). Conta só com Google não precisa de senha.
   - Gatilho `secure_account_on_external_login`: ao ligar o Google a uma conta com senha, a senha, as sessões e os códigos antigos deixam de valer. A pessoa continua entrando com Google e pode criar outra senha em `/minha-conta`.
-  - Hook `hook_limit_signups` (Authentication › Hooks › Before User Created): até 10 contas novas por hora por endereço. Verificação: `scripts/verify-account-guards-db.sql` (dados sintéticos com rollback).
+  - Verificação: `scripts/verify-account-guards-db.sql` (dados sintéticos com rollback).
 - **Campos de senha:** sempre `PasswordField` (olhinho para mostrar ou ocultar). O cadastro em `/entrar` pede a senha duas vezes.
 - **Limites:** `takeRateLimit` (`_shared/counter-security.ts`, RPC `take_rate_limit`, só service_role) guarda o endereço em hash. `customer-coupons` aceita 120 consultas em 5 minutos por endereço.
 - **Registro de ações:** `logAdminAction` grava em `admin_audit_log` (sem acesso pelo navegador); aparece em Gerenciar Admins › Registro de ações.
@@ -76,7 +76,7 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - `npm run dev`: ambiente local.
 - `npm run build`: build + páginas de SEO. `npm run lint`: lint (deve terminar sem erros).
 - `node scripts/verify-seo.mjs` e `node --experimental-vm-modules scripts/verify-counter.mjs`: verificações.
-- `node scripts/bundle-counter-function.mjs`: gera em `supabase/deploy/` arquivos únicos de `balcao-api`, `admin-login`, `admin-orders`, `partner-portal`, `partner-register` e `receita-intake` (com `_shared`) para publicar pelo editor do Supabase.
+- `node scripts/bundle-counter-function.mjs`: gera em `supabase/deploy/` arquivos únicos de `balcao-api`, `admin-login`, `admin-orders`, `partner-portal`, `partner-register`, `receita-intake` e `customer-signup` (com `_shared`) para publicar pelo editor do Supabase.
 
 ## Armazenamento (Supabase)
 - `receitas` (público): só fotos de produto. Sem listagem e sem envio anônimo; o admin envia fotos por link assinado (ação `product_image_upload` da função `admin-orders`). Aceita JPG/PNG/WEBP até 5 MB.
@@ -87,7 +87,7 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - O repositório é público: nunca colocar dados ou backups sem criptografia nos logs ou artefatos do Actions. O Storage (receitas e fotos) não entra no backup.
 
 ## Pendências técnicas conhecidas
-- E-mails de conta: o envio padrão do Supabase só entrega para a equipe do projeto (2 por hora), então cliente real não recupera a senha até configurar SMTP próprio (Authentication › Emails). Modelo em português: `supabase/templates/redefinir-senha.html` (assunto no `<title>`); colar em Authentication › Emails. `confirmar-conta.html` só volta a valer se a confirmação for religada. DNS do domínio fica na UOL; plano sugerido: Resend.
+- E-mails de conta: o envio padrão do Supabase só entrega para a equipe do projeto (2 por hora), então cliente real não recupera a senha até configurar SMTP próprio (Authentication › Emails). Modelo em português: `supabase/templates/redefinir-senha.html` (assunto no `<title>`); colar em Authentication › Emails. `confirmar-conta.html` só seria usado se o cadastro voltasse a confirmar o e-mail. DNS do domínio fica na UOL; plano sugerido: Resend.
 - Painel do Supabase (Authentication › URL Configuration): Site URL ainda é `https://site-graphene.vercel.app` e Redirect URLs só tem `http://127.0.0.1:5173/**`. Trocar para `https://www.graphenemanipulacoes.com.br`, liberando www, domínio sem www e o endereço estável da Vercel com `/**`.
 - Contas antigas do balcão (só usuário) e admins antigos (`thalesbxempresa`, `thales`, `rodrigo`) não entram mais até receberem e-mail no admin.
 - Proteção contra senhas vazadas no login de clientes exige o plano Pro do Supabase.

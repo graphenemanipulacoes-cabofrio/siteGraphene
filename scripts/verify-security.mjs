@@ -9,7 +9,7 @@ import { webcrypto } from 'node:crypto';
 const site = 'https://www.graphenemanipulacoes.com.br';
 const jwtWith = aal => `h.${btoa(JSON.stringify({ aal }))}.s`;
 const state = {};
-const reset = () => Object.assign(state, { rate: {}, rateError: false, rpc: [], inserts: [], signedError: false, existing: null, insertError: null, isAdmin: false, users: {}, createUserCalled: false, partners: [] });
+const reset = () => Object.assign(state, { rate: {}, rateError: false, rpc: [], inserts: [], signedError: false, existing: null, insertError: null, isAdmin: false, users: {}, createUserCalled: false, createUserError: null, partners: [] });
 
 class Query {
   constructor(table) { this.table = table; }
@@ -38,7 +38,7 @@ const client = {
   storage: { from: bucket => ({ createSignedUploadUrl: async path => state.signedError ? { data: null, error: {} } : { data: { path: `${bucket === 'receitas-privadas' ? '' : 'errado/'}${path}`, token: 'token-de-envio' }, error: null } }) },
   auth: {
     getUser: async jwt => state.users[jwt] ? { data: { user: state.users[jwt] }, error: null } : { data: { user: null }, error: { message: 'invalid' } },
-    admin: { createUser: async () => { state.createUserCalled = true; return { data: { user: { id: 'x' } }, error: null }; } },
+    admin: { createUser: async attributes => { state.createUserCalled = attributes; return state.createUserError ? { data: { user: null }, error: state.createUserError } : { data: { user: { id: 'x' } }, error: null }; } },
   },
 };
 
@@ -120,6 +120,38 @@ assert.equal(state.createUserCalled, false, 'a função não cria contas');
 state.existing = { id: confirmed.id };
 assert.equal((await register(partner, auth)).status, 409);
 
+// Cadastro de clientes: sem confirmação de e-mail, com limite no servidor.
+const signupFn = await loadHandler('customer-signup');
+const newCustomer = { fullName: ' Pessoa Teste ', email: ' Nova@Example.invalid ', password: 'senha-de-teste-1' };
+reset();
+assert.equal((await signupFn(newCustomer, {}, 'https://attacker.example')).status, 403);
+assert.equal((await signupFn('nao-e-json')).status, 400);
+for (const invalid of [{ email: 'sem-arroba' }, { password: 'curta' }, { password: 123456789012 }, { fullName: ' ' }]) {
+  assert.equal((await signupFn({ ...newCustomer, ...invalid })).status, 400, JSON.stringify(invalid));
+}
+assert.equal(state.rpc.length, 0, 'dados inválidos não gastam o limite');
+assert.equal(state.createUserCalled, false);
+const created = await signupFn(newCustomer);
+assert.equal(created.status, 201);
+assert.equal(JSON.stringify(state.createUserCalled), JSON.stringify({ email: 'nova@example.invalid', password: 'senha-de-teste-1', email_confirm: true, user_metadata: { full_name: 'Pessoa Teste' } }));
+assert.equal(state.rpc[0].body.p_max, 10);
+assert.equal(state.rpc[0].body.p_window_seconds, 3600);
+assert.equal(state.rpc[0].body.p_key.includes('203.0.113.9'), false, 'o endereço não é gravado em texto puro');
+reset(); state.rate['cadastro-ip'] = false;
+assert.equal((await signupFn(newCustomer)).status, 429);
+assert.equal(state.createUserCalled, false, 'acima do limite, nenhuma conta é criada');
+reset(); state.rateError = true;
+assert.equal((await signupFn(newCustomer)).status, 503, 'sem limite disponível, não cria conta');
+assert.equal(state.createUserCalled, false);
+reset(); state.createUserError = { code: 'email_exists' };
+const duplicate = await signupFn(newCustomer);
+assert.equal(duplicate.status, 409);
+assert.equal(duplicate.data.error, 'already_registered');
+reset(); state.createUserError = { code: 'weak_password' };
+assert.equal((await signupFn(newCustomer)).data.error, 'weak_password');
+reset(); state.createUserError = { code: 'unexpected_failure' };
+assert.equal((await signupFn(newCustomer)).status, 503);
+
 // Painel de parceiros: a visão de administrador exige as duas etapas.
 const portal = await loadHandler('partner-portal');
 reset();
@@ -151,11 +183,13 @@ assert.match(readFileSync('supabase/functions/admin-login/index.ts', 'utf8'), /a
 const guards = read('_contas_sem_confirmacao.sql');
 assert.match(guards, /before insert or update of email on auth\.users/, 'e-mail da equipe reservado');
 assert.match(guards, /after insert on auth\.identities/, 'login do Google derruba a senha antiga');
-for (const signature of ['protect_staff_email\\(\\)', 'secure_account_on_external_login\\(\\)', 'auth_account_access\\(text\\)', 'reset_account_access\\(uuid\\)', 'hook_limit_signups\\(jsonb\\)']) {
+for (const signature of ['protect_staff_email\\(\\)', 'secure_account_on_external_login\\(\\)', 'auth_account_access\\(text\\)', 'reset_account_access\\(uuid\\)']) {
   assert.match(guards, new RegExp(`revoke all on function public\\.${signature} from public, anon, authenticated`));
 }
 const signup = readFileSync('src/pages/CustomerAccessPage.jsx', 'utf8');
 assert.match(signup, /password !== confirmPassword/, 'o cadastro confere as duas senhas');
-assert.match(signup, /error\.status === 429/, 'excesso de tentativas tem mensagem própria');
+assert.match(signup, /too_many_requests: tooManyAttempts/, 'excesso de tentativas tem mensagem própria');
+assert.match(signup, /functions\.invoke\('customer-signup'/, 'o cadastro passa pela função com limite');
+assert.doesNotMatch(signup, /auth\.signUp\(/, 'o site não cadastra direto pela API pública');
 
-console.log('Security checks passed: prescription intake limits and path validation, partner requests only from confirmed accounts, second factor for admin views, CSP and access lockdown. No real data touched.');
+console.log('Security checks passed: prescription intake limits and path validation, customer sign-up limits, partner requests only from confirmed accounts, second factor for admin views, CSP and access lockdown. No real data touched.');

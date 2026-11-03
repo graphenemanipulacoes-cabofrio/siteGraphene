@@ -17,8 +17,6 @@ do $$
 declare
   v_access record;
   v_blocked boolean;
-  v_result jsonb;
-  v_event jsonb := '{"metadata":{"ip_address":"203.0.113.77"},"user":{"email":"novo@example.invalid"}}';
 begin
   -- Ninguém cria conta com e-mail reservado da equipe.
   v_blocked := false;
@@ -71,25 +69,11 @@ begin
   perform public.reset_account_access('a0000000-0000-4000-8000-000000000002');
   assert not exists (select 1 from auth.sessions where user_id = 'a0000000-0000-4000-8000-000000000002'), 'sessões limpas';
 
-  -- Limite de cadastro: 10 por hora por endereço, sem guardar o endereço em texto.
-  for i in 1..10 loop
-    v_result := public.hook_limit_signups(v_event);
-    assert v_result = '{}'::jsonb, 'dentro do limite';
-  end loop;
-  v_result := public.hook_limit_signups(v_event);
-  assert (v_result->'error'->>'http_code')::int = 429, 'acima do limite';
-  v_result := public.hook_limit_signups(jsonb_set(v_event, '{metadata,ip_address}', '"203.0.113.78"'));
-  assert v_result = '{}'::jsonb, 'outro endereço não é afetado';
-  assert not exists (select 1 from public.rate_limits where key like '%203.0.113%'), 'endereço só em hash';
-
   -- Permissões: o navegador não chama nenhuma dessas funções.
   assert not has_function_privilege('anon', 'public.auth_account_access(text)', 'execute'), 'anon sem auth_account_access';
   assert not has_function_privilege('authenticated', 'public.auth_account_access(text)', 'execute'), 'authenticated sem auth_account_access';
   assert not has_function_privilege('anon', 'public.reset_account_access(uuid)', 'execute'), 'anon sem reset_account_access';
   assert not has_function_privilege('authenticated', 'public.reset_account_access(uuid)', 'execute'), 'authenticated sem reset_account_access';
-  assert not has_function_privilege('anon', 'public.hook_limit_signups(jsonb)', 'execute'), 'anon sem hook';
-  assert not has_function_privilege('authenticated', 'public.hook_limit_signups(jsonb)', 'execute'), 'authenticated sem hook';
-  assert has_function_privilege('supabase_auth_admin', 'public.hook_limit_signups(jsonb)', 'execute'), 'Auth chama o hook';
   assert has_function_privilege('service_role', 'public.auth_account_access(text)', 'execute'), 'funções consultam a conta';
   assert has_function_privilege('service_role', 'public.reset_account_access(uuid)', 'execute'), 'funções limpam acessos';
 end;
