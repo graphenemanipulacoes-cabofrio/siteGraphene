@@ -17,8 +17,6 @@ Deno.serve(async (req: Request) => {
     const account = await authAccount(admin, req);
     if (!account) return json({ error: 'unauthorized' }, 401, origin);
     if (!await isAdminEmail(admin, account.email)) return json({ error: 'not_admin' }, 403, origin);
-    // A senha sozinha não abre a administração: exige a verificação em duas etapas.
-    if (account.aal !== 'aal2') return json({ error: 'mfa_required' }, 403, origin);
 
     const session = await issueAdminSession(admin, account.email);
     if (!session) return json({ error: 'session_error' }, 500, origin);

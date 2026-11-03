@@ -275,17 +275,10 @@ state.session.counter_accounts.role = 'balcao';
 // Administradores entram em todas as áreas da equipe com o próprio e-mail (conta do site).
 const sha = value => security.hashToken(value);
 state.account = null; state.adminSession = null;
-const jwtWith = aal => `h.${btoa(JSON.stringify({ aal }))}.s`;
 const adminUser = { id: '66666666-6666-4666-8666-666666666666', email: 'ThalesBX@Gmail.com', email_confirmed_at: '2026-01-01' };
-state.authUsers[jwtWith('aal2')] = adminUser;
-state.authUsers[jwtWith('aal1')] = adminUser;
+state.authUsers['token-admin'] = adminUser;
 state.adminRecord = { id: 1 };
-const adminAuth = { authorization: `Bearer ${jwtWith('aal2')}` };
-const adminWithoutSecondFactor = { authorization: `Bearer ${jwtWith('aal1')}` };
-// Senha sem o código em duas etapas não abre nenhuma área de administrador.
-const withoutMfa = await send({ action: 'login' }, adminWithoutSecondFactor);
-assert.equal(withoutMfa.status, 403);
-assert.equal(withoutMfa.data.error, 'mfa_required');
+const adminAuth = { authorization: 'Bearer token-admin' };
 const adminLogin = await send({ action: 'login' }, adminAuth);
 assert.equal(adminLogin.status, 200);
 assert.equal(adminLogin.data.user.role, 'admin');
@@ -330,17 +323,11 @@ const panelLogin = async (headers = {}, origin = 'https://www.graphenemanipulaco
 assert.equal((await panelLogin(adminAuth, 'https://attacker.example')).status, 403);
 assert.equal((await panelLogin()).status, 401); // Usuário e senha no corpo não valem.
 assert.equal((await panelLogin({ authorization: 'Bearer token-invalido' })).status, 401);
-const panelWithoutMfa = await panelLogin(adminWithoutSecondFactor);
-assert.equal(panelWithoutMfa.status, 403);
-assert.equal(panelWithoutMfa.data.error, 'not_admin', 'sem cadastro de admin nesta etapa, nega antes');
 state.adminRecord = null;
 const notAdmin = await panelLogin({ authorization: 'Bearer token-cliente' });
 assert.equal(notAdmin.status, 403);
 assert.equal(notAdmin.data.error, 'not_admin');
 state.adminRecord = { id: 1 };
-const panelMfa = await panelLogin(adminWithoutSecondFactor);
-assert.equal(panelMfa.status, 403);
-assert.equal(panelMfa.data.error, 'mfa_required');
 const panelSession = await panelLogin(adminAuth);
 assert.equal(panelSession.status, 200);
 assert.match(panelSession.data.token, /^[A-Za-z0-9_-]{43}$/);

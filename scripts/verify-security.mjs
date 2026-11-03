@@ -7,7 +7,6 @@ import { SourceTextModule, SyntheticModule, createContext } from 'node:vm';
 import { webcrypto } from 'node:crypto';
 
 const site = 'https://www.graphenemanipulacoes.com.br';
-const jwtWith = aal => `h.${btoa(JSON.stringify({ aal }))}.s`;
 const state = {};
 const reset = () => Object.assign(state, { rate: {}, rateError: false, rpc: [], inserts: [], signedError: false, existing: null, insertError: null, isAdmin: false, users: {}, createUserCalled: false, createUserError: null, partners: [] });
 
@@ -152,16 +151,14 @@ assert.equal((await signupFn(newCustomer)).data.error, 'weak_password');
 reset(); state.createUserError = { code: 'unexpected_failure' };
 assert.equal((await signupFn(newCustomer)).status, 503);
 
-// Painel de parceiros: a visão de administrador exige as duas etapas.
+// Painel de parceiros: a visão de administrador só abre para e-mail cadastrado em admins.
 const portal = await loadHandler('partner-portal');
 reset();
 const admin = { id: '22222222-2222-4222-8222-222222222222', email: 'admin@example.invalid', email_confirmed_at: '2026-01-01' };
-state.users[jwtWith('aal1')] = admin;
-state.users[jwtWith('aal2')] = admin;
-assert.equal((await portal({}, { authorization: `Bearer ${jwtWith('aal1')}` })).data.state, 'not_partner');
+state.users['token-admin'] = admin;
+assert.equal((await portal({}, { authorization: 'Bearer token-admin' })).data.state, 'not_partner');
 state.isAdmin = true;
-assert.equal((await portal({}, { authorization: `Bearer ${jwtWith('aal1')}` })).data.state, 'mfa_required');
-assert.equal((await portal({}, { authorization: `Bearer ${jwtWith('aal2')}` })).data.state, 'admin');
+assert.equal((await portal({}, { authorization: 'Bearer token-admin' })).data.state, 'admin');
 
 // Conferências nos arquivos.
 const csp = JSON.parse(readFileSync('vercel.json', 'utf8')).headers[0].headers.find(header => header.key === 'Content-Security-Policy')?.value || '';
@@ -179,7 +176,6 @@ assert.match(lockdown, /drop policy if exists "Public can upload private prescri
 assert.match(lockdown, /revoke insert on public\.solicitacoes from anon, authenticated/);
 assert.match(lockdown, /revoke truncate, references, trigger on public\.orders, public\.order_items from authenticated/);
 assert.match(lockdown, /grant select \(id, frete, updated_at\) on public\.loja_config/);
-assert.match(readFileSync('supabase/functions/admin-login/index.ts', 'utf8'), /account\.aal !== 'aal2'/);
 const guards = read('_contas_sem_confirmacao.sql');
 assert.match(guards, /before insert or update of email on auth\.users/, 'e-mail da equipe reservado');
 assert.match(guards, /after insert on auth\.identities/, 'login do Google derruba a senha antiga');
@@ -192,4 +188,4 @@ assert.match(signup, /too_many_requests: tooManyAttempts/, 'excesso de tentativa
 assert.match(signup, /functions\.invoke\('customer-signup'/, 'o cadastro passa pela função com limite');
 assert.doesNotMatch(signup, /auth\.signUp\(/, 'o site não cadastra direto pela API pública');
 
-console.log('Security checks passed: prescription intake limits and path validation, customer sign-up limits, partner requests only from confirmed accounts, second factor for admin views, CSP and access lockdown. No real data touched.');
+console.log('Security checks passed: prescription intake limits and path validation, customer sign-up limits, partner requests only from confirmed accounts, admin views only for admin e-mails, CSP and access lockdown. No real data touched.');

@@ -26,7 +26,7 @@ verify_jwt = false
 
 
 [functions.admin-login]
-# The handler validates the account session and the verified second factor.
+# The handler validates the account session and the admin e-mail.
 verify_jwt = false
 
 [functions.partner-register]

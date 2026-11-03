@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { ArrowLeft, Chrome, LoaderCircle, LockKeyhole, LogOut, Monitor, LayoutGrid, ShieldCheck } from 'lucide-react';
 import AdminProducts from '../components/AdminProducts';
@@ -20,7 +20,6 @@ import '../styles/staff.css';
 // tem acesso à administração; o servidor confere o tipo da conta em cada ação.
 const allowedRoles = ['farmaceutico', 'admin'];
 export default function FarmaceuticoPage() {
-    const navigate = useNavigate();
     const [session, setSession] = useState(() => readStaffSession(PHARMACIST_SESSION_KEY) || adminStaffSession());
     const [checked, setChecked] = useState(false);
     const [credentials, setCredentials] = useState({ email: '', password: '' });
@@ -61,16 +60,11 @@ export default function FarmaceuticoPage() {
             if (!await currentAccountEmail() || !active) return;
             setBusy(true);
             try { const created = await enterStaffArea('farmaceutico', PHARMACIST_SESSION_KEY); if (active) { setMessage(''); setChecked(true); setSession(created); } }
-            catch (failure) {
-                if (!active) return;
-                // Admin ainda sem o código em duas etapas: confirma no login e volta para cá.
-                if (failure.code === 'mfa_required') navigate('/login', { state: { returnTo: '/farmaceutico' } });
-                else setMessage(failure.message);
-            }
+            catch (failure) { if (active) setMessage(failure.message); }
             finally { if (active) setBusy(false); }
         })();
         return () => { active = false; };
-    }, [session, navigate]);
+    }, [session]);
 
     useEffect(() => {
         const storage = event => { if (event.key === PHARMACIST_SESSION_KEY && !event.newValue) revoke('O acesso foi encerrado em outra aba.'); };
@@ -87,10 +81,7 @@ export default function FarmaceuticoPage() {
             await signInWithEmail(credentials.email, credentials.password);
             const created = await enterStaffArea('farmaceutico', PHARMACIST_SESSION_KEY);
             setCredentials({ email: '', password: '' }); setChecked(true); setSession(created);
-        } catch (failure) {
-            if (failure.code === 'mfa_required') navigate('/login', { state: { returnTo: '/farmaceutico' } });
-            else setMessage(failure.message);
-        }
+        } catch (failure) { setMessage(failure.message); }
         finally { setBusy(false); }
     };
 

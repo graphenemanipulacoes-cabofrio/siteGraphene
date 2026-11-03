@@ -4,7 +4,6 @@ import { adminStaffSession } from '../utils/counter';
 
 export const counterErrors = {
     unauthorized: 'Seu acesso foi encerrado. Entre novamente ou consulte o administrador.',
-    mfa_required: 'Administradores precisam confirmar o código em duas etapas.',
     not_staff: 'Este e-mail não tem acesso da equipe. Peça ao administrador para cadastrá-lo ou entre com outro e-mail.',
     too_many_attempts: 'Muitas tentativas de acesso. Aguarde até 15 minutos e tente novamente.',
     invalid_account: 'Confira o nome e o e-mail. A senha inicial, se preenchida, precisa ter de 10 a 128 caracteres.',

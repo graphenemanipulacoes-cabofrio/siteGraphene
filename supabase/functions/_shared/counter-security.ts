@@ -29,12 +29,6 @@ export const normalizeEmail = (value: unknown) => typeof value === 'string' ? va
 export const validEmail = (value: string) => value.length <= 320 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value);
 // Senha definida pelo admin ao cadastrar alguém sem conta (mesmo mínimo da tela de cadastro).
 export const validAccountPassword = (value: unknown): value is string => typeof value === 'string' && value.length >= 10 && value.length <= 128;
-// Nível da sessão: aal2 = passou pela verificação em duas etapas. Só leia depois de
-// getUser, que é quem valida o token.
-const sessionAssurance = (jwt: string) => {
-  try { return String(JSON.parse(atob(jwt.split('.')[1].replaceAll('-', '+').replaceAll('_', '/'))).aal || 'aal1'); }
-  catch { return 'aal1'; }
-};
 // Conta conectada (cabeçalho Authorization enviado pelo supabase-js).
 // Sem sessão, ou com e-mail ainda não confirmado: null.
 // deno-lint-ignore no-explicit-any
@@ -44,7 +38,7 @@ export async function authAccount(db: any, req: Request) {
   const { data, error } = await db.auth.getUser(jwt);
   const email = normalizeEmail(data?.user?.email);
   if (error || !data?.user || !email || !data.user.email_confirmed_at) return null;
-  return { id: String(data.user.id), email, aal: sessionAssurance(jwt) };
+  return { id: String(data.user.id), email };
 }
 export const clientIp = (req: Request) => req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown';
 // Limite de uso no servidor. Devolve false ao passar do limite e null se o banco não responder.

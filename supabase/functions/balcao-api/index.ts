@@ -125,7 +125,6 @@ Deno.serve(async (req: Request) => {
       const signedIn = await authAccount(admin, req);
       if (!signedIn) return json({ error: 'unauthorized' }, 401, origin);
       if (await isAdminEmail(admin, signedIn.email)) {
-        if (signedIn.aal !== 'aal2') return json({ error: 'mfa_required' }, 403, origin);
         // Administrador: mesma sessão do painel (8 horas), vale em todas as áreas.
         const adminSession = await issueAdminSession(admin, signedIn.email);
         if (!adminSession) return json({ error: 'login_unavailable' }, 503, origin);

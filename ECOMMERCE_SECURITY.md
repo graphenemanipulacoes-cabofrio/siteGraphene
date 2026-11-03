@@ -14,7 +14,6 @@
 - Novas tentativas reaproveitam o pedido e a URL de pagamento já salva; pedidos concluídos não recebem outra preferência. Falhas recebem uma referência de diagnóstico, sem expor CPF, endereço ou credenciais nos logs da aplicação.
 - O webhook valida a assinatura HMAC, consulta o pagamento no Mercado Pago e compara o valor antes de marcar como pago.
 - A aplicação recebe cabeçalhos contra MIME sniffing, clickjacking e permissões desnecessárias, além de CSP sem script inline ou de terceiros.
-- Admin entra com segunda etapa (código do autenticador); as funções exigem sessão `aal2` antes de liberar qualquer área de administrador.
 - O envio público de receitas passa por `receita-intake`, com links assinados e limites por endereço e por dia. O bucket privado e `solicitacoes` não aceitam gravação direta do navegador.
 - A solicitação de parceria usa a conta conectada e nunca cria contas. Sem confirmação de e-mail, o e-mail informado não prova a posse: a aprovação do admin é a checagem.
 - A busca de cupons tem limite por endereço, e ações administrativas ficam em `admin_audit_log`, sem acesso pelo navegador.
@@ -29,7 +28,7 @@
 6. Cadastre preços maiores que zero em todos os produtos vendáveis.
 7. Teste com credenciais de teste do Mercado Pago antes de trocar para produção.
 
-O painel administrativo usa o Supabase Auth: `admin-login` confere a sessão da conta (`auth.getUser()`), a segunda etapa (`aal2`) e o e-mail em `admins` antes de emitir o token do painel. Nenhuma chave privilegiada vai para o navegador.
+O painel administrativo usa o Supabase Auth: `admin-login` confere a sessão da conta (`auth.getUser()`) e o e-mail em `admins` antes de emitir o token do painel. Nenhuma chave privilegiada vai para o navegador.
 
 Nunca coloque service-role key, access token ou webhook secret em `.env` do Vite ou em qualquer variável `VITE_*`.
 
