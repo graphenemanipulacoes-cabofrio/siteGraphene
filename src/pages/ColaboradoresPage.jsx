@@ -17,8 +17,8 @@ const doors = [
         text: 'Cadastro e revisão de produtos e matérias-primas, com gestão de imagens e informações técnicas.',
     },
     {
-        to: '/balcaographene', icon: Monitor, title: 'Balcão', tag: 'Pedidos', roles: ['admin', 'farmaceutico', 'balcao'],
-        text: 'Pedidos para separar, endereços de entrega e orçamentos enviados pelos clientes.',
+        to: '/balcaographene', icon: Monitor, title: 'Balcão', tag: 'Orçamentos', roles: ['admin', 'farmaceutico', 'balcao'],
+        text: 'Orçamentos enviados pelos clientes, pedidos para separar e endereços de entrega.',
     },
     {
         to: '/parceiros/painel', icon: Users, title: 'Parceiros e influenciadores', tag: 'Indicações', roles: ['admin'],

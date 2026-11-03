@@ -195,7 +195,8 @@ export default function CounterPage() {
     const [loginBusy, setLoginBusy] = useState(false);
     const [logoutBusy, setLogoutBusy] = useState(false);
     const [loginError, setLoginError] = useState('');
-    const [tab, setTab] = useState('orders');
+    // Orçamento é a prioridade da loja: o balcão abre nele.
+    const [tab, setTab] = useState('requests');
     const [filters, setFilters] = useState(emptyFilters);
     const [query, setQuery] = useState(emptyFilters);
     const [showDates, setShowDates] = useState(false);
@@ -355,7 +356,7 @@ export default function CounterPage() {
         <div className="counter-login-brand">
             <img src="/assets/logo.png" alt="Graphène"/>
             <h1>Balcão da loja</h1>
-            <p>Pedidos para separar, endereços de entrega e orçamentos dos clientes, num só lugar.</p>
+            <p>Orçamentos dos clientes, pedidos para separar e endereços de entrega, num só lugar.</p>
             <div><ShieldCheck size={20} aria-hidden="true"/> Acesso só para a equipe autorizada</div>
         </div>
         <form className="counter-login-form" onSubmit={login}>
@@ -376,8 +377,8 @@ export default function CounterPage() {
         <aside className="counter-sidebar">
             <Link className="counter-brand" to="/balcaographene"><img src="/assets/logo.png" alt="Graphène"/><span>Balcão da loja</span></Link>
             <nav aria-label="Áreas do balcão">
-                <button className={tab === 'orders' ? 'active' : ''} aria-current={tab === 'orders' ? 'page' : undefined} onClick={() => switchTab('orders')}><PackageCheck size={20} aria-hidden="true"/>Pedidos{metrics.preparation > 0 && <span title="Pedidos para separar">{metrics.preparation}</span>}</button>
                 <button className={tab === 'requests' ? 'active' : ''} aria-current={tab === 'requests' ? 'page' : undefined} onClick={() => switchTab('requests')}><Inbox size={20} aria-hidden="true"/>Orçamentos{metrics.requests > 0 && <span title="Orçamentos para responder">{metrics.requests}</span>}</button>
+                <button className={tab === 'orders' ? 'active' : ''} aria-current={tab === 'orders' ? 'page' : undefined} onClick={() => switchTab('orders')}><PackageCheck size={20} aria-hidden="true"/>Pedidos{metrics.preparation > 0 && <span title="Pedidos para separar">{metrics.preparation}</span>}</button>
             </nav>
             <div className="counter-sidebar-bottom">
                 <span className="counter-user"><UserRound size={17} aria-hidden="true"/><span><strong>{session.user?.displayName}</strong><small>{session.user?.role === 'admin' ? staffRoleLabels.admin : session.user?.email || session.user?.username}</small></span></span>
@@ -401,8 +402,8 @@ export default function CounterPage() {
             </header>
 
             <nav className="counter-mobile-tabs" aria-label="Áreas do balcão">
-                <button aria-current={tab === 'orders' ? 'page' : undefined} onClick={() => switchTab('orders')}>Pedidos{metrics.preparation > 0 && <span>{metrics.preparation}</span>}</button>
                 <button aria-current={tab === 'requests' ? 'page' : undefined} onClick={() => switchTab('requests')}>Orçamentos{metrics.requests > 0 && <span>{metrics.requests}</span>}</button>
+                <button aria-current={tab === 'orders' ? 'page' : undefined} onClick={() => switchTab('orders')}>Pedidos{metrics.preparation > 0 && <span>{metrics.preparation}</span>}</button>
             </nav>
 
             {tab === 'orders' && <div className="counter-queues" role="group" aria-label="Mostrar pedidos">
