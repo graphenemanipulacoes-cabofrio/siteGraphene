@@ -81,7 +81,6 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - O repositório é público: nunca colocar dados ou backups sem criptografia nos logs ou artefatos do Actions. O Storage (receitas e fotos) não entra no backup.
 
 ## Pendências técnicas conhecidas
-- Publicar o site (Vercel) com o código atual: até lá, o envio de foto nova de produto pelo admin do site no ar não funciona (pelo site local funciona).
 - E-mails de conta: o envio padrão do Supabase só entrega para a equipe do projeto (2 por hora), então cliente real não confirma a conta nem recupera a senha até configurar SMTP próprio (Authentication › Emails). Até lá, funciona o login com Google. Manter "Confirm email" ligado: desligado, qualquer pessoa cria conta com o e-mail de outra.
 - Painel do Supabase (Authentication › URL Configuration): Site URL ainda é `https://site-graphene.vercel.app` e Redirect URLs só tem `http://127.0.0.1:5173/**`. Trocar para `https://www.graphenemanipulacoes.com.br`, liberando www, domínio sem www e o endereço estável da Vercel com `/**`.
 - Contas antigas do balcão (só usuário) e admins antigos (`thalesbxempresa`, `thales`, `rodrigo`) não entram mais até receberem e-mail no admin.
