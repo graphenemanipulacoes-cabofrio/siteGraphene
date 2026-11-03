@@ -12,6 +12,7 @@ import AdminFinance from '../components/AdminFinance';
 import AdminPartners from '../components/AdminPartners';
 import AdminCounterAccess from '../components/AdminCounterAccess';
 import AdminShipping from '../components/AdminShipping';
+import PasswordField from '../components/PasswordField';
 import { getSession, destroySession } from '../utils/security';
 import { ensureAdminSession } from '../lib/accountAuth';
 
@@ -185,6 +186,7 @@ const Admin = () => {
         admin_exists: 'Esse e-mail já é administrador.',
         invalid_admin: 'Confira o e-mail. A senha inicial, se preenchida, precisa ter de 10 a 128 caracteres.',
         password_required: 'Esse e-mail ainda não tem conta no site. Defina uma senha inicial para criar a conta.',
+        existing_account_needs_password: 'Esse e-mail já tem conta com senha própria. Por segurança, defina uma senha inicial: a senha antiga deixa de valer.',
         invalid_password: 'O Supabase recusou essa senha. Use uma senha mais forte (10 caracteres ou mais).',
     };
     const handleAddAdmin = async (e) => {
@@ -530,8 +532,8 @@ const Admin = () => {
                                     <input type="email" autoComplete="off" required value={newAdminEmail} onChange={e => setNewAdminEmail(e.target.value)} placeholder="pessoa@exemplo.com" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }} />
                                 </div>
                                 <div className="admin-admin-field">
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Senha inicial (só se a pessoa ainda não tiver conta no site)</label>
-                                    <input type="password" autoComplete="new-password" minLength={10} maxLength={128} value={newAdminPass} onChange={e => setNewAdminPass(e.target.value)} placeholder="Mínimo de 10 caracteres" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }} />
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Senha inicial (obrigatória se a pessoa não tiver conta ou já usar senha; contas só com Google não precisam)</label>
+                                    <PasswordField autoComplete="new-password" minLength={10} maxLength={128} value={newAdminPass} onChange={e => setNewAdminPass(e.target.value)} placeholder="Mínimo de 10 caracteres" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }} />
                                 </div>
                                 <Button type="submit" variant="primary" className="admin-admin-submit" style={{ justifyContent: 'center' }}>Adicionar administrador</Button>
                             </form>

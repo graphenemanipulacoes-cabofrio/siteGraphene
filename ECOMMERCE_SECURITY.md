@@ -16,12 +16,12 @@
 - A aplicação recebe cabeçalhos contra MIME sniffing, clickjacking e permissões desnecessárias, além de CSP sem script inline ou de terceiros.
 - Admin entra com segunda etapa (código do autenticador); as funções exigem sessão `aal2` antes de liberar qualquer área de administrador.
 - O envio público de receitas passa por `receita-intake`, com links assinados e limites por endereço e por dia. O bucket privado e `solicitacoes` não aceitam gravação direta do navegador.
-- A solicitação de parceria exige conta com e-mail confirmado e nunca cria contas.
+- A solicitação de parceria usa a conta conectada e nunca cria contas. Sem confirmação de e-mail, o e-mail informado não prova a posse: a aprovação do admin é a checagem.
 - A busca de cupons tem limite por endereço, e ações administrativas ficam em `admin_audit_log`, sem acesso pelo navegador.
 
 ## Antes de produção
 
-1. Mantenha "Confirm email" ligado no Supabase Auth: desligado, qualquer pessoa cria conta com o e-mail de outra. Configure [SMTP próprio](https://supabase.com/docs/guides/auth/auth-smtp), porque o envio padrão só entrega para a equipe do projeto. E-mails de admin e da equipe sem conta são cadastrados com senha inicial, criando a conta na hora. [Proteção contra senhas vazadas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) depende do plano Pro.
+1. Por decisão do dono (03/11/2026), o cadastro não confirma o e-mail ("Confirm email" desligado no Supabase Auth). Isso depende das travas da migração `contas_sem_confirmacao`, descritas em `CLAUDE.md`, e do hook `hook_limit_signups` ligado no painel. Configure [SMTP próprio](https://supabase.com/docs/guides/auth/auth-smtp), porque a recuperação de senha usa o envio padrão, que só entrega para a equipe do projeto. E-mails de admin e da equipe sem conta são cadastrados com senha inicial, criando a conta na hora. [Proteção contra senhas vazadas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) depende do plano Pro.
 2. Configure CAPTCHA no cadastro/login e limites de envio de e-mail no painel do Supabase.
 3. Aplique `supabase/migrations/202609020001_secure_ecommerce.sql`.
 4. Cadastre `SITE_URL`, `MERCADO_PAGO_ACCESS_TOKEN` e `MERCADO_PAGO_WEBHOOK_SECRET` como secrets das Edge Functions.

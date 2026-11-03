@@ -5,6 +5,7 @@ import { currentAccountEmail, requestAdminSession, sendPasswordReset, signInWith
 import AdminMfaStep from '../components/AdminMfaStep';
 import { Toaster, toast } from 'sonner';
 import { Chrome, Lock, Mail, ArrowLeft, ShieldCheck } from 'lucide-react';
+import PasswordField from '../components/PasswordField';
 
 // Administração: mesma conta do site (e-mail e senha ou Google), mais o código em duas
 // etapas. O e-mail precisa estar cadastrado como administrador.
@@ -112,8 +113,7 @@ const Login = () => {
 
                     <div className="login-input-group">
                         <label><Lock size={14} /> Senha</label>
-                        <input
-                            type="password"
+                        <PasswordField
                             autoComplete="current-password"
                             placeholder="Sua senha"
                             value={password}

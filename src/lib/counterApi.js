@@ -10,6 +10,7 @@ export const counterErrors = {
     invalid_account: 'Confira o nome e o e-mail. A senha inicial, se preenchida, precisa ter de 10 a 128 caracteres.',
     email_exists: 'Esse e-mail já tem um acesso da equipe. Edite o cadastro existente.',
     password_required: 'Esse e-mail ainda não tem conta no site. Defina uma senha inicial para criar a conta.',
+    existing_account_needs_password: 'Esse e-mail já tem conta com senha própria. Por segurança, defina uma senha inicial: a senha antiga deixa de valer.',
     invalid_password: 'O Supabase recusou essa senha. Use uma senha mais forte (10 caracteres ou mais).',
     unable_to_check_account: 'Não foi possível conferir a conta desse e-mail agora. Tente de novo.',
     invalid_date: 'Confira as datas do filtro.',

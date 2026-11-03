@@ -148,5 +148,14 @@ assert.match(lockdown, /revoke insert on public\.solicitacoes from anon, authent
 assert.match(lockdown, /revoke truncate, references, trigger on public\.orders, public\.order_items from authenticated/);
 assert.match(lockdown, /grant select \(id, frete, updated_at\) on public\.loja_config/);
 assert.match(readFileSync('supabase/functions/admin-login/index.ts', 'utf8'), /account\.aal !== 'aal2'/);
+const guards = read('_contas_sem_confirmacao.sql');
+assert.match(guards, /before insert or update of email on auth\.users/, 'e-mail da equipe reservado');
+assert.match(guards, /after insert on auth\.identities/, 'login do Google derruba a senha antiga');
+for (const signature of ['protect_staff_email\\(\\)', 'secure_account_on_external_login\\(\\)', 'auth_account_access\\(text\\)', 'reset_account_access\\(uuid\\)', 'hook_limit_signups\\(jsonb\\)']) {
+  assert.match(guards, new RegExp(`revoke all on function public\\.${signature} from public, anon, authenticated`));
+}
+const signup = readFileSync('src/pages/CustomerAccessPage.jsx', 'utf8');
+assert.match(signup, /password !== confirmPassword/, 'o cadastro confere as duas senhas');
+assert.match(signup, /error\.status === 429/, 'excesso de tentativas tem mensagem própria');
 
 console.log('Security checks passed: prescription intake limits and path validation, partner requests only from confirmed accounts, second factor for admin views, CSP and access lockdown. No real data touched.');

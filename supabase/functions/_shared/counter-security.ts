@@ -77,14 +77,23 @@ export async function issueAdminSession(db: any, email: string) {
 }
 // Admin cadastra alguém (admin ou equipe): cria a conta já confirmada se ainda não existir,
 // ou troca a senha se ele informou uma nova. Sem conta e sem senha, a pessoa cria a própria.
+// O cadastro do site não confirma o e-mail: uma conta com senha que ainda não é da equipe pode
+// ter sido criada por outra pessoa, então só recebe um papel com senha nova e sem acessos antigos.
 // deno-lint-ignore no-explicit-any
 export async function ensureAuthAccount(db: any, email: string, password: string) {
-  const { data: existingId, error } = await db.rpc('auth_user_id_by_email', { p_email: email });
+  const { data: rows, error } = await db.rpc('auth_account_access', { p_email: email });
   if (error) return { error: 'unable_to_check_account' };
-  if (existingId) {
-    if (!password) return { id: String(existingId), created: false };
-    const { error: updateError } = await db.auth.admin.updateUserById(existingId, { password });
-    return updateError ? { error: 'invalid_password' } : { id: String(existingId), created: false, passwordChanged: true };
+  const account = rows?.[0];
+  if (account) {
+    const unverified = account.has_password && !account.is_staff;
+    if (!password) return unverified ? { error: 'existing_account_needs_password' } : { id: String(account.id), created: false };
+    const { error: updateError } = await db.auth.admin.updateUserById(account.id, { password });
+    if (updateError) return { error: 'invalid_password' };
+    if (unverified) {
+      const { error: resetError } = await db.rpc('reset_account_access', { p_user_id: account.id });
+      if (resetError) return { error: 'unable_to_check_account' };
+    }
+    return { id: String(account.id), created: false, passwordChanged: true };
   }
   if (!password) return { error: 'password_required' };
   const { data, error: createError } = await db.auth.admin.createUser({ email, password, email_confirm: true });

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ExternalLink, FlaskConical, KeyRound, LoaderCircle, Monitor, Plus, Save, ShieldCheck, Trash2, Users, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import PasswordField from './PasswordField';
 import { counterRequest } from '../lib/counterApi';
 import { getSession } from '../utils/security';
 import { dateTime, staffRoleLabels } from '../utils/counter';
@@ -65,7 +66,7 @@ export default function AdminCounterAccess({ onUnauthorized }) {
             <label className="counter-access-role">Tipo de acesso<select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}><option value="balcao">Balcão: pedidos e orçamentos</option><option value="farmaceutico">Farmacêutico: produtos, matérias-primas e balcão</option></select></label>
             <label>Nome da pessoa ou equipe<input required maxLength={100} minLength={2} value={form.displayName} onChange={e => setForm({ ...form, displayName: e.target.value })} placeholder="Ex.: Balcão Cabo Frio" /></label>
             <label>E-mail de acesso<input type="email" autoComplete="off" required maxLength={320} value={form.email} onChange={e => setForm({ ...form, email: e.target.value.trim().toLowerCase() })} placeholder="pessoa@exemplo.com" /><small>É o e-mail que a pessoa usa para entrar no site.</small></label>
-            <label>Senha inicial (opcional)<input autoComplete="new-password" type="password" minLength={10} maxLength={128} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /><small>Obrigatória só se o e-mail ainda não tiver conta no site. Se a conta já existir e você preencher, a senha dela é trocada.</small></label>
+            <label>Senha inicial (opcional)<PasswordField autoComplete="new-password" minLength={10} maxLength={128} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /><small>Obrigatória se o e-mail ainda não tiver conta ou se a conta tiver senha própria: por segurança, a senha antiga deixa de valer. Contas só com Google não precisam. Se preencher, a senha da conta é trocada.</small></label>
             {form.id && <label className="counter-checkbox"><input type="checkbox" checked={form.isActive} onChange={e => setForm({ ...form, isActive: e.target.checked })}/> Acesso ativo</label>}
             <div className="counter-access-actions"><button className="counter-button primary" disabled={saving}>{saving ? <LoaderCircle size={16} className="counter-spin"/> : form.id ? <Save size={16}/> : <Plus size={16}/>} {saving ? 'Salvando…' : form.id ? 'Salvar alterações' : 'Criar acesso'}</button>{form.id && <button type="button" className="counter-button" onClick={() => setForm(emptyForm)} disabled={saving}><X size={16}/> Cancelar edição</button>}</div>
         </form>

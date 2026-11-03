@@ -3,13 +3,31 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Chrome, KeyRound, LoaderCircle, ShieldCheck, UserPlus } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import StoreLayout from '../components/StoreLayout';
+import PasswordField from '../components/PasswordField';
 import { useStore } from '../context/StoreContext';
 import { currentStaffRole } from '../lib/accountAuth';
+
+// Mensagens do Supabase Auth em português: o código do erro não muda com o idioma.
+const tooManyAttempts = 'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.';
+const existingAccount = 'Este e-mail já tem conta. Entre com sua senha ou use "Esqueci minha senha".';
+const authErrorMessages = {
+    over_request_rate_limit: tooManyAttempts,
+    over_email_send_rate_limit: tooManyAttempts,
+    user_already_exists: existingAccount,
+    email_exists: existingAccount,
+    weak_password: 'Essa senha é fraca demais. Use pelo menos 10 caracteres, misturando letras, números e símbolos.',
+    email_address_invalid: 'Confira o e-mail digitado e tente de novo.',
+    email_not_confirmed: 'Confirme seu e-mail antes de entrar. Procure a mensagem de confirmação na caixa de entrada e no spam.',
+    email_address_not_authorized: 'Não foi possível enviar o e-mail de confirmação agora. Continue com Google ou tente mais tarde.',
+};
+const authErrorMessage = (error, mode) => authErrorMessages[error.code]
+    || (error.status === 429 ? tooManyAttempts : mode === 'login' ? 'E-mail ou senha inválidos.' : 'Não foi possível criar a conta agora. Tente novamente.');
 
 const CustomerAccessPage = () => {
     const [mode, setMode] = useState('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [fullName, setFullName] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
@@ -36,27 +54,38 @@ const CustomerAccessPage = () => {
 
     const submit = async event => {
         event.preventDefault();
-        setLoading(true); setError(''); setMessage('');
-        const redirectTo = `${window.location.origin}/minha-conta`;
-        const result = mode === 'login'
-            ? await supabase.auth.signInWithPassword({ email, password })
-            : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo, data: { full_name: fullName.trim() } } });
-        setLoading(false);
-        if (result.error) { setError(result.error.message); return; }
-        if (mode === 'signup' && !result.data.session) {
-            setMessage('Conta criada. Confira seu e-mail para confirmar o acesso.');
-            return;
+        setError(''); setMessage('');
+        if (mode === 'signup' && password !== confirmPassword) { setError('As duas senhas não são iguais. Digite de novo.'); return; }
+        setLoading(true);
+        try {
+            const redirectTo = `${window.location.origin}/minha-conta`;
+            const result = mode === 'login'
+                ? await supabase.auth.signInWithPassword({ email, password })
+                : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo, data: { full_name: fullName.trim() } } });
+            if (result.error) { setError(authErrorMessage(result.error, mode)); return; }
+            if (mode === 'signup' && !result.data.session) {
+                setMessage(`Conta criada. Enviamos o link de confirmação para ${email}. Se não aparecer em alguns minutos, confira o spam.`);
+                return;
+            }
+            if (pendingProduct) addItem(pendingProduct);
+            navigate(await destinationAfterLogin(requestedReturn), { replace: true });
+        } catch {
+            setError('Não foi possível conectar agora. Confira sua internet e tente novamente.');
+        } finally {
+            setLoading(false);
         }
-        if (pendingProduct) addItem(pendingProduct);
-        navigate(await destinationAfterLogin(requestedReturn), { replace: true });
     };
 
     const resetPassword = async () => {
         setError(''); setMessage('');
         if (!email) { setError('Informe seu e-mail para recuperar a senha.'); return; }
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/redefinir-senha` });
-        if (resetError) { setError('Não foi possível enviar a recuperação agora.'); return; }
-        setMessage('Se o e-mail estiver cadastrado, você receberá o link de recuperação.');
+        try {
+            const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/redefinir-senha` });
+            if (resetError) { setError(resetError.status === 429 ? tooManyAttempts : 'Não foi possível enviar a recuperação agora.'); return; }
+            setMessage('Se o e-mail estiver cadastrado, você receberá o link de recuperação.');
+        } catch {
+            setError('Não foi possível enviar a recuperação agora.');
+        }
     };
 
     const continueWithGoogle = async () => {
@@ -76,8 +105,8 @@ const CustomerAccessPage = () => {
     return <StoreLayout><section className="customer-access-page"><div className="access-card store-card">
         <div className="access-icon">{mode === 'login' ? <KeyRound size={25} /> : <UserPlus size={25} />}</div>
         <span className="eyebrow">Área do cliente</span><h1>{mode === 'login' ? 'Entre na sua conta' : 'Crie sua conta'}</h1><p>{intent === 'cart' ? 'Para adicionar produtos ao carrinho, entre ou crie sua conta.' : intent === 'checkout' ? 'Para comprar agora, entre ou crie sua conta.' : mode === 'login' ? 'Acompanhe pedidos, dados de entrega e suas compras.' : 'Cadastre-se para agilizar seus próximos pedidos.'}</p>
-        <button type="button" disabled={loading} className="google-submit" onClick={continueWithGoogle}><Chrome size={19} /> Continuar com Google</button><div className="access-divider"><span>ou use seu e-mail</span></div><form onSubmit={submit}>{mode === 'signup' && <label>Nome completo<input type="text" autoComplete="name" maxLength="120" placeholder="Seu nome completo" value={fullName} onChange={e => setFullName(e.target.value)} required /></label>}<label>E-mail<input type="email" autoComplete="email" placeholder="voce@exemplo.com" value={email} onChange={e => setEmail(e.target.value)} required /></label><label>Senha<input type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength="10" placeholder="Mínimo de 10 caracteres" value={password} onChange={e => setPassword(e.target.value)} required /></label>{error && <div className="access-alert error">{error === 'google' ? 'Não foi possível iniciar o acesso com Google. Tente novamente.' : mode === 'login' ? 'E-mail ou senha inválidos.' : error}</div>}{message && <div className="access-alert success">{message}</div>}<button disabled={loading} className="access-submit">{loading ? <LoaderCircle className="spin" size={18} /> : mode === 'login' ? 'Entrar' : 'Criar conta'}</button></form>
-        {mode === 'login' && <button className="password-reset-link" onClick={resetPassword}>Esqueci minha senha</button>}<button className="mode-switch" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setMessage(''); }}>{mode === 'login' ? 'Ainda não tenho conta' : 'Já tenho uma conta'}</button><Link className="back-store" to="/">Voltar à loja</Link><small><ShieldCheck size={14} /> Acesso seguro gerenciado pela Graphène.</small>
+        <button type="button" disabled={loading} className="google-submit" onClick={continueWithGoogle}><Chrome size={19} /> Continuar com Google</button><div className="access-divider"><span>ou use seu e-mail</span></div><form onSubmit={submit}>{mode === 'signup' && <label>Nome completo<input type="text" autoComplete="name" maxLength="120" placeholder="Seu nome completo" value={fullName} onChange={e => setFullName(e.target.value)} required /></label>}<label>E-mail<input type="email" autoComplete="email" placeholder="voce@exemplo.com" value={email} onChange={e => setEmail(e.target.value)} required /></label><label>Senha<PasswordField autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength="10" placeholder="Mínimo de 10 caracteres" value={password} onChange={e => setPassword(e.target.value)} required /></label>{mode === 'signup' && <label>Confirme a senha<PasswordField autoComplete="new-password" minLength="10" placeholder="Digite a mesma senha" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required /></label>}{error && <div className="access-alert error" role="alert">{error === 'google' ? 'Não foi possível iniciar o acesso com Google. Tente novamente.' : error}</div>}{message && <div className="access-alert success">{message}</div>}<button disabled={loading} className="access-submit">{loading ? <LoaderCircle className="spin" size={18} /> : mode === 'login' ? 'Entrar' : 'Criar conta'}</button></form>
+        {mode === 'login' && <button className="password-reset-link" onClick={resetPassword}>Esqueci minha senha</button>}<button className="mode-switch" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setConfirmPassword(''); setError(''); setMessage(''); }}>{mode === 'login' ? 'Ainda não tenho conta' : 'Já tenho uma conta'}</button><Link className="back-store" to="/">Voltar à loja</Link><small><ShieldCheck size={14} /> Acesso seguro gerenciado pela Graphène.</small>
     </div><style>{accessStyles}</style></section></StoreLayout>;
 };
 

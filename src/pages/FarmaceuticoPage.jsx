@@ -4,6 +4,7 @@ import { Toaster } from 'sonner';
 import { ArrowLeft, Chrome, LoaderCircle, LockKeyhole, LogOut, Monitor, LayoutGrid, ShieldCheck } from 'lucide-react';
 import AdminProducts from '../components/AdminProducts';
 import AdminMaterials from '../components/AdminMaterials';
+import PasswordField from '../components/PasswordField';
 import { materialsApi } from '../lib/materialsApi';
 import { counterRequest, enterStaffArea } from '../lib/counterApi';
 import { currentAccountEmail, signInWithEmail, startGoogleLogin } from '../lib/accountAuth';
@@ -117,7 +118,7 @@ export default function FarmaceuticoPage() {
                 {message && <div className="staff-error" role="alert">{message}</div>}
                 <button type="button" className="staff-btn" onClick={loginWithGoogle} disabled={busy}><Chrome size={18} aria-hidden="true" /> Continuar com Google</button>
                 <label className="staff-field">E-mail<input type="email" autoComplete="email" required value={credentials.email} onChange={e => setCredentials({ ...credentials, email: e.target.value })} /></label>
-                <label className="staff-field">Senha<input type="password" autoComplete="current-password" required value={credentials.password} onChange={e => setCredentials({ ...credentials, password: e.target.value })} /></label>
+                <label className="staff-field">Senha<PasswordField autoComplete="current-password" required value={credentials.password} onChange={e => setCredentials({ ...credentials, password: e.target.value })} /></label>
                 <button className="staff-btn primary" disabled={busy}>{busy ? <LoaderCircle size={18} className="staff-spin" aria-hidden="true" /> : <LockKeyhole size={18} aria-hidden="true" />} {busy ? 'Entrando…' : 'Entrar'}</button>
                 <div className="staff-login-links"><Link to="/colaboradores"><ArrowLeft size={14} aria-hidden="true" /> Área da equipe</Link><Link to="/entrar">Esqueci minha senha</Link></div>
             </form>

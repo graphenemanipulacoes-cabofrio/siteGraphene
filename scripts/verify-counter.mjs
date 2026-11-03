@@ -21,7 +21,7 @@ assert.match(addressText({ name: 'Cliente teste', address: 'Rua teste', number: 
 let handler;
 const calls = [];
 const rpcCalls = [];
-const state = { session: null, adminSession: null, account: null, adminRecord: null, rateAllowed: true, authUsers: {}, existingAuthId: null };
+const state = { session: null, adminSession: null, account: null, adminRecord: null, rateAllowed: true, authUsers: {}, existingAccount: null };
 const authAdminCalls = [];
 class Query {
   constructor(table) { this.table = table; this.filters = []; this.operation = 'read'; calls.push(this); }
@@ -72,7 +72,7 @@ const auth = {
     updateUserById: async (id, attributes) => { authAdminCalls.push({ type: 'update', id, attributes }); return { data: { user: { id } }, error: null }; },
   },
 };
-const client = { auth, storage: { from: () => ({ createSignedUploadUrl: async path => ({ data: { path, token: 'upload-token' }, error: null }) }) }, from: table => new Query(table), rpc: async (name, body) => { rpcCalls.push({ name, body }); return { data: name === 'counter_take_login_attempt' ? state.rateAllowed : name === 'auth_user_id_by_email' ? state.existingAuthId : '11111111-1111-4111-8111-111111111111', error: null }; } };
+const client = { auth, storage: { from: () => ({ createSignedUploadUrl: async path => ({ data: { path, token: 'upload-token' }, error: null }) }) }, from: table => new Query(table), rpc: async (name, body) => { rpcCalls.push({ name, body }); return { data: name === 'counter_take_login_attempt' ? state.rateAllowed : name === 'auth_account_access' ? (state.existingAccount ? [state.existingAccount] : []) : '11111111-1111-4111-8111-111111111111', error: null }; } };
 const context = createContext({ Number, Array, Set, Math, Date, String, btoa, atob, crypto: webcrypto, TextEncoder, Uint8Array, URL, Request, Response, console, Deno: { env: { get: name => name === 'SITE_URL' ? 'https://www.graphenemanipulacoes.com.br' : 'https://project.supabase.co' }, serve: fn => { handler = fn; } } });
 const securityModule = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/_shared/counter-security.ts', 'utf8')), { context });
 const httpModule = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/_shared/http.ts', 'utf8')), { context });
@@ -127,7 +127,7 @@ state.adminSession = { admin_username: 'admin_teste' };
 const adminHeaders = { 'x-admin-token': 'b'.repeat(64) };
 assert.equal((await send({ action: 'list_accounts' }, adminHeaders)).status, 200);
 // Cadastro da equipe por e-mail: sem conta no site, a senha inicial é obrigatória e cria a conta já confirmada.
-state.existingAuthId = null;
+state.existingAccount = null;
 const withoutPassword = await send({ action: 'save_account', displayName: 'Equipe teste', email: 'nova@exemplo.com' }, adminHeaders);
 assert.equal(withoutPassword.status, 400);
 assert.equal(withoutPassword.data.error, 'password_required');
@@ -140,8 +140,27 @@ assert.equal(createAccount.p_action, 'create');
 assert.equal(createAccount.p_email, 'nova@exemplo.com');
 assert.equal(createAccount.p_admin_email, 'admin_teste');
 assert.equal('p_password_hash' in createAccount, false);
-// Conta que já existe: entra com a própria senha; só troca se o admin informar uma nova.
-state.existingAuthId = '22222222-2222-4222-8222-222222222222';
+// Sem confirmação de e-mail, conta com senha fora da equipe pode ter sido criada por outra pessoa:
+// só entra na equipe com senha nova e sem as sessões e códigos antigos.
+const staffId = '22222222-2222-4222-8222-222222222222';
+state.existingAccount = { id: staffId, has_password: true, is_staff: false };
+const staffCallsBefore = rpcCalls.filter(call => call.name === 'staff_manage_account').length;
+const needsPassword = await send({ action: 'save_account', displayName: 'Equipe teste', email: 'antiga@exemplo.com' }, adminHeaders);
+assert.equal(needsPassword.status, 400);
+assert.equal(needsPassword.data.error, 'existing_account_needs_password');
+assert.equal(rpcCalls.filter(call => call.name === 'staff_manage_account').length, staffCallsBefore, 'sem senha nova, o papel não é concedido');
+assert.equal((await send({ action: 'save_account', displayName: 'Equipe teste', email: 'antiga@exemplo.com', password: 'senha-nova-segura' }, adminHeaders)).status, 200);
+assert.equal(JSON.stringify(authAdminCalls.at(-1)), JSON.stringify({ type: 'update', id: staffId, attributes: { password: 'senha-nova-segura' } }));
+const staffResetAt = rpcCalls.findLastIndex(call => call.name === 'reset_account_access');
+assert.equal(rpcCalls[staffResetAt].body.p_user_id, staffId);
+assert.equal(rpcCalls[staffResetAt + 1].name, 'staff_manage_account', 'os acessos antigos saem antes de conceder o papel');
+// Conta só com Google já provou a posse do e-mail: não precisa de senha nem perde os acessos.
+state.existingAccount = { id: staffId, has_password: false, is_staff: false };
+const resetsBefore = rpcCalls.filter(call => call.name === 'reset_account_access').length;
+assert.equal((await send({ action: 'save_account', displayName: 'Equipe teste', email: 'google@exemplo.com' }, adminHeaders)).status, 200);
+assert.equal(rpcCalls.filter(call => call.name === 'reset_account_access').length, resetsBefore);
+// Conta que já é da equipe: entra com a própria senha; só troca se o admin informar uma nova.
+state.existingAccount = { id: staffId, has_password: true, is_staff: true };
 const authCallsBefore = authAdminCalls.length;
 assert.equal((await send({ action: 'save_account', id: '11111111-1111-4111-8111-111111111111', displayName: 'Equipe teste', email: 'nova@exemplo.com', password: '', isActive: false }, adminHeaders)).status, 200);
 assert.equal(authAdminCalls.length, authCallsBefore);

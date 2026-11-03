@@ -5,6 +5,7 @@ import { FlaskConical, KeyRound, LayoutGrid, LogOut, Monitor, PackageCheck, Shie
 import { Toaster, toast } from 'sonner';
 import { supabase } from '../lib/supabaseClient';
 import StoreLayout from '../components/StoreLayout';
+import PasswordField from '../components/PasswordField';
 import { useStore } from '../context/StoreContext';
 import { isAdminPreview } from '../utils/adminPreview';
 
@@ -40,8 +41,8 @@ const PasswordChange = () => {
     };
     return <form className="account-password store-card" onSubmit={submit}>
         <h2><KeyRound size={18}/> Alterar senha</h2>
-        <label>Nova senha<input type="password" autoComplete="new-password" minLength={10} maxLength={128} required value={password} onChange={e => setPassword(e.target.value)} /></label>
-        <label>Repita a nova senha<input type="password" autoComplete="new-password" minLength={10} maxLength={128} required value={confirm} onChange={e => setConfirm(e.target.value)} /></label>
+        <label>Nova senha<PasswordField autoComplete="new-password" minLength={10} maxLength={128} required value={password} onChange={e => setPassword(e.target.value)} /></label>
+        <label>Repita a nova senha<PasswordField autoComplete="new-password" minLength={10} maxLength={128} required value={confirm} onChange={e => setConfirm(e.target.value)} /></label>
         <button disabled={saving}>{saving ? 'Salvando…' : 'Salvar nova senha'}</button>
     </form>;
 };

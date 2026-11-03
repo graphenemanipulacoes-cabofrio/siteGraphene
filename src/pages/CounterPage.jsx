@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, ArrowLeft, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Chrome, Clock, Copy, ExternalLink, FileText, Inbox, LoaderCircle, LockKeyhole, LogOut, MapPin, MessageCircle, Moon, PackageCheck, Printer, Receipt, RefreshCw, Search, ShieldCheck, StickyNote, Sun, Truck, UserRound, X, XCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import PasswordField from '../components/PasswordField';
 import { counterRequest, enterStaffArea } from '../lib/counterApi';
 import { currentAccountEmail, signInWithEmail, startGoogleLogin } from '../lib/accountAuth';
 import { supabase } from '../lib/supabaseClient';
@@ -375,7 +376,7 @@ export default function CounterPage() {
             <p>Entre com o e-mail cadastrado pelo administrador (senha ou Google). Administradores usam o e-mail deles.</p>
             <button type="button" className="counter-button large" onClick={loginWithGoogle} disabled={loginBusy}><Chrome size={18} aria-hidden="true"/> Continuar com Google</button>
             <label htmlFor="counter-email">E-mail<input id="counter-email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required value={credentials.email} onChange={e => setCredentials({ ...credentials, email: e.target.value })}/></label>
-            <label htmlFor="counter-password">Senha<input id="counter-password" type="password" autoComplete="current-password" required value={credentials.password} onChange={e => setCredentials({ ...credentials, password: e.target.value })}/></label>
+            <label htmlFor="counter-password">Senha<PasswordField id="counter-password" autoComplete="current-password" required value={credentials.password} onChange={e => setCredentials({ ...credentials, password: e.target.value })}/></label>
             {loginError && <div className="counter-error" role="alert">{loginError}</div>}
             <button className="counter-button primary large" disabled={loginBusy}>{loginBusy ? <LoaderCircle className="counter-spin" size={18} aria-hidden="true"/> : <LockKeyhole size={18} aria-hidden="true"/>}{loginBusy ? 'Entrando…' : 'Entrar no balcão'}</button>
             <p className="counter-muted">Esqueceu a senha? Use “Esqueci minha senha” em <Link to="/entrar">Entrar</Link>.</p>
