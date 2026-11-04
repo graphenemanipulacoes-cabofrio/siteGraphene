@@ -189,7 +189,8 @@ assert.match(signup, /functions\.invoke\('customer-signup'/, 'o cadastro passa p
 assert.doesNotMatch(signup, /auth\.signUp\(/, 'o site não cadastra direto pela API pública');
 // O login do Google pode voltar pela Site URL; a sessão precisa terminar no endereço oficial.
 const vercelConfig = JSON.parse(readFileSync('vercel.json', 'utf8'));
-assert.ok(vercelConfig.redirects.some(rule => rule.has?.some(item => item.value === 'site-graphene.vercel.app') && rule.destination.startsWith('https://www.graphenemanipulacoes.com.br/') && !rule.permanent));
+// O Google volta para a raiz do endereço: o padrão precisa cobrir "/" também.
+assert.ok(vercelConfig.redirects.some(rule => rule.source === '/(.*)' && rule.has?.some(item => item.value === 'site-graphene.vercel.app') && rule.destination === 'https://www.graphenemanipulacoes.com.br/$1' && !rule.permanent));
 assert.match(readFileSync('src/App.jsx', 'utf8'), /<OAuthReturn \/>/, 'quem volta do Google segue para o destino guardado');
 const partnerPortalPage = readFileSync('src/pages/PartnerPortal.jsx', 'utf8');
 assert.match(partnerPortalPage, /<Link to="\/"[^>]*>.*Voltar ao site/, 'voltar ao site não encerra a sessão');

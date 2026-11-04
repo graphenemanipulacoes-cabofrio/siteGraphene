@@ -13,7 +13,7 @@
         }
     ],
     "redirects": [
-        { "source": "/:path*", "has": [{ "type": "host", "value": "site-graphene.vercel.app" }], "destination": "https://www.graphenemanipulacoes.com.br/:path*", "permanent": false }
+        { "source": "/(.*)", "has": [{ "type": "host", "value": "site-graphene.vercel.app" }], "destination": "https://www.graphenemanipulacoes.com.br/$1", "permanent": false }
     ],
     "rewrites": [
         { "source": "/ativos", "destination": "/ativos.html" },
