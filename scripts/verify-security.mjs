@@ -187,5 +187,15 @@ assert.match(signup, /password !== confirmPassword/, 'o cadastro confere as duas
 assert.match(signup, /too_many_requests: tooManyAttempts/, 'excesso de tentativas tem mensagem própria');
 assert.match(signup, /functions\.invoke\('customer-signup'/, 'o cadastro passa pela função com limite');
 assert.doesNotMatch(signup, /auth\.signUp\(/, 'o site não cadastra direto pela API pública');
+// O login do Google pode voltar pela Site URL; a sessão precisa terminar no endereço oficial.
+const vercelConfig = JSON.parse(readFileSync('vercel.json', 'utf8'));
+assert.ok(vercelConfig.redirects.some(rule => rule.has?.some(item => item.value === 'site-graphene.vercel.app') && rule.destination.startsWith('https://www.graphenemanipulacoes.com.br/') && !rule.permanent));
+assert.match(readFileSync('src/App.jsx', 'utf8'), /<OAuthReturn \/>/, 'quem volta do Google segue para o destino guardado');
+const partnerPortalPage = readFileSync('src/pages/PartnerPortal.jsx', 'utf8');
+assert.match(partnerPortalPage, /<Link to="\/"[^>]*>.*Voltar ao site/, 'voltar ao site não encerra a sessão');
+assert.equal((partnerPortalPage.match(/\{partnerExits\}|: partnerExits\}/g) || []).length, 3, 'as três telas do parceiro têm as duas saídas');
+const siteHeader = readFileSync('src/components/Header.jsx', 'utf8');
+assert.match(siteHeader, /partnerStatus && <Link to="\/parceiros\/painel" className="gh-staff-btn"/, 'botão do painel do parceiro no cabeçalho');
+assert.match(read('_parceiro_no_cabecalho.sql'), /revoke all on function public\.current_partner_status\(\) from public, anon/);
 
 console.log('Security checks passed: prescription intake limits and path validation, customer sign-up limits, partner requests only from confirmed accounts, admin views only for admin e-mails, CSP and access lockdown. No real data touched.');

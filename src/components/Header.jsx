@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, MessageCircle, FileUp, Search, Truck, MapPin, Clock, Phone, ShoppingBag, UserRound, LockKeyhole, ChevronRight, ShieldCheck } from 'lucide-react';
+import { Menu, X, MessageCircle, FileUp, Search, Truck, MapPin, Clock, Phone, ShoppingBag, UserRound, LockKeyhole, ChevronRight, ShieldCheck, BadgeCheck } from 'lucide-react';
 import { getWhatsAppUrl } from '../config';
 import { useStore } from '../context/StoreContext';
 import '../styles/header.css';
@@ -55,7 +55,7 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
     const { scrolled, condensed } = useScrollState();
     const [menuOpen, setMenuOpen] = useState(false);
     const location = useLocation();
-    const { itemCount, customer, staffRole } = useStore();
+    const { itemCount, customer, staffRole, partnerStatus } = useStore();
     // Admin e equipe entram pelo login normal do site; este botão leva à área da equipe.
     const staffLabel = staffRole === 'admin' ? 'Painel admin' : 'Área da equipe';
     const closeButton = useRef(null);
@@ -106,7 +106,7 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                 <p className="gh-top-info">
                     <span><Clock size={14} aria-hidden="true" /> {HOURS}</span>
                     <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer"><Phone size={14} aria-hidden="true" /> {PHONE}</a>
-                    <Link to="/parceiros/entrar" className="gh-top-partner"><LockKeyhole size={13} aria-hidden="true" /> Painel do parceiro</Link>
+                    {!partnerStatus && <Link to="/parceiros/entrar" className="gh-top-partner"><LockKeyhole size={13} aria-hidden="true" /> Painel do parceiro</Link>}
                 </p>
             </div>
         </div>
@@ -118,6 +118,7 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                     {search}
                     <nav className="gh-actions" aria-label="Sua conta">
                         {staffRole && <Link to="/colaboradores" className="gh-staff-btn" aria-label={staffLabel}><ShieldCheck size={17} aria-hidden="true" /><span>{staffLabel}</span></Link>}
+                        {partnerStatus && <Link to="/parceiros/painel" className="gh-staff-btn" aria-label="Painel do parceiro"><BadgeCheck size={17} aria-hidden="true" /><span>Painel do parceiro</span></Link>}
                         <Link to={accountPath} className="gh-icon-link" aria-label={accountLabel}><UserRound size={20} aria-hidden="true" /><span>{accountLabel}</span></Link>
                         <Link to="/carrinho" className="gh-icon-link gh-cart" aria-label={cartLabel}>
                             <span className="gh-cart-icon"><ShoppingBag size={20} aria-hidden="true" />{itemCount > 0 && <b aria-hidden="true">{itemCount > 9 ? '9+' : itemCount}</b>}</span>
@@ -146,12 +147,13 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                 </div>
                 <div className="gh-drawer-quick">
                     {staffRole && <Link to="/colaboradores" className="gh-drawer-staff"><ShieldCheck size={18} aria-hidden="true" /> {staffLabel}</Link>}
+                    {partnerStatus && <Link to="/parceiros/painel" className="gh-drawer-staff"><BadgeCheck size={18} aria-hidden="true" /> Painel do parceiro</Link>}
                     <Link to={accountPath}><UserRound size={18} aria-hidden="true" /> {customer ? 'Minha conta' : 'Entrar ou criar conta'}</Link>
                     <Link to="/carrinho"><ShoppingBag size={18} aria-hidden="true" /> Carrinho{itemCount ? ` (${itemCount})` : ''}</Link>
                 </div>
                 <nav className="gh-drawer-links" aria-label="Seções do site">
                     {NAV.map(item => <Link key={item.to} to={item.to} className={isActive(item) ? 'is-active' : ''} aria-current={isActive(item) ? 'page' : undefined}>{item.label}<ChevronRight size={17} aria-hidden="true" /></Link>)}
-                    <Link to="/parceiros/entrar">Painel do parceiro<ChevronRight size={17} aria-hidden="true" /></Link>
+                    {!partnerStatus && <Link to="/parceiros/entrar">Painel do parceiro<ChevronRight size={17} aria-hidden="true" /></Link>}
                 </nav>
                 <div className="gh-drawer-foot">
                     <Link to="/receita" className="gh-cta"><FileUp size={17} aria-hidden="true" /> Solicitar orçamento</Link>

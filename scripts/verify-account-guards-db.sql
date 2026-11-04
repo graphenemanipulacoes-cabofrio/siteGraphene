@@ -69,6 +69,16 @@ begin
   perform public.reset_account_access('a0000000-0000-4000-8000-000000000002');
   assert not exists (select 1 from auth.sessions where user_id = 'a0000000-0000-4000-8000-000000000002'), 'sessões limpas';
 
+  -- Situação da parceria: cada conta vê só a própria, para mostrar o botão do painel.
+  insert into public.partner_profiles (id, full_name, email, phone, status)
+  values ('a0000000-0000-4000-8000-000000000002', 'Pessoa Teste', 'so-google@example.invalid', '22999990000', 'pending');
+  perform set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000002","role":"authenticated"}', true);
+  assert public.current_partner_status() = 'pending', 'parceiro vê a própria situação';
+  perform set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
+  assert public.current_partner_status() is null, 'conta sem parceria não vê a de outra pessoa';
+  assert not has_function_privilege('anon', 'public.current_partner_status()', 'execute'), 'visitante sem current_partner_status';
+  assert has_function_privilege('authenticated', 'public.current_partner_status()', 'execute'), 'conta conectada consulta a própria situação';
+
   -- Permissões: o navegador não chama nenhuma dessas funções.
   assert not has_function_privilege('anon', 'public.auth_account_access(text)', 'execute'), 'anon sem auth_account_access';
   assert not has_function_privilege('authenticated', 'public.auth_account_access(text)', 'execute'), 'authenticated sem auth_account_access';

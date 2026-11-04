@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import SeoManager from './components/SeoManager';
 import PrivacyNotice from './components/PrivacyNotice';
 import ScrollToTop from './components/ScrollToTop';
+import OAuthReturn from './components/OAuthReturn';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 const AtivosPage = lazy(() => import('./pages/AtivosPage'));
@@ -35,6 +36,7 @@ function App() {
     <BrowserRouter>
       <SeoManager />
       <ScrollToTop />
+      <OAuthReturn />
       <PrivacyNotice />
       <Suspense fallback={<main role="status" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: 'var(--text-main)' }}>Carregando Graphène…</main>}>
         <Routes>

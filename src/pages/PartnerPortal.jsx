@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  BadgeCheck, 
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft,
+  BadgeCheck,
   Calendar, 
   CircleDollarSign, 
   Clock3, 
@@ -109,9 +110,15 @@ const PartnerPortal = () => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
     navigate('/parceiros/entrar');
   };
+
+  // Voltar ao site mantém a conta conectada; só "Sair" encerra a sessão.
+  const partnerExits = <>
+    <Link to="/" className="btn-portal-signout partner-back-site"><ArrowLeft size={16}/> Voltar ao site</Link>
+    <button onClick={signOut} className="btn-portal-signout" title="Sair da conta"><LogOut size={16}/> Sair</button>
+  </>;
 
   const getDirectWaUrl = (messageText) => {
     const msg = encodeURIComponent(messageText);
@@ -158,7 +165,7 @@ const PartnerPortal = () => {
         <Toaster richColors />
         <header className="partner-portal-header">
           <strong>GRAPHÈNE <small>PARCEIROS</small></strong>
-          {adminView ? <button onClick={() => navigate('/admin')}><LogOut size={16}/> Voltar ao painel</button> : <button onClick={signOut}><LogOut size={16}/> Sair</button>}
+          {adminView ? <button onClick={() => navigate('/admin')}><LogOut size={16}/> Voltar ao painel</button> : <div className="header-right-group">{partnerExits}</div>}
         </header>
         <main className="partner-status-card">
           <Clock3/>
@@ -196,7 +203,7 @@ const PartnerPortal = () => {
             >
               <MessageCircle size={15}/> Falar com Diretor {DIRECTOR_WHATSAPP_DISPLAY}
             </a>
-            {adminView ? <button onClick={() => navigate('/admin')}><LogOut size={16}/> Voltar ao painel</button> : <button onClick={signOut}><LogOut size={16}/> Sair</button>}
+            {adminView ? <button onClick={() => navigate('/admin')}><LogOut size={16}/> Voltar ao painel</button> : partnerExits}
           </div>
         </header>
         {adminBar}
@@ -260,7 +267,7 @@ const PartnerPortal = () => {
             <span>WhatsApp Diretoria {DIRECTOR_WHATSAPP_DISPLAY}</span>
           </a>
 
-          {adminView ? <button onClick={() => navigate('/admin')} className="btn-portal-signout" title="Voltar ao painel administrativo"><LogOut size={16}/> Voltar ao painel</button> : <button onClick={signOut} className="btn-portal-signout" title="Sair da conta"><LogOut size={16}/> Sair</button>}
+          {adminView ? <button onClick={() => navigate('/admin')} className="btn-portal-signout" title="Voltar ao painel administrativo"><LogOut size={16}/> Voltar ao painel</button> : partnerExits}
         </div>
       </header>
 
@@ -542,6 +549,8 @@ const styles = `
 .partner-direct-wa-btn:hover{background:#10b981;color:#071018}
 .btn-portal-signout,.partner-refresh,.partner-coupon button,.partner-retry{display:flex;align-items:center;gap:6px;border:1px solid rgba(203,213,225,.14);border-radius:8px;background:transparent;color:#d5e1ea;padding:8px 11px;font-size:.72rem;font-weight:800;cursor:pointer}
 .btn-portal-signout:hover{border-color:#f43f5e;color:#fb7185}
+.partner-back-site{text-decoration:none;white-space:nowrap}
+.partner-back-site:hover{border-color:#62ddf2;color:#62ddf2}
 
 /* Dashboard Body */
 .partner-dashboard{width:min(1180px,calc(100% - 40px));margin:0 auto;padding:40px 0 72px;display:grid;gap:18px}
@@ -650,6 +659,8 @@ const styles = `
 .partner-retry{margin-top:22px;border-color:rgba(103,221,243,.3);color:#78e6f6}
 
 @media(max-width:760px){
+  .partner-portal-header{height:auto;min-height:72px;padding:12px 16px;flex-wrap:wrap;gap:10px}
+  .header-right-group{flex-wrap:wrap;gap:8px}
   .partner-dashboard{width:min(100% - 24px,1180px);padding:24px 0 52px}
   .partner-dashboard-intro{align-items:start;flex-direction:column}
   .header-right-group .partner-welcome-badge{display:none}

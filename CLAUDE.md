@@ -28,6 +28,8 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - Admin abre o painel de qualquer parceiro (`/parceiros/painel?parceiro=id`, só leitura). Sair do admin, balcão ou farmacêutico sai também da conta do site.
 - Google sempre volta por `/entrar?oauth=google` e segue para o destino salvo em `graphene_oauth_intent`.
 - O papel da conta fica em `StoreContext` (`staffRole`, via RPC `current_staff_role`). Admin/equipe veem no cabeçalho o botão dourado "Painel admin"/"Área da equipe" (`.gh-staff-btn`) que leva a `/colaboradores`; no login normal sem destino pedido, também vão direto para lá. `/colaboradores` mostra só as áreas do papel, já conectadas.
+- Quem tem parceria vê no cabeçalho o mesmo botão dourado, "Painel do parceiro", que leva a `/parceiros/painel` (`partnerStatus` em `StoreContext`, via RPC `current_partner_status`; `refreshAccountRoles` atualiza depois do cadastro). No painel, "Voltar ao site" mantém a conta conectada; só "Sair" encerra a sessão.
+- O login só vale no endereço em que aconteceu. Enquanto a Site URL do painel for o endereço da Vercel, o Google volta para lá; por isso `vercel.json` redireciona `site-graphene.vercel.app` para o domínio oficial, levando a sessão, e `OAuthReturn` segue para o destino guardado.
 
 ## Segurança
 - **Admin sem segunda etapa** (decisão do dono em 03/11/2026): o código do celular com QR foi retirado; a administração depende só do login da conta e do e-mail em `admins`.

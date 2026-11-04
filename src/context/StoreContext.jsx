@@ -76,20 +76,25 @@ export const StoreProvider = ({ children }) => {
         };
     }, [authReady, customer?.id, cartStore]);
 
-    // Papel da conta conectada (admin, farmacêutico ou balcão) para mostrar o acesso da equipe.
-    // Só serve para a interface: as funções do servidor conferem o papel em cada ação.
-    const [roleState, setRoleState] = useState({ userId: null, role: null });
+    // Papel da conta conectada (admin, farmacêutico ou balcão) e situação da parceria, para mostrar
+    // os atalhos. Só serve para a interface: as funções do servidor conferem tudo em cada ação.
+    const [roleState, setRoleState] = useState({ userId: null, role: null, partnerStatus: null });
+    const [rolesVersion, setRolesVersion] = useState(0);
+    const refreshAccountRoles = useCallback(() => setRolesVersion(version => version + 1), []);
     useEffect(() => {
         if (!customer?.id) return undefined;
         let active = true;
         const userId = customer.id;
-        supabase.rpc('current_staff_role')
-            .then(({ data, error }) => { if (active) setRoleState({ userId, role: error ? null : data || null }); })
-            .catch(() => { if (active) setRoleState({ userId, role: null }); });
+        Promise.all([supabase.rpc('current_staff_role'), supabase.rpc('current_partner_status')])
+            .then(([staff, partner]) => {
+                if (active) setRoleState({ userId, role: staff.error ? null : staff.data || null, partnerStatus: partner.error ? null : partner.data || null });
+            })
+            .catch(() => { if (active) setRoleState({ userId, role: null, partnerStatus: null }); });
         return () => { active = false; };
-    }, [customer?.id]);
+    }, [customer?.id, rolesVersion]);
     const staffRoleReady = !customer?.id || roleState.userId === customer.id;
     const staffRole = customer?.id && staffRoleReady ? roleState.role : null;
+    const partnerStatus = customer?.id && staffRoleReady ? roleState.partnerStatus : null;
 
     // choice ={ size, sizeLabel, flavor, flavorLabel, price } quando o produto tem opções.
     const addItem = useCallback((product, choice = {}, units = 1) => {
@@ -144,9 +149,9 @@ export const StoreProvider = ({ children }) => {
         .filter(item => Number.isSafeInteger(item.productId) && item.productId > 0), [cart]);
 
     const value = useMemo(() => ({
-        cart, customer, authReady, staffRole, staffRoleReady, cartReady, cartSyncing, cartSyncError, syncCart, itemCount, subtotal, zip, setZip,
+        cart, customer, authReady, staffRole, staffRoleReady, partnerStatus, refreshAccountRoles, cartReady, cartSyncing, cartSyncError, syncCart, itemCount, subtotal, zip, setZip,
         addItem, updateQuantity, removeItem, clearCart, settleCart,
-    }), [cart, customer, authReady, staffRole, staffRoleReady, cartReady, cartSyncing, cartSyncError, syncCart, itemCount, subtotal, zip, setZip, addItem, updateQuantity, removeItem, clearCart, settleCart]);
+    }), [cart, customer, authReady, staffRole, staffRoleReady, partnerStatus, refreshAccountRoles, cartReady, cartSyncing, cartSyncError, syncCart, itemCount, subtotal, zip, setZip, addItem, updateQuantity, removeItem, clearCart, settleCart]);
 
     return <StoreContext.Provider value={value}><CouponProvider key={customer?.id || 'guest'} userId={customer?.id} items={couponItems}>{children}</CouponProvider></StoreContext.Provider>;
 };

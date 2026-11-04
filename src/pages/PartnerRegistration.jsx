@@ -28,7 +28,7 @@ const generateCouponSuggestion = (fullName, channel) => {
 };
 
 const PartnerRegistration = () => {
-  const { customer, authReady } = useStore();
+  const { customer, authReady, refreshAccountRoles } = useStore();
   const navigate = useNavigate();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
@@ -49,6 +49,7 @@ const PartnerRegistration = () => {
       }
       if (error || payload?.error) { toast.error(registrationErrors[payload?.error] || 'Revise os dados e tente novamente.'); return; }
       toast.success('Solicitação enviada. Acompanhe a análise no seu painel.');
+      refreshAccountRoles();
       navigate('/parceiros/painel');
     } catch {
       toast.error('Não foi possível enviar agora. Tente novamente.');
