@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Package, PackageCheck, MessageCircle, FileText, LogOut, X, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink, WalletCards, Eye, UserRound, ShoppingBag, Monitor, FlaskConical, LayoutGrid, Truck } from 'lucide-react';
+import { Package, PackageCheck, MessageCircle, FileText, LogOut, X, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink, WalletCards, Eye, UserRound, ShoppingBag, Monitor, FlaskConical, LayoutGrid, Truck, Scale } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { Link, useNavigate } from 'react-router-dom';
@@ -10,6 +10,7 @@ import AdminMaterials from '../components/AdminMaterials';
 import AdminOrders from '../components/AdminOrders';
 import AdminFinance from '../components/AdminFinance';
 import AdminPartners from '../components/AdminPartners';
+import AdminPartnerResults from '../components/AdminPartnerResults';
 import AdminCounterAccess from '../components/AdminCounterAccess';
 import AdminShipping from '../components/AdminShipping';
 import PasswordField from '../components/PasswordField';
@@ -27,6 +28,8 @@ const auditLabels = {
     add_partner_product_credit: 'Concedeu crédito de produtos', record_partner_product_usage: 'Registrou uso de crédito', delete_partner_credit_entry: 'Apagou lançamento de crédito',
     update_request_status: 'Moveu solicitação', delete_request: 'Excluiu solicitação', update: 'Atualizou pedido',
     product_active: 'Tirou ou colocou produto no site',
+    save_cost_settings: 'Confirmou custos das parcerias', save_product_cost: 'Alterou custo de produto',
+    save_partner_terms: 'Alterou regras de parceria', save_partner_delivery: 'Registrou postagens de parceira',
 };
 
 const Admin = () => {
@@ -343,6 +346,10 @@ const Admin = () => {
                     <Users size={22} />
                     <span>Parceiros</span>
                 </div>
+                <button type="button" className={`nav-item ${view === 'partnerResults' ? 'active' : ''}`} style={{ background: 'none', border: 0, font: 'inherit' }} aria-pressed={view === 'partnerResults'} onClick={() => setView('partnerResults')}>
+                    <Scale size={22} />
+                    <span>Resultados</span>
+                </button>
                 <div className={`nav-item ${view === 'trash' ? 'active' : ''}`} onClick={() => setView('trash')}>
                     <Trash2 size={22} />
                     <span>Lixeira</span>
@@ -420,6 +427,9 @@ const Admin = () => {
                     >
                         <Users size={18} /> Parceiros
                     </Button>
+                    <Button variant="ghost" className={`admin-nav-link ${view === 'partnerResults' ? 'active' : ''}`} onClick={() => { setView('partnerResults'); setExpandedId(null); }}>
+                        <Scale size={18} /> Resultado das parcerias
+                    </Button>
                     <span className="admin-nav-label">SISTEMA</span>
                     <Button
                         variant="ghost"
@@ -445,9 +455,9 @@ const Admin = () => {
                         )}
                         <span className="admin-eyebrow">CENTRAL DE OPERAÇÕES</span>
                         <h1 className="admin-page-title">
-                            {view === 'active' ? 'Solicitações' : view === 'orders' ? 'Pedidos e Entregas' : view === 'counter' ? 'Acessos da Equipe' : view === 'finance' ? 'Central Financeira' : view === 'products' ? 'Gerenciar Produtos' : view === 'materials' ? 'Gerenciar Matérias-primas' : view === 'shipping' ? 'Frete e entrega' : view === 'admins' ? 'Gerenciar Admins' : view === 'partners' ? 'Parceiros' : 'Lixeira'}
+                            {view === 'active' ? 'Solicitações' : view === 'orders' ? 'Pedidos e Entregas' : view === 'counter' ? 'Acessos da Equipe' : view === 'finance' ? 'Central Financeira' : view === 'products' ? 'Gerenciar Produtos' : view === 'materials' ? 'Gerenciar Matérias-primas' : view === 'shipping' ? 'Frete e entrega' : view === 'admins' ? 'Gerenciar Admins' : view === 'partners' ? 'Parceiros' : view === 'partnerResults' ? 'Resultado das parcerias' : 'Lixeira'}
                         </h1>
-                        <p className="admin-page-copy">{view === 'orders' ? 'Acompanhe pagamentos, separação e envios em um só lugar.' : view === 'finance' ? 'Controle vendas, taxas, comissões, cupons e repasses em uma única área.' : view === 'partners' ? 'Analise inscrições, ative cupons e acompanhe o acesso dos parceiros.' : view === 'active' ? 'Receitas e solicitações recebidas pelos canais da Graphène.' : 'Gerencie os dados operacionais da Graphène com segurança.'}</p>
+                        <p className="admin-page-copy">{view === 'orders' ? 'Acompanhe pagamentos, separação e envios em um só lugar.' : view === 'finance' ? 'Controle vendas, taxas, comissões, cupons e repasses em uma única área.' : view === 'partners' ? 'Analise inscrições, ative cupons e acompanhe o acesso dos parceiros.' : view === 'partnerResults' ? 'Veja quanto cada parceira vendeu, quanto recebeu e se está dando lucro ou prejuízo.' : view === 'active' ? 'Receitas e solicitações recebidas pelos canais da Graphène.' : 'Gerencie os dados operacionais da Graphène com segurança.'}</p>
                     </div>
                     <div className="admin-header-actions">
                         <span className="admin-role">ACESSO ADMINISTRATIVO</span>
@@ -481,6 +491,8 @@ const Admin = () => {
                     <AdminShipping onUnauthorized={handleUnauthorized} />
                 ) : view === 'partners' ? (
                     <AdminPartners onUnauthorized={handleUnauthorized} />
+                ) : view === 'partnerResults' ? (
+                    <AdminPartnerResults onUnauthorized={handleUnauthorized} />
                 ) : view === 'admins' ? (
                     <div className="admin-settings-stack">
                         <Card>

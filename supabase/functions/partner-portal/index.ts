@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { allowedOrigin, json } from '../_shared/http.ts';
 import { authAccount, isAdminEmail, uuidPattern } from '../_shared/counter-security.ts';
+import { monthKey, partnerGoal, partnerSales, partnerStatus, todayInBrazil } from '../_shared/partner-results.ts';
 
 const profileFields = 'id,full_name,email,phone,status,referral_code,requested_coupon_code,commission_recipient_id,coupon_id,approved_at,rejection_reason,created_at';
 
@@ -40,20 +41,27 @@ Deno.serve(async (req: Request) => {
     if (profile.status !== 'approved' || !profile.commission_recipient_id) return json({ profile, metrics: null, orders: [], commissions: [], adminView, partners }, 200, origin);
 
     await admin.rpc('release_available_commissions');
-    const [ordersResult, commissionsResult, couponResult, creditsResult] = await Promise.all([
-      admin.from('orders').select('id,total,discount_code,discount_amount,payment_status,status,paid_at,created_at').eq('attributed_recipient_id', profile.commission_recipient_id).order('created_at', { ascending: false }).limit(100),
+    const currentMonth = monthKey(new Date());
+    const [ordersResult, commissionsResult, couponResult, creditsResult, termsResult, deliveryResult, paidResult] = await Promise.all([
+      admin.from('orders').select('id,subtotal,total,discount_code,discount_amount,payment_status,status,paid_at,created_at').eq('attributed_recipient_id', profile.commission_recipient_id).order('created_at', { ascending: false }).limit(100),
       admin.from('commissions').select('id,order_id,base_amount,amount,status,available_at,paid_at,created_at,orders(id,total,created_at,payment_status)').eq('recipient_id', profile.commission_recipient_id).order('created_at', { ascending: false }).limit(150),
       profile.coupon_id ? admin.from('discount_coupons').select('code,redeemed_count,max_redemptions,is_active,discount_type,discount_value').eq('id', profile.coupon_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
       admin.from('partner_product_credits').select('id,type,amount,description,invoice_ref,spent_at,created_at').eq('partner_id', profile.id).order('spent_at', { ascending: false }).limit(100),
+      admin.from('partner_terms').select('test_start,test_days,monthly_minimum,monthly_goal,monthly_vale,reels_per_month,stories_per_month,phase').eq('recipient_id', profile.commission_recipient_id).maybeSingle(),
+      admin.from('partner_deliveries').select('reels,stories').eq('recipient_id', profile.commission_recipient_id).eq('month', `${currentMonth}-01`).maybeSingle(),
+      admin.from('orders').select('subtotal,discount_amount,payment_status,paid_at,created_at,customer_id,customer_email').eq('attributed_recipient_id', profile.commission_recipient_id).eq('payment_status', 'paid').limit(5000),
     ]);
     // Uma falha pontual em um dos blocos de histórico não pode impedir o parceiro
     // de acessar o próprio painel. Os dados disponíveis continuam sendo exibidos.
-    if (ordersResult.error || commissionsResult.error || couponResult.error || creditsResult.error) {
+    if (ordersResult.error || commissionsResult.error || couponResult.error || creditsResult.error || termsResult.error || deliveryResult.error || paidResult.error) {
       console.error('partner_portal_dashboard_query_failure', {
         orders: ordersResult.error?.message,
         commissions: commissionsResult.error?.message,
         coupon: couponResult.error?.message,
         credits: creditsResult.error?.message,
+        terms: termsResult.error?.message,
+        delivery: deliveryResult.error?.message,
+        paid: paidResult.error?.message,
       });
     }
     const orders = ordersResult.data || [];
@@ -64,7 +72,8 @@ Deno.serve(async (req: Request) => {
     const sum = (rows: any[], field: string) => rows.reduce((total, item) => total + Number(item[field] || 0), 0);
     const metrics = {
       paidSalesCount: paidOrders.length,
-      paidSalesAmount: sum(paidOrders, 'total'),
+      // O volume segue a mesma base da comissão: valor pago em produtos, sem frete.
+      paidSalesAmount: paidOrders.reduce((total, order) => total + Math.max(Number(order.subtotal || 0) - Number(order.discount_amount || 0), 0), 0),
       pendingCommission: sum(commissions.filter(item => item.status === 'pending'), 'amount'),
       availableCommission: sum(commissions.filter(item => item.status === 'available'), 'amount'),
       paidCommission: sum(commissions.filter(item => item.status === 'paid'), 'amount'),
@@ -78,7 +87,11 @@ Deno.serve(async (req: Request) => {
       balance: Math.max(0, grantedCredits - usedCredits),
       movements: credits,
     };
-    return json({ profile, metrics, productCredits, coupon: couponResult.data || null, orders, commissions, adminView, partners }, 200, origin);
+    // Meta da parceria: só vendas e entregas. Custos e lucro nunca saem desta função.
+    const terms = paidResult.error ? null : termsResult.data || null;
+    const sales = partnerSales(paidResult.data || [], profile, currentMonth, terms?.test_start || null);
+    const goal = partnerGoal(terms, partnerStatus(terms, { today: todayInBrazil(), salesSinceStart: sales.sinceStart, monthlySales: sales.monthlySales, currentMonth }), sales.monthSales, deliveryResult.data || null);
+    return json({ profile, metrics, productCredits, coupon: couponResult.data || null, orders, commissions, goal, adminView, partners }, 200, origin);
   } catch (error) {
     console.error('partner_portal_failure', error instanceof Error ? error.message : 'unknown');
     return json({ error: 'internal_error' }, 500, origin || undefined);

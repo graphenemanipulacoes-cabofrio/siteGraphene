@@ -59,6 +59,16 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - Nada de conteúdo diferente para quem revisa, nem reativar produto depois da aprovação para contornar a revisão: há risco de suspensão sem aviso. Contestação e pedido de certificação precisam descrever a farmácia como ela é.
 - Verificação: `npm run build`, `node scripts/verify-ads-ready.mjs`, `node scripts/verify-product-pages.mjs` e `scripts/verify-product-active-db.sql` (fixtures sintéticas com rollback). `node scripts/serve-dist.mjs` também roda as funções de `api/` com o `.env`. O script confere os textos fixos; produto novo no admin precisa de revisão própria.
 
+## Resultado das parcerias
+- Admin → **Resultado das parcerias** (`AdminPartnerResults`): quanto cada parceira vendeu e recebeu, o custo do vale e o lucro ou prejuízo, no mês e desde o início do teste. Tem simulador, alertas, regras da parceria, postagens e custos.
+- A conta fica em `_shared/partner-results.ts`, sem acesso ao banco. Ações `partner_results`, `save_cost_settings`, `save_product_cost`, `save_partner_terms` e `save_partner_delivery` da `admin-orders`. Migração `resultado_das_parcerias`.
+- Vêm de registros reais: pedidos pagos, comissões, vales (`partner_product_credits`) e taxa do Mercado Pago (`orders.provider_fee`). Custo de produto, embalagem e imposto são informados no admin; enquanto `partner_cost_settings.confirmed_at` estiver vazio, a tela avisa que são hipótese.
+- Custos ficam em `partner_cost_settings` e `product_costs`, sem acesso pelo navegador. Nunca colocar custo em `produtos`, que é lida pelo público, nem na resposta da `partner-portal`. `PartnerGoalCard` só recebe vendas, mínimo, meta, postagens e prazo (`partnerGoal`).
+- Comissão: a base é subtotal menos desconto, sem frete. Compra da própria parceira não gera comissão para ela nem conta como venda dela, mas segue valendo para quem recebe sobre todas as vendas (`attribution_scope = all_paid_orders`).
+- Situação: 30 primeiros dias sem corte; dia 60 abaixo de 1× o mínimo acumulado = "Em atenção"; dia 90 sugere renovar (3×), meio vale por mais 30 dias (1,5×) ou só comissão. Depois do teste, usa a média dos 3 últimos meses fechados. Tudo é sugestão: a mudança de situação é sempre manual, e nada corta vale ou comissão sozinho.
+- Regras, percentuais e cupons de cada parceira dependem do dono. Não cadastrar sem aprovação. Proposta em discussão: https://claude.ai/artifact/JjXDmQiPeNnZCkTmd5NBWV
+- Verificação: `node scripts/verify-partner-results.mjs` e `scripts/verify-partner-results-db.sql` (fixtures sintéticas com rollback).
+
 ## Cupons de parceiros
 - `CouponPanel` fica sempre aberto no carrinho e na entrega, antes dos produtos/formulário. Busca a partir de 3 caracteres por prefixo do código ou primeiro nome do recebedor, com seleção por mouse/toque/teclado e digitação em maiúsculas. Não criar cupons de exemplo.
 - `CouponContext` mantém a escolha entre carrinho e checkout; só o código escolhido é salvo em localStorage separado por conta. Ao editar, o desconto anterior sai do resumo; o código é validado novamente quando o subtotal muda. Não aceitar um rascunho como cupom aplicado.

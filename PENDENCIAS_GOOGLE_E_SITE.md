@@ -44,6 +44,7 @@ Ainda faltam, fora do site:
 - Revisar o Perfil da Empresa no Google e corrigir diferenças de informações, se houver.
 - Antes de ativar Google Analytics, Google Ads ou pixels, configurar escolhas de privacidade para tecnologias opcionais e atualizar o aviso. Não usar dados de saúde ou documentos de prescrição para segmentar publicidade.
 - Definir prazos de guarda e exclusão dos dados e um responsável pelo atendimento às solicitações de privacidade.
+- Parcerias: informar em Admin › Resultado das parcerias › Custos o custo real dos produtos, a embalagem e o imposto. Até lá, o lucro ou prejuízo usa 35%, 3% e 8% como hipótese. Definir também percentuais, cupons, prazos de repasse e as regras de cada parceira.
 
 ## Referências oficiais
 

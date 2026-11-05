@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { allowedOrigin, json } from '../_shared/http.ts';
 import { ensureAuthAccount, hashToken, logAdminAction, normalizeEmail, requestIdPattern, uuidPattern, validAccountPassword, validEmail } from '../_shared/counter-security.ts';
+import { buildPartnerReport, monthKey, todayInBrazil } from '../_shared/partner-results.ts';
 
 const sha256 = hashToken;
 const clean = (value: unknown, max: number) => typeof value === 'string' ? value.trim().slice(0, max) : '';
@@ -16,7 +17,23 @@ const recipientRoles = new Set(['influencer', 'marketing', 'development', 'other
 const commissionTypes = new Set(['percentage', 'fixed']);
 const attributionScopes = new Set(['coupon', 'all_paid_orders']);
 // Ações que entram no registro da administração quando dão certo.
-const auditedActions = new Set(['add_admin', 'delete_admin', 'approve_partner', 'reject_partner', 'create_recipient', 'update_recipient', 'create_coupon', 'toggle_coupon', 'settle_recipient_commissions', 'add_partner_product_credit', 'record_partner_product_usage', 'delete_partner_credit_entry', 'update_request_status', 'delete_request', 'update']);
+const auditedActions = new Set(['add_admin', 'delete_admin', 'approve_partner', 'reject_partner', 'create_recipient', 'update_recipient', 'create_coupon', 'toggle_coupon', 'settle_recipient_commissions', 'add_partner_product_credit', 'record_partner_product_usage', 'delete_partner_credit_entry', 'update_request_status', 'delete_request', 'update', 'save_cost_settings', 'save_product_cost', 'save_partner_terms', 'save_partner_delivery']);
+const partnerPhases = new Set(['test', 'active', 'half_vale', 'commission_only', 'ended']);
+const percentIn = (value: unknown, max: number) => { const number = Number(value); return value !== '' && value !== null && value !== undefined && Number.isFinite(number) && number >= 0 && number <= max ? number : null; };
+const wholeIn = (value: unknown, max: number) => { const number = Number(value); return Number.isInteger(number) && number >= 0 && number <= max ? number : null; };
+const validDay = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
+
+// Lê a tabela inteira em páginas, para o relatório nunca sair cortado sem aviso.
+// deno-lint-ignore no-explicit-any
+async function readAll(query: (from: number, to: number) => PromiseLike<{ data: any[] | null; error: unknown }>) {
+  const rows = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await query(from, from + 999);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if (!data || data.length < 1000) return rows;
+  }
+}
 
 Deno.serve(async (req: Request) => {
   const origin = allowedOrigin(req.headers.get('origin'));
@@ -173,6 +190,78 @@ Deno.serve(async (req: Request) => {
       ]);
       if (ordersResult.error || recipientsResult.error || couponsResult.error || commissionsResult.error || eventsResult.error) return json({ error: 'unable_to_load_finance' }, 500, origin);
       return json({ mercadoPagoConfigured: Boolean(Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN')), orders: ordersResult.data || [], recipients: recipientsResult.data || [], coupons: couponsResult.data || [], commissions: commissionsResult.data || [], paymentEvents: eventsResult.data || [] }, 200, origin);
+    }
+
+    // Resultado das parcerias: vendas, comissões, taxas e vales reais, com os custos privados informados no admin.
+    if (body.action === 'partner_results') {
+      const requested = clean(body.month, 7);
+      const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(requested) ? requested : monthKey(new Date());
+      await admin.rpc('release_available_commissions');
+      const [settings, recipients, terms, profiles, coupons, productCosts, products, deliveries] = await Promise.all([
+        admin.from('partner_cost_settings').select('*').eq('id', 1).maybeSingle(),
+        admin.from('commission_recipients').select('id,name,role,commission_type,commission_value,attribution_scope,hold_days,is_active').order('created_at', { ascending: true }),
+        admin.from('partner_terms').select('*'),
+        admin.from('partner_profiles').select('id,email,commission_recipient_id,status'),
+        admin.from('discount_coupons').select('recipient_id,code,discount_type,discount_value,is_active').order('created_at', { ascending: true }),
+        admin.from('product_costs').select('product_id,cost_percent'),
+        admin.from('produtos').select('id,name,price,is_active').order('name', { ascending: true }),
+        admin.from('partner_deliveries').select('recipient_id,month,reels,stories,note'),
+      ]);
+      if (settings.error || !settings.data || recipients.error || terms.error || profiles.error || coupons.error || productCosts.error || products.error || deliveries.error) return json({ error: 'unable_to_load_results' }, 500, origin);
+      const orders = await readAll((from, to) => admin.from('orders')
+        .select('id,customer_id,customer_email,subtotal,discount_amount,total,provider_fee,payment_status,paid_at,created_at,attributed_recipient_id,order_items(product_id,unit_price,quantity),commissions(recipient_id,amount,status)')
+        .eq('payment_status', 'paid').order('paid_at', { ascending: true }).order('id', { ascending: true }).range(from, to));
+      const credits = await readAll((from, to) => admin.from('partner_product_credits').select('partner_id,type,amount,spent_at,created_at').order('created_at', { ascending: true }).order('id', { ascending: true }).range(from, to));
+      return json(buildPartnerReport({
+        month, today: todayInBrazil(), settings: settings.data, recipients: recipients.data || [], terms: terms.data || [], profiles: profiles.data || [],
+        coupons: coupons.data || [], productCosts: productCosts.data || [], products: products.data || [], orders, credits, deliveries: deliveries.data || [],
+      }), 200, origin);
+    }
+
+    if (body.action === 'save_cost_settings') {
+      const values = { default_cost_percent: percentIn(body.defaultCostPercent, 200), packaging_percent: percentIn(body.packagingPercent, 100), tax_percent: percentIn(body.taxPercent, 100), payment_percent: percentIn(body.paymentPercent, 100) };
+      if (Object.values(values).some(value => value === null)) return json({ error: 'invalid_costs' }, 400, origin);
+      const { error } = await admin.from('partner_cost_settings').update({ ...values, confirmed_at: now, updated_by: session.admin_username, updated_at: now }).eq('id', 1);
+      if (error) return json({ error: 'unable_to_save_costs' }, 500, origin);
+      return json({ ok: true }, 200, origin);
+    }
+
+    if (body.action === 'save_product_cost') {
+      const productId = Number(body.productId);
+      if (!Number.isSafeInteger(productId) || productId < 1) return json({ error: 'invalid_product' }, 400, origin);
+      if (body.costPercent === null || body.costPercent === '') {
+        const { error } = await admin.from('product_costs').delete().eq('product_id', productId);
+        return error ? json({ error: 'unable_to_save_costs' }, 500, origin) : json({ ok: true }, 200, origin);
+      }
+      const costPercent = percentIn(body.costPercent, 200);
+      if (costPercent === null) return json({ error: 'invalid_costs' }, 400, origin);
+      const { error } = await admin.from('product_costs').upsert({ product_id: productId, cost_percent: costPercent, updated_by: session.admin_username, updated_at: now });
+      return error ? json({ error: 'unable_to_save_costs' }, 500, origin) : json({ ok: true }, 200, origin);
+    }
+
+    if (body.action === 'save_partner_terms') {
+      const recipientId = clean(body.recipientId, 36);
+      const testStart = clean(body.testStart, 10);
+      const testDays = wholeIn(body.testDays, 365);
+      const monthlyMinimum = percentIn(body.monthlyMinimum, 10_000_000);
+      const monthlyGoal = percentIn(body.monthlyGoal, 10_000_000);
+      const monthlyVale = percentIn(body.monthlyVale, 10_000_000);
+      const reels = wholeIn(body.reelsPerMonth, 100);
+      const stories = wholeIn(body.storiesPerMonth, 100);
+      const phase = clean(body.phase, 20);
+      if (!uuidPattern.test(recipientId) || !validDay(testStart) || testDays === null || testDays < 30 || monthlyMinimum === null || monthlyGoal === null || monthlyVale === null || reels === null || stories === null || !partnerPhases.has(phase)) return json({ error: 'invalid_terms' }, 400, origin);
+      const { error } = await admin.from('partner_terms').upsert({ recipient_id: recipientId, test_start: testStart, test_days: testDays, monthly_minimum: monthlyMinimum, monthly_goal: monthlyGoal, monthly_vale: monthlyVale, reels_per_month: reels, stories_per_month: stories, phase, notes: clean(body.notes, 1000) || null, updated_by: session.admin_username, updated_at: now });
+      return error ? json({ error: 'unable_to_save_terms' }, 500, origin) : json({ ok: true }, 200, origin);
+    }
+
+    if (body.action === 'save_partner_delivery') {
+      const recipientId = clean(body.recipientId, 36);
+      const month = clean(body.month, 7);
+      const reels = wholeIn(body.reels, 1000);
+      const stories = wholeIn(body.stories, 1000);
+      if (!uuidPattern.test(recipientId) || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || reels === null || stories === null) return json({ error: 'invalid_delivery' }, 400, origin);
+      const { error } = await admin.from('partner_deliveries').upsert({ recipient_id: recipientId, month: `${month}-01`, reels, stories, note: clean(body.note, 300) || null, updated_by: session.admin_username, updated_at: now });
+      return error ? json({ error: 'unable_to_save_delivery' }, 500, origin) : json({ ok: true }, 200, origin);
     }
 
     if (body.action === 'list_partner_applications') {
@@ -432,7 +521,7 @@ Deno.serve(async (req: Request) => {
     };
     const response = await handle();
     if (response.ok && auditedActions.has(body.action)) {
-      const target = body.email || body.adminId || body.partnerId || body.recipientId || body.orderId || body.requestId || body.entryId || body.code || body.id;
+      const target = body.email || body.adminId || body.partnerId || body.recipientId || body.orderId || body.requestId || body.entryId || body.code || body.id || body.productId;
       await logAdminAction(admin, session.admin_username, body.action, target, { status: body.status, passwordSet: body.action === 'add_admin' ? Boolean(body.password) : undefined });
     }
     return response;

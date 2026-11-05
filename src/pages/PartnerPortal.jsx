@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { Toaster, toast } from 'sonner';
+import PartnerGoalCard from '../components/PartnerGoalCard';
 
 const DIRECTOR_WHATSAPP_PHONE = '5522998994412';
 const DIRECTOR_WHATSAPP_DISPLAY = '(22) 99899-4412';
@@ -283,6 +284,8 @@ const PartnerPortal = () => {
             <RefreshCw size={15}/> Atualizar dados
           </button>
         </section>
+
+        <PartnerGoalCard goal={data.goal} />
 
         {/* Direct WhatsApp Director Banner */}
         <section className="partner-director-card">
