@@ -2,6 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { allowedOrigin, json } from '../_shared/http.ts';
 import { ensureAuthAccount, hashToken, logAdminAction, normalizeEmail, requestIdPattern, uuidPattern, validAccountPassword, validEmail } from '../_shared/counter-security.ts';
 import { buildPartnerReport, monthKey, todayInBrazil } from '../_shared/partner-results.ts';
+import { buildCustomerReport, customerKeyPattern } from '../_shared/customer-insights.ts';
 
 const sha256 = hashToken;
 const clean = (value: unknown, max: number) => typeof value === 'string' ? value.trim().slice(0, max) : '';
@@ -17,7 +18,7 @@ const recipientRoles = new Set(['influencer', 'marketing', 'development', 'other
 const commissionTypes = new Set(['percentage', 'fixed']);
 const attributionScopes = new Set(['coupon', 'all_paid_orders']);
 // Ações que entram no registro da administração quando dão certo.
-const auditedActions = new Set(['add_admin', 'delete_admin', 'approve_partner', 'reject_partner', 'create_recipient', 'update_recipient', 'create_coupon', 'toggle_coupon', 'settle_recipient_commissions', 'add_partner_product_credit', 'record_partner_product_usage', 'delete_partner_credit_entry', 'update_request_status', 'delete_request', 'update', 'save_cost_settings', 'save_product_cost', 'save_partner_terms', 'save_partner_delivery']);
+const auditedActions = new Set(['add_admin', 'delete_admin', 'approve_partner', 'reject_partner', 'create_recipient', 'update_recipient', 'create_coupon', 'toggle_coupon', 'settle_recipient_commissions', 'add_partner_product_credit', 'record_partner_product_usage', 'delete_partner_credit_entry', 'update_request_status', 'delete_request', 'update', 'save_cost_settings', 'save_product_cost', 'save_partner_terms', 'save_partner_delivery', 'save_customer_followup', 'add_customer_note', 'delete_customer_note', 'log_customer_export']);
 const partnerPhases = new Set(['test', 'active', 'half_vale', 'commission_only', 'ended']);
 const percentIn = (value: unknown, max: number) => { const number = Number(value); return value !== '' && value !== null && value !== undefined && Number.isFinite(number) && number >= 0 && number <= max ? number : null; };
 const wholeIn = (value: unknown, max: number) => { const number = Number(value); return Number.isInteger(number) && number >= 0 && number <= max ? number : null; };
@@ -32,6 +33,18 @@ async function readAll(query: (from: number, to: number) => PromiseLike<{ data: 
     if (error) throw error;
     rows.push(...(data || []));
     if (!data || data.length < 1000) return rows;
+  }
+}
+
+// Todas as contas do site, em páginas. Só o e-mail, o nome e as datas seguem para o relatório.
+// deno-lint-ignore no-explicit-any
+async function readAllAccounts(db: any) {
+  const users = [];
+  for (let page = 1; ; page += 1) {
+    const { data, error } = await db.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw error;
+    users.push(...(data?.users || []));
+    if (!data?.users || data.users.length < 1000) return users;
   }
 }
 
@@ -262,6 +275,73 @@ Deno.serve(async (req: Request) => {
       if (!uuidPattern.test(recipientId) || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || reels === null || stories === null) return json({ error: 'invalid_delivery' }, 400, origin);
       const { error } = await admin.from('partner_deliveries').upsert({ recipient_id: recipientId, month: `${month}-01`, reels, stories, note: clean(body.note, 300) || null, updated_by: session.admin_username, updated_at: now });
       return error ? json({ error: 'unable_to_save_delivery' }, 500, origin) : json({ ok: true }, 200, origin);
+    }
+
+    // Clientes e pós-venda. CPF, rua, dados de pagamento, receitas e observações de orçamento ficam de fora.
+    if (body.action === 'customers_report') {
+      const [users, orders, profiles, carts, quotes, followups, notes] = await Promise.all([
+        readAllAccounts(admin),
+        readAll((from, to) => admin.from('orders')
+          .select('id,customer_id,shipping_address->>name,shipping_address->>phone,shipping_address->>city,shipping_address->>state,shipping_address->>neighborhood,subtotal,discount_amount,shipping_amount,status,payment_status,payment_method,paid_at,shipped_at,delivered_at,created_at,discount_code,attributed_recipient_id,order_items(product_name,quantity)')
+          .order('created_at', { ascending: true }).order('id', { ascending: true }).range(from, to)),
+        readAll((from, to) => admin.from('customer_profiles').select('id,full_name,phone').order('id', { ascending: true }).range(from, to)),
+        readAll((from, to) => admin.from('customer_carts').select('customer_id,items,updated_at').order('customer_id', { ascending: true }).range(from, to)),
+        readAll((from, to) => admin.from('solicitacoes').select('id,created_at,nome_cliente,whatsapp').neq('status', 'trash').order('id', { ascending: true }).range(from, to)),
+        readAll((from, to) => admin.from('customer_followups').select('customer_key,contact_preference,next_contact_on').order('customer_key', { ascending: true }).range(from, to)),
+        readAll((from, to) => admin.from('customer_notes').select('id,customer_key,kind,note,created_by,created_at').order('created_at', { ascending: true }).order('id', { ascending: true }).range(from, to)),
+      ]);
+      const [admins, counterAccounts, partners, recipients] = await Promise.all([
+        admin.from('admins').select('email').not('email', 'is', null),
+        admin.from('counter_accounts').select('email').not('email', 'is', null),
+        admin.from('partner_profiles').select('id'),
+        admin.from('commission_recipients').select('id,name'),
+      ]);
+      if (admins.error || counterAccounts.error || partners.error || recipients.error) return json({ error: 'unable_to_load_customers' }, 500, origin);
+      return json(buildCustomerReport({
+        today: todayInBrazil(),
+        users,
+        // A consulta traz só estas partes do endereço; a rua e o número nem saem do banco.
+        orders: orders.map(({ name, phone, city, state, neighborhood, ...order }) => ({ ...order, shipping_address: { name, phone, city, state, neighborhood } })),
+        profiles, carts, quotes, followups, notes,
+        staffEmails: [...(admins.data || []), ...(counterAccounts.data || [])].map(row => String(row.email)),
+        partnerIds: (partners.data || []).map(row => String(row.id)),
+        recipients: recipients.data || [],
+      }), 200, origin);
+    }
+
+    if (body.action === 'save_customer_followup') {
+      const customerKey = clean(body.customerKey, 60);
+      const preference = clean(body.contactPreference, 10);
+      const nextContactOn = clean(body.nextContactOn, 10);
+      if (!customerKeyPattern.test(customerKey) || !['unknown', 'allowed', 'refused'].includes(preference) || (nextContactOn && !validDay(nextContactOn))) return json({ error: 'invalid_followup' }, 400, origin);
+      // Quem recusou contato não fica com retorno marcado.
+      const { error } = await admin.from('customer_followups').upsert({ customer_key: customerKey, contact_preference: preference, next_contact_on: preference === 'refused' ? null : nextContactOn || null, updated_by: session.admin_username, updated_at: now });
+      return error ? json({ error: 'unable_to_save_followup' }, 500, origin) : json({ ok: true }, 200, origin);
+    }
+
+    if (body.action === 'add_customer_note') {
+      const customerKey = clean(body.customerKey, 60);
+      const note = clean(body.note, 1000);
+      const kind = clean(body.kind, 10);
+      if (!customerKeyPattern.test(customerKey) || note.length < 2 || !['note', 'contact'].includes(kind)) return json({ error: 'invalid_note' }, 400, origin);
+      const { error } = await admin.from('customer_notes').insert({ customer_key: customerKey, kind, note, created_by: session.admin_username });
+      if (error) return json({ error: 'unable_to_save_note' }, 500, origin);
+      // Registrar o contato encerra o retorno que estava marcado para hoje ou antes.
+      if (kind === 'contact') await admin.from('customer_followups').update({ next_contact_on: null, updated_by: session.admin_username, updated_at: now }).eq('customer_key', customerKey).lte('next_contact_on', todayInBrazil());
+      return json({ ok: true }, 200, origin);
+    }
+
+    if (body.action === 'delete_customer_note') {
+      const noteId = clean(body.noteId, 36);
+      if (!uuidPattern.test(noteId)) return json({ error: 'invalid_note' }, 400, origin);
+      const { error } = await admin.from('customer_notes').delete().eq('id', noteId);
+      return error ? json({ error: 'unable_to_delete_note' }, 500, origin) : json({ ok: true }, 200, origin);
+    }
+
+    // A planilha é gerada no navegador; aqui fica só o registro de quem exportou e quantas pessoas.
+    if (body.action === 'log_customer_export') {
+      const count = wholeIn(body.count, 1_000_000);
+      return count === null ? json({ error: 'invalid_export' }, 400, origin) : json({ ok: true }, 200, origin);
     }
 
     if (body.action === 'list_partner_applications') {
@@ -521,7 +601,7 @@ Deno.serve(async (req: Request) => {
     };
     const response = await handle();
     if (response.ok && auditedActions.has(body.action)) {
-      const target = body.email || body.adminId || body.partnerId || body.recipientId || body.orderId || body.requestId || body.entryId || body.code || body.id || body.productId;
+      const target = body.email || body.adminId || body.partnerId || body.recipientId || body.orderId || body.requestId || body.entryId || body.code || body.id || body.productId || body.customerKey || body.noteId || (body.action === 'log_customer_export' ? `${body.count} pessoas` : undefined);
       await logAdminAction(admin, session.admin_username, body.action, target, { status: body.status, passwordSet: body.action === 'add_admin' ? Boolean(body.password) : undefined });
     }
     return response;

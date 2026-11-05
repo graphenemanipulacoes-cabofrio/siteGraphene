@@ -48,9 +48,10 @@ async function loadHandler(name) {
   const security = read('supabase/functions/_shared/counter-security.ts');
   const http = read('supabase/functions/_shared/http.ts');
   const partnerResults = read('supabase/functions/_shared/partner-results.ts');
+  const customerInsights = read('supabase/functions/_shared/customer-insights.ts');
   const supabase = new SyntheticModule(['createClient'], function () { this.setExport('createClient', () => client); }, { context });
   const main = read(`supabase/functions/${name}/index.ts`);
-  await main.link(specifier => specifier.includes('supabase-js') ? supabase : specifier.includes('counter-security') ? security : specifier.includes('partner-results') ? partnerResults : http);
+  await main.link(specifier => specifier.includes('supabase-js') ? supabase : specifier.includes('counter-security') ? security : specifier.includes('partner-results') ? partnerResults : specifier.includes('customer-insights') ? customerInsights : http);
   await main.evaluate();
   return async (body, headers = {}, origin = site) => {
     const response = await handler(new Request(`https://project.supabase.co/functions/v1/${name}`, { method: 'POST', headers: { origin, 'content-type': 'application/json', 'cf-connecting-ip': '203.0.113.9', ...headers }, body: typeof body === 'string' ? body : JSON.stringify(body) }));

@@ -11,6 +11,7 @@ import AdminOrders from '../components/AdminOrders';
 import AdminFinance from '../components/AdminFinance';
 import AdminPartners from '../components/AdminPartners';
 import AdminPartnerResults from '../components/AdminPartnerResults';
+import AdminCustomers from '../components/AdminCustomers';
 import AdminCounterAccess from '../components/AdminCounterAccess';
 import AdminShipping from '../components/AdminShipping';
 import PasswordField from '../components/PasswordField';
@@ -322,6 +323,10 @@ const Admin = () => {
                     <WalletCards size={22} />
                     <span>Financeiro</span>
                 </div>
+                <button type="button" className={`nav-item ${view === 'customers' ? 'active' : ''}`} style={{ background: 'none', border: 0, font: 'inherit' }} aria-pressed={view === 'customers'} onClick={() => setView('customers')}>
+                    <UserRound size={22} />
+                    <span>Clientes</span>
+                </button>
                 <div className={`nav-item ${view === 'products' ? 'active' : ''}`} onClick={() => setView('products')}>
                     <Package size={22} />
                     <span>Produtos</span>
@@ -387,6 +392,9 @@ const Admin = () => {
                         onClick={() => { setView('finance'); setExpandedId(null); }}
                     >
                         <WalletCards size={18} /> Financeiro
+                    </Button>
+                    <Button variant="ghost" className={`admin-nav-link ${view === 'customers' ? 'active' : ''}`} onClick={() => { setView('customers'); setExpandedId(null); }}>
+                        <UserRound size={18} /> Clientes
                     </Button>
                     <span className="admin-nav-label">GESTÃO</span>
                     <Button
@@ -455,9 +463,9 @@ const Admin = () => {
                         )}
                         <span className="admin-eyebrow">CENTRAL DE OPERAÇÕES</span>
                         <h1 className="admin-page-title">
-                            {view === 'active' ? 'Solicitações' : view === 'orders' ? 'Pedidos e Entregas' : view === 'counter' ? 'Acessos da Equipe' : view === 'finance' ? 'Central Financeira' : view === 'products' ? 'Gerenciar Produtos' : view === 'materials' ? 'Gerenciar Matérias-primas' : view === 'shipping' ? 'Frete e entrega' : view === 'admins' ? 'Gerenciar Admins' : view === 'partners' ? 'Parceiros' : view === 'partnerResults' ? 'Resultado das parcerias' : 'Lixeira'}
+                            {view === 'active' ? 'Solicitações' : view === 'orders' ? 'Pedidos e Entregas' : view === 'counter' ? 'Acessos da Equipe' : view === 'finance' ? 'Central Financeira' : view === 'products' ? 'Gerenciar Produtos' : view === 'materials' ? 'Gerenciar Matérias-primas' : view === 'shipping' ? 'Frete e entrega' : view === 'admins' ? 'Gerenciar Admins' : view === 'partners' ? 'Parceiros' : view === 'partnerResults' ? 'Resultado das parcerias' : view === 'customers' ? 'Clientes e pós-venda' : 'Lixeira'}
                         </h1>
-                        <p className="admin-page-copy">{view === 'orders' ? 'Acompanhe pagamentos, separação e envios em um só lugar.' : view === 'finance' ? 'Controle vendas, taxas, comissões, cupons e repasses em uma única área.' : view === 'partners' ? 'Analise inscrições, ative cupons e acompanhe o acesso dos parceiros.' : view === 'partnerResults' ? 'Veja quanto cada parceira vendeu, quanto recebeu e se está dando lucro ou prejuízo.' : view === 'active' ? 'Receitas e solicitações recebidas pelos canais da Graphène.' : 'Gerencie os dados operacionais da Graphène com segurança.'}</p>
+                        <p className="admin-page-copy">{view === 'orders' ? 'Acompanhe pagamentos, separação e envios em um só lugar.' : view === 'finance' ? 'Controle vendas, taxas, comissões, cupons e repasses em uma única área.' : view === 'partners' ? 'Analise inscrições, ative cupons e acompanhe o acesso dos parceiros.' : view === 'partnerResults' ? 'Veja quanto cada parceira vendeu, quanto recebeu e se está dando lucro ou prejuízo.' : view === 'customers' ? 'Veja quem compra com frequência, quem está sumindo e com quem falar hoje.' : view === 'active' ? 'Receitas e solicitações recebidas pelos canais da Graphène.' : 'Gerencie os dados operacionais da Graphène com segurança.'}</p>
                     </div>
                     <div className="admin-header-actions">
                         <span className="admin-role">ACESSO ADMINISTRATIVO</span>
@@ -493,6 +501,8 @@ const Admin = () => {
                     <AdminPartners onUnauthorized={handleUnauthorized} />
                 ) : view === 'partnerResults' ? (
                     <AdminPartnerResults onUnauthorized={handleUnauthorized} />
+                ) : view === 'customers' ? (
+                    <AdminCustomers onUnauthorized={handleUnauthorized} />
                 ) : view === 'admins' ? (
                     <div className="admin-settings-stack">
                         <Card>

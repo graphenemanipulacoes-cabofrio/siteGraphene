@@ -162,7 +162,7 @@ export function PrivacyPage() {
                 title="Privacidade e dados pessoais"
                 intro="Explicamos quais informações o site utiliza para conta, orçamento, atendimento e compra, e como falar com a Graphène sobre seus dados."
             >
-                <p className="institutional-updated">Atualizado em 4 de novembro de 2026.</p>
+                <p className="institutional-updated">Atualizado em 5 de novembro de 2026.</p>
                 <section>
                     <h2>Quem recebe e trata os dados</h2>
                     <p>A empresa responsável pelo tratamento das informações enviadas neste site é {business.legalName}, CNPJ {business.cnpj}, que atua com o nome comercial {business.name}. A unidade fica na {business.address.street}, {business.address.neighborhood}, {business.address.city} — {business.address.region}. Para dúvidas e solicitações relacionadas a dados pessoais, entre em contato pelo WhatsApp oficial, (22) 99936-1256.</p>
@@ -181,11 +181,12 @@ export function PrivacyPage() {
                     <h2>Para que são utilizados</h2>
                     <p>Os dados são usados para autenticar a conta, responder pedidos de orçamento, analisar solicitações encaminhadas à equipe, validar e processar pedidos, registrar pagamentos, organizar a entrega e prestar atendimento. O envio de informações deve se limitar ao necessário para a solicitação feita.</p>
                     <p>Arquivos enviados em pedidos de orçamento podem conter dados referentes à saúde, que recebem proteção especial pela legislação. Envie documentos apenas quando forem necessários para a análise solicitada. A Graphène não deve usar esses documentos para publicidade.</p>
+                    <p>No pós-venda, a administração usa os dados de contato, o histórico de compras e o carrinho da conta para acompanhar a entrega, tirar dúvidas, entender a frequência de compra e organizar o retorno da equipe. Arquivos de orçamento ficam fora desse controle. Se não quiser receber esse contato, avise pelo WhatsApp oficial e registraremos a sua escolha.</p>
                 </section>
                 <section>
                     <h2>Serviços envolvidos e armazenamento</h2>
                     <p>Usamos Supabase para autenticação, banco de dados e armazenamento; o pagamento é concluído no Mercado Pago. Se você escolher entrar com Google, a autenticação também envolve esse provedor. Ao abrir o WhatsApp, a conversa passa a seguir as condições e políticas do próprio serviço. Mapas incorporados e fontes de texto também podem carregar recursos do Google.</p>
-                    <p>O carrinho é mantido no armazenamento local do navegador para que a seleção continue disponível durante a navegação. A sessão permite acessar a conta e acompanhar pedidos. Compartilhe apenas as informações necessárias para o atendimento.</p>
+                    <p>O carrinho é mantido no navegador e, para quem está conectado, também na conta, para que a seleção continue disponível. A sessão permite acessar a conta e acompanhar pedidos. Compartilhe apenas as informações necessárias para o atendimento.</p>
                 </section>
                 <section>
                     <h2>Cookies e armazenamento do navegador</h2>

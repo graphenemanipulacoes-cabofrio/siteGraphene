@@ -14,7 +14,7 @@ Este arquivo é a fonte de contexto do projeto. Não há notas externas (Obsidia
 - **Loja pública:** `/`, `/produto/:id`, `/laboratorio`, `/avaliacoes`, `/parceiros`, `/sobre`, `/compras`, `/trocas`, `/privacidade`. `/ativos`, `/receita` e `/prescritores` estão fora do ar por causa dos anúncios (ver "Anúncios no Google").
 - **Compra:** `/carrinho`, `/entrar`, `/minha-conta`, `/checkout`, `/pedido/retorno`, `/redefinir-senha`. Carrinho em `src/context/StoreContext.jsx`.
   Carrinhos autenticados ficam em `customer_carts`/RPC `customer_cart_sync`; `src/utils/cartPersistence.js` mantém cache separado por conta e operações pendentes idempotentes. Não voltar a usar um único localStorage para todos os clientes. Checkout usa sempre `create_checkout_order_v2`, incluindo frete, e `src/lib/checkoutApi.js` cuida da sessão/erros sem repetir pagamentos.
-- **Admin** (`/admin`, login em `/login`): solicitações, pedidos, produtos, financeiro, parceiros, acessos do balcão, administradores.
+- **Admin** (`/admin`, login em `/login`): solicitações, pedidos, clientes, produtos, financeiro, parceiros, acessos do balcão, administradores.
 - **Parceiros:** `/parceiros/cadastro`, `/parceiros/entrar`, `/parceiros/painel`.
 - **Balcão** (`/balcaographene`): consulta da equipe da loja. Detalhes em `BALCAO_GRAPHENE.md`.
 
@@ -68,6 +68,15 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - Situação: 30 primeiros dias sem corte; dia 60 abaixo de 1× o mínimo acumulado = "Em atenção"; dia 90 sugere renovar (3×), meio vale por mais 30 dias (1,5×) ou só comissão. Depois do teste, usa a média dos 3 últimos meses fechados. Tudo é sugestão: a mudança de situação é sempre manual, e nada corta vale ou comissão sozinho.
 - Regras, percentuais e cupons de cada parceira dependem do dono. Não cadastrar sem aprovação. Proposta em discussão: https://claude.ai/artifact/JjXDmQiPeNnZCkTmd5NBWV
 - Verificação: `node scripts/verify-partner-results.mjs` e `scripts/verify-partner-results-db.sql` (fixtures sintéticas com rollback).
+
+## Clientes e pós-venda
+- Admin → **Clientes** (`AdminCustomers`): frequência de compra, ticket, produtos, cidade, cupom de origem, carrinho, orçamentos, anotações, retorno marcado e lista "Contatar agora". Só admin; o balcão e o farmacêutico não veem.
+- A conta fica em `_shared/customer-insights.ts`, sem acesso ao banco. Ações `customers_report`, `save_customer_followup`, `add_customer_note`, `delete_customer_note` e `log_customer_export` da `admin-orders`. Tabelas `customer_followups` e `customer_notes`, sem acesso pelo navegador. A chave é o id da conta ou `tel:` e o número de quem só pediu orçamento.
+- Compra é pedido pago e não cancelado; o valor não inclui frete. Quem está em `admins` ou `counter_accounts` fica fora dos totais. Orçamento entra na conta com o mesmo telefone.
+- **Fica fora do relatório, de propósito:** CPF, rua e número, dados de pagamento, receitas e observações de orçamento. O histórico de uma farmácia pode revelar dados de saúde (LGPD). A mensagem pronta do WhatsApp nunca cita produto e a planilha não traz produtos nem anotações.
+- Quem está como "Não quer contato" não entra na lista de contato nem na planilha, e fica sem botões de WhatsApp e e-mail. Registrar um contato encerra o retorno marcado para hoje ou antes e pausa os lembretes por 7 dias.
+- Ainda não existe consentimento para ofertas: o site não pergunta se a pessoa aceita receber promoções. Enquanto não houver, "Aceita contato" só vale se a pessoa tiver dito isso à equipe. Não enviar oferta em massa com base nesta lista.
+- Verificação: `node scripts/verify-customer-insights.mjs` e `scripts/verify-customer-insights-db.sql` (fixtures sintéticas com rollback).
 
 ## Cupons de parceiros
 - `CouponPanel` fica sempre aberto no carrinho e na entrega, antes dos produtos/formulário. Busca a partir de 3 caracteres por prefixo do código ou primeiro nome do recebedor, com seleção por mouse/toque/teclado e digitação em maiúsculas. Não criar cupons de exemplo.
