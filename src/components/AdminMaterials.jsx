@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { adminMaterialsApi } from '../lib/materialsApi';
 import { validateProductImage } from '../lib/productsApi';
+import { PRESCRIPTION_PAGES_ENABLED } from '../data/publicChannels';
 import MaterialThumbnail from './MaterialThumbnail';
 import '../styles/materials.css';
 
@@ -100,7 +101,7 @@ export default function AdminMaterials({ api = adminMaterialsApi }) {
     const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const filtered = materials.filter(item => normalize(`${item.name} ${item.lab} ${item.category}`).includes(normalize(search)));
     return <section className="materials-panel" aria-label="Gestão de matérias-primas">
-        <div className="materials-toolbar"><div><h2>Matérias-primas</h2><p>Edite o catálogo exibido em <Link to="/ativos" target="_blank" rel="noreferrer">Matérias-primas e fornecedores <ExternalLink size={12}/></Link>.</p></div><button className="rm-btn primary" onClick={() => setEditor({})}><Plus size={17}/> Nova matéria-prima</button></div>
+        <div className="materials-toolbar"><div><h2>Matérias-primas</h2>{PRESCRIPTION_PAGES_ENABLED ? <p>Edite o catálogo exibido em <Link to="/ativos" target="_blank" rel="noreferrer">Matérias-primas e fornecedores <ExternalLink size={12}/></Link>.</p> : <p>O cadastro continua aqui. A página pública de matérias-primas está fora do ar por causa dos anúncios no Google.</p>}</div><button className="rm-btn primary" onClick={() => setEditor({})}><Plus size={17}/> Nova matéria-prima</button></div>
         <div className="materials-search"><label><Search size={17}/><input type="search" aria-label="Buscar matéria-prima" placeholder="Buscar por nome, fornecedor ou categoria" value={search} onChange={event => setSearch(event.target.value)}/></label><span>{filtered.length} de {materials.length} cadastros</span></div>
         {error && <div className="rm-error" role="alert">{error} <button className="rm-btn" onClick={load}>Tentar novamente</button></div>}
         {loading ? <p role="status">Carregando matérias-primas…</p> : !error && <div className="materials-list">{filtered.length ? filtered.map(material => <article key={material.id} className="materials-row"><MaterialThumbnail src={material.image_url} name={material.name}/><div className="materials-row-info"><h3>{material.name}</h3><p>{material.lab || 'Fornecedor não informado'}</p><span>{material.category}</span></div><div className="rm-actions"><button className="rm-btn" onClick={() => setEditor(material)}><Pencil size={15}/><span>Editar</span></button><button className="rm-icon danger" aria-label={`Excluir ${material.name}`} disabled={deleting !== null} onClick={() => remove(material)}>{deleting === material.id ? <LoaderCircle size={16} className="spin"/> : <Trash2 size={16}/>}</button></div></article>) : <p className="materials-empty">{search ? 'Nenhuma matéria-prima encontrada para esta busca.' : 'Nenhuma matéria-prima cadastrada. Use “Nova matéria-prima” para começar.'}</p>}</div>}

@@ -37,4 +37,12 @@ for (const pathname of Object.keys(pageMetadata)) {
     assert.ok(rewrite, `${pathname}: deployment route exists`);
     assert.ok(existsSync(`dist${rewrite.destination}`), `${pathname}: deployment file exists`);
 }
+const { redirects } = JSON.parse(readFileSync('vercel.json', 'utf8'));
+for (const pathname of ['/ativos', '/receita', '/prescritores']) {
+    const published = Object.hasOwn(pageMetadata, pathname);
+    assert.equal(rewrites.some(item => item.source === pathname), published, `${pathname}: route matches the page switch`);
+    assert.equal(redirects.some(item => item.source === pathname), !published, `${pathname}: redirect matches the page switch`);
+    assert.equal(sitemap.includes(`<loc>${SITE_URL}${pathname}</loc>`), published, `${pathname}: sitemap matches the page switch`);
+    assert.equal(existsSync(`dist${pathname}.html`), published, `${pathname}: built page matches the page switch`);
+}
 console.log('SEO checks passed: identity, confirmed hours, JSON-LD, canonical URLs, sitemap, deployment routes and private-page isolation.');

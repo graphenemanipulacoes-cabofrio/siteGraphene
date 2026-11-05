@@ -1,10 +1,11 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Button from './Button';
-import { GripVertical, Pencil, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Eye, EyeOff, GripVertical, Pencil, Trash2, Image as ImageIcon } from 'lucide-react';
 import { resolveProductImage } from '../utils/productImages';
 
-const SortableProductCard = ({ product, handleOpenModal, handleDelete }) => {
+const SortableProductCard = ({ product, handleOpenModal, handleDelete, handleToggleActive }) => {
+    const hidden = product.is_active === false;
     const {
         attributes,
         listeners,
@@ -35,8 +36,10 @@ const SortableProductCard = ({ product, handleOpenModal, handleDelete }) => {
                     <GripVertical size={17} />
                 </button>
 
+                {hidden && <span style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 2, padding: '6px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, color: '#ffffff', background: 'rgba(7,16,24,0.92)', border: '1px solid rgba(255,255,255,0.28)' }}>Fora do site</span>}
+
                 {/* Image */}
-                <div style={{ height: '190px', background: '#ffffff', borderRadius: 'var(--radius-sm)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', pointerEvents: 'none' }}>
+                <div style={{ height: '190px', background: '#ffffff', borderRadius: 'var(--radius-sm)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', pointerEvents: 'none', opacity: hidden ? 0.55 : 1 }}>
                     {resolvedImg ? (
                         <img src={resolvedImg} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     ) : (
@@ -93,6 +96,15 @@ const SortableProductCard = ({ product, handleOpenModal, handleDelete }) => {
                         <Trash2 size={20} />
                     </button>
                 </div>
+                <button
+                    type="button"
+                    onClick={(event) => { event.stopPropagation(); handleToggleActive(product); }}
+                    aria-label={`${hidden ? 'Colocar no site' : 'Tirar do site'}: ${product.name}`}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', minHeight: '44px', padding: '10px', cursor: 'pointer', borderRadius: 'var(--radius-sm)', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-white)', background: hidden ? 'rgba(34,199,232,0.14)' : 'rgba(255,255,255,0.04)', border: `1px solid ${hidden ? 'var(--primary)' : 'rgba(255,255,255,0.14)'}` }}
+                >
+                    {hidden ? <Eye size={18} aria-hidden="true" /> : <EyeOff size={18} aria-hidden="true" />}
+                    {hidden ? 'Colocar no site' : 'Tirar do site'}
+                </button>
             </div>
         </div>
     );

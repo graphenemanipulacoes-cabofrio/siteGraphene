@@ -8,6 +8,7 @@ import AuthenticityRibbon from '../components/AuthenticityRibbon';
 import Footer from '../components/Footer';
 import FloatingWhatsApp from '../components/FloatingWhatsApp';
 import { Toaster } from 'sonner';
+import { PRESCRIPTION_PAGES_ENABLED } from '../data/publicChannels';
 
 const HomePage = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -28,7 +29,7 @@ const HomePage = () => {
                 <HeroBanner />
                 <BenefitsBar />
                 <ProductGrid searchTerm={searchTerm} />
-                <AuthenticityRibbon />
+                {PRESCRIPTION_PAGES_ENABLED && <AuthenticityRibbon />}
             </main>
             <Footer />
             <FloatingWhatsApp />

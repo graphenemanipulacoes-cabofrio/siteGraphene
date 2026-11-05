@@ -6,117 +6,9 @@ import { resolveProductImage } from '../utils/productImages';
 import { NATURAL_FLAVOR, flavorName, productOptions, requiresChoice, useFlavors, variantPrice } from '../utils/productOptions';
 import { GOALS, goalLabel, goalOf } from '../utils/productGoals';
 import { money } from '../utils/commerce';
+import { PRESCRIPTION_PAGES_ENABLED } from '../data/publicChannels';
 import ProductRail from './ProductRail';
 import '../styles/vitrine.css';
-
-// Produtos de reserva caso o banco não responda.
-const defaultProducts = [
-    {
-        id: '12',
-        name: 'Coenzima Q10 100mg',
-        description: 'Coenzima Q10 100mg. Fundamental para a produção de energia celular e suporte à saúde cardíaca. Ação antioxidante. Contém 60 cápsulas.',
-        price: null,
-        image_url: '/assets/products/coenzima_q10.png'
-    },
-    {
-        id: '4',
-        name: 'Composto Termogênico',
-        description: 'Acelerador metabólico avançado. Mais energia e queima calórica eficiente.',
-        price: null,
-        image_url: '/assets/products/termogenico.png'
-    },
-    {
-        id: '15',
-        name: 'Creatina Monohidratada 200g',
-        description: 'Creatina Monohidratada 200g. Auxilia no aumento de força e massa muscular. Fórmula pura e sem sabor. Contém 200g (pó).',
-        price: null,
-        image_url: '/assets/products/creatina.png'
-    },
-    {
-        id: '9',
-        name: 'Colágeno Verisol® 2.5g',
-        description: 'Colágeno Verisol® 2.5g. Auxilia na manutenção da saúde da pele, contribuindo para a elasticidade e redução de rugas. Contém 30 sachês.',
-        price: null,
-        image_url: '/assets/products/colageno_verisol.png'
-    },
-    {
-        id: '3',
-        name: 'Morosil® 500mg',
-        description: 'Autêntico extrato da laranja moro. Potente na redução de medidas abdominais.',
-        price: null,
-        image_url: '/assets/products/morosil.png'
-    },
-    {
-        id: '1',
-        name: 'Melatonina 5mg',
-        description: 'Sono reparador, rápido e combate à insônia. Regula o ritmo biológico natural.',
-        price: null,
-        image_url: '/assets/products/melatonina.png'
-    },
-    {
-        id: '5',
-        name: 'Maca Peruana',
-        description: 'Superalimento para vigor físico, libido e equilíbrio hormonal.',
-        price: null,
-        image_url: '/assets/products/maca_peruana.png'
-    },
-    {
-        id: '7',
-        name: 'Vitamina D3 5000 UI',
-        description: 'Vitamina D3 5000 UI. Auxilia na formação de ossos e dentes, na absorção de cálcio e fósforo e no funcionamento do sistema imune. Contém 60 cápsulas.',
-        price: null,
-        image_url: '/assets/products/vitamina_d3.png'
-    },
-    {
-        id: '6',
-        name: 'Magnésio Dimalato 500mg',
-        description: 'Magnésio Dimalato 500mg. Auxilia no funcionamento muscular e neuromuscular, metabolismo energético e formação de ossos e dentes. Contém 90 cápsulas.',
-        price: null,
-        image_url: '/assets/products/magnesio_dimalato.png'
-    },
-    {
-        id: '8',
-        name: 'Cúrcuma (Curcumina 95%) 500mg',
-        description: 'Cúrcuma 500mg (Curcumina 95%). Potente ação antioxidante e anti-inflamatória. Auxilia na proteção das células contra radicais livres. Contém 60 cápsulas.',
-        price: null,
-        image_url: '/assets/products/curcuma.png'
-    },
-    {
-        id: '10',
-        name: 'Biotina 10000mcg',
-        description: 'Biotina 10000mcg. Vitamina essencial para a manutenção da saúde da pele, cabelos e unhas. Contém 60 cápsulas.',
-        price: null,
-        image_url: '/assets/products/biotina.png'
-    },
-    {
-        id: '11',
-        name: 'Resveratrol 250mg',
-        description: 'Resveratrol 250mg (Trans-Resveratrol). Potente antioxidante que auxilia na saúde cardiovascular e combate o envelhecimento celular. Contém 60 cápsulas.',
-        price: null,
-        image_url: '/assets/products/resveratrol.png'
-    },
-    {
-        id: '14',
-        name: 'Zinco Quelado 30mg',
-        description: 'Zinco Quelado 30mg. Mineral essencial para o fortalecimento do sistema imune e processos de cicatrização. Alta biodisponibilidade. Contém 60 cápsulas.',
-        price: null,
-        image_url: '/assets/products/zinco_quelado.png'
-    },
-    {
-        id: '13',
-        name: 'Ômega 3 (EPA/DHA) 1000mg',
-        description: 'Ômega 3 1000mg. Óleo de peixe rico em EPA e DHA. Auxilia na saúde do coração, cérebro e controle dos níveis de colesterol. Contém 90 cápsulas.',
-        price: null,
-        image_url: '/assets/products/omega_3.png'
-    },
-    {
-        id: '2',
-        name: 'Ashwagandha 300mg',
-        description: 'Adaptógeno natural. Reduz estresse, ansiedade e melhora o foco e disposição.',
-        price: null,
-        image_url: '/assets/products/ashwagandha.png'
-    }
-];
 
 // Bolinha de cor de cada sabor no cartão (sabores novos usam cinza).
 const flavorColors = {
@@ -133,7 +25,10 @@ const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
 const ProductGrid = ({ searchTerm = '' }) => {
     const [goal, setGoal] = useState('todos');
     const [expanded, setExpanded] = useState(false);
-    const [productsList, setProductsList] = useState(defaultProducts);
+    // A vitrine vem só do banco: nenhum produto fica escrito no código, para não
+    // aparecer na tela um item que saiu do site.
+    const [productsList, setProductsList] = useState([]);
+    const [catalogStatus, setCatalogStatus] = useState('loading');
     const navigate = useNavigate();
     const sectionRef = useRef(null);
 
@@ -146,20 +41,20 @@ const ProductGrid = ({ searchTerm = '' }) => {
                     .order('display_order', { ascending: true, nullsFirst: false })
                     .order('created_at', { ascending: true });
 
-                if (!error && data && data.length > 0) {
-                    setProductsList(data.map((item, idx) => ({
-                        id: String(item.id || idx),
-                        name: item.name,
-                        description: item.description || '',
-                        price: item.price && parseFloat(item.price) > 0 ? parseFloat(item.price).toFixed(2).replace('.', ',') : null,
-                        rawPrice: Number(item.price) || 0,
-                        options: item.options || {},
-                        image_url: resolveProductImage(item)
-                    })));
-                }
+                if (error) throw error;
+                setProductsList((data || []).map((item, idx) => ({
+                    id: String(item.id || idx),
+                    name: item.name,
+                    description: item.description || '',
+                    price: item.price && parseFloat(item.price) > 0 ? parseFloat(item.price).toFixed(2).replace('.', ',') : null,
+                    rawPrice: Number(item.price) || 0,
+                    options: item.options || {},
+                    image_url: resolveProductImage(item)
+                })));
+                setCatalogStatus('ready');
             } catch (err) {
                 console.error('Erro ao buscar produtos:', err);
-                setProductsList(defaultProducts);
+                setCatalogStatus('error');
             }
         };
         fetchProducts();
@@ -223,7 +118,7 @@ const ProductGrid = ({ searchTerm = '' }) => {
 
                 {(visible.length > 0 || !searching) && <div className="vt-part" data-part="catalog">
                     <h3 className="vt-sr-only">{goalName ? `${goalName}: produtos` : 'Produtos da loja'}</h3>
-                    {visible.length === 0 ? <p className="vt-empty">{goalName ? `Nenhum produto encontrado em ${goalName.toLowerCase()}.` : 'Nenhum produto encontrado.'}</p> :
+                    {visible.length === 0 ? <p className="vt-empty" role="status">{catalogStatus === 'loading' ? 'Carregando produtos…' : catalogStatus === 'error' ? 'Não foi possível carregar os produtos. Atualize a página ou fale com a equipe pelo WhatsApp.' : goalName ? `Nenhum produto encontrado em ${goalName.toLowerCase()}.` : 'Nenhum produto encontrado.'}</p> :
                         <ProductLayout className="vt-grid" {...(allProducts ? { id: 'vt-products-rail', label: 'Todos os produtos', resetKey: term } : {})}>
                             {shownProducts.map(item => {
                                 const selected = choiceOf(item);
@@ -266,10 +161,10 @@ const ProductGrid = ({ searchTerm = '' }) => {
                     </button>}
                 </div>}
 
-                <div className="vt-prescription">
+                {PRESCRIPTION_PAGES_ENABLED && <div className="vt-prescription">
                     <p>Um cuidado mais individualizado?</p>
                     <Link to="/receita">Solicite um orçamento para a sua fórmula <ArrowRight size={16} aria-hidden="true" /></Link>
-                </div>
+                </div>}
             </div>
         </section>
     );

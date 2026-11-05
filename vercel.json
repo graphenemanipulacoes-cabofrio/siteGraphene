@@ -13,19 +13,22 @@
         }
     ],
     "redirects": [
-        { "source": "/(.*)", "has": [{ "type": "host", "value": "site-graphene.vercel.app" }], "destination": "https://www.graphenemanipulacoes.com.br/$1", "permanent": false }
+        { "source": "/(.*)", "has": [{ "type": "host", "value": "site-graphene.vercel.app" }], "destination": "https://www.graphenemanipulacoes.com.br/$1", "permanent": false },
+        { "source": "/ativos", "destination": "/", "permanent": false },
+        { "source": "/receita", "destination": "/", "permanent": false },
+        { "source": "/prescritores", "destination": "/", "permanent": false }
     ],
     "rewrites": [
-        { "source": "/ativos", "destination": "/ativos.html" },
         { "source": "/laboratorio", "destination": "/laboratorio.html" },
-        { "source": "/receita", "destination": "/receita.html" },
-        { "source": "/prescritores", "destination": "/prescritores.html" },
         { "source": "/avaliacoes", "destination": "/avaliacoes.html" },
         { "source": "/parceiros", "destination": "/parceiros.html" },
         { "source": "/sobre", "destination": "/sobre.html" },
         { "source": "/compras", "destination": "/compras.html" },
+        { "source": "/trocas", "destination": "/trocas.html" },
         { "source": "/privacidade", "destination": "/privacidade.html" },
-        { "source": "/produto/:id", "destination": "/product.html" },
+        { "source": "/produto/:id", "destination": "/api/produto?id=:id" },
+        { "source": "/feed.xml", "destination": "/api/feed" },
+        { "source": "/sitemap-produtos.xml", "destination": "/api/sitemap-produtos" },
         { "source": "/admin", "destination": "/private.html" },
         { "source": "/balcaographene", "destination": "/private.html" },
         { "source": "/colaboradores", "destination": "/private.html" },

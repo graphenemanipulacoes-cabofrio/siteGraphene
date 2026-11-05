@@ -3,6 +3,22 @@
 Lista de acompanhamento em linguagem simples. Atualizada em 2 de outubro de 2026.
 As informações do site não equivalem a uma aprovação do Google nem confirmam, sozinhas, a situação atual de todos os documentos.
 
+## Situação dos anúncios (4 de novembro de 2026)
+
+O Google reprovou os anúncios por "serviços de medicamentos", segundo o relato do proprietário. O site foi preparado: páginas de receita fora do ar, produtos de maior risco fora do site e textos sem promessa de tratamento. Isso não garante a aprovação. A política para o Brasil também exige a certificação abaixo, e não cita farmácia de manipulação.
+
+Comparação com 5 farmácias que anunciam: todas têm conta verificada, licença sanitária, AFE e AE no site, conteúdo no próprio HTML e anúncios de produto no Shopping. A conta da Graphène também é verificada e teve anúncios exibidos até 3 de novembro, apontando para o site antigo. Os anúncios foram reprovados quando o destino mudou para o site novo, com loja. A hipótese principal é a falta da certificação de farmácia on-line, ainda não confirmada na conta.
+
+Ainda faltam, fora do site:
+
+- Print da reprovação e situação da certificação na conta do Google Ads (ou acesso à conta).
+- Pedido da certificação, se ainda não existir.
+- Números da licença sanitária e da AE, para incluir no site.
+- Revisão da lista de produtos pela responsável técnica, com composição e advertências de cada um.
+- Regras reais de troca e devolução da loja.
+- Conta no Google Merchant Center, com o feed `https://www.graphenemanipulacoes.com.br/feed.xml`.
+- Revisão de anúncios e palavras-chave. Nenhum deles deve citar medicamento, receita, doença ou emagrecimento.
+
 ## Antes de ativar anúncios
 
 - Pedir ao Rodrigo o alvará sanitário vigente da unidade. Depois de conferir, incluir no site o número, órgão emissor e validade.

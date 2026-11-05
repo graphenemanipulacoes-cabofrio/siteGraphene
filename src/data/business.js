@@ -33,4 +33,7 @@ export const business = {
         resolution: 'RE nº 276, de 24/01/2024',
         publication: '25/01/2024',
     },
+    // Aguardando os números com o proprietário. Só aparecem no site quando preenchidos.
+    sanitaryLicense: null,
+    specialAuthorization: null,
 };

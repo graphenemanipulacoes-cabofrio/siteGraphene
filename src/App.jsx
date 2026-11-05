@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
+import { PRESCRIPTION_PAGES_ENABLED } from './data/publicChannels';
 import SeoManager from './components/SeoManager';
 import PrivacyNotice from './components/PrivacyNotice';
 import ScrollToTop from './components/ScrollToTop';
@@ -30,6 +31,7 @@ const PasswordResetPage = lazy(() => import('./pages/PasswordResetPage'));
 const AboutPage = lazy(() => import('./pages/InstitutionalPages').then(module => ({ default: module.AboutPage })));
 const PrivacyPage = lazy(() => import('./pages/InstitutionalPages').then(module => ({ default: module.PrivacyPage })));
 const PurchaseInfoPage = lazy(() => import('./pages/InstitutionalPages').then(module => ({ default: module.PurchaseInfoPage })));
+const ReturnsPage = lazy(() => import('./pages/InstitutionalPages').then(module => ({ default: module.ReturnsPage })));
 
 function App() {
   return (
@@ -41,10 +43,10 @@ function App() {
       <Suspense fallback={<main role="status" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: 'var(--text-main)' }}>Carregando Graphène…</main>}>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/ativos" element={<AtivosPage />} />
+          <Route path="/ativos" element={PRESCRIPTION_PAGES_ENABLED ? <AtivosPage /> : <Navigate to="/" replace />} />
           <Route path="/laboratorio" element={<LaboratorioPage />} />
-          <Route path="/receita" element={<ReceitaPage />} />
-          <Route path="/prescritores" element={<PrescritoresPage />} />
+          <Route path="/receita" element={PRESCRIPTION_PAGES_ENABLED ? <ReceitaPage /> : <Navigate to="/" replace />} />
+          <Route path="/prescritores" element={PRESCRIPTION_PAGES_ENABLED ? <PrescritoresPage /> : <Navigate to="/" replace />} />
           <Route path="/avaliacoes" element={<AvaliacoesPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<Admin />} />
@@ -65,6 +67,7 @@ function App() {
           <Route path="/sobre" element={<AboutPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
           <Route path="/compras" element={<PurchaseInfoPage />} />
+          <Route path="/trocas" element={<ReturnsPage />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

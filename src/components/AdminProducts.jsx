@@ -41,10 +41,13 @@ const AdminProducts = ({ api = adminProductsApi }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [activeId, setActiveId] = useState(null); // For drag overlay
+    const [visibility, setVisibility] = useState('all');
 
     // Form State
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [composition, setComposition] = useState('');
+    const [warnings, setWarnings] = useState('');
     const [price, setPrice] = useState('');
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
@@ -144,12 +147,16 @@ const AdminProducts = ({ api = adminProductsApi }) => {
         if (product) {
             setName(product.name);
             setDescription(product.description || '');
+            setComposition(product.composition || '');
+            setWarnings(product.warnings || '');
             setPrice(product.price || '');
             setImagePreview(product.image_url);
             setOptions(optionsFromProduct(product));
         } else {
             setName('');
             setDescription('');
+            setComposition('');
+            setWarnings('');
             setPrice('');
             setImagePreview(null);
             setOptions(emptyOptions);
@@ -193,6 +200,8 @@ const AdminProducts = ({ api = adminProductsApi }) => {
                 id: editingProduct?.id ?? null,
                 name,
                 description,
+                composition,
+                warnings,
                 price: !price ? 0 : Number(price),
                 image_url: imageUrl,
                 options: { sizes, flavors: options.flavors, natural: options.natural, flavor_price: options.flavorPrice === '' ? 0 : Number(options.flavorPrice) },
@@ -212,6 +221,28 @@ const AdminProducts = ({ api = adminProductsApi }) => {
             setUploading(false);
         }
     };
+
+    // Fora do site: some da loja e do checkout, mas segue aqui para voltar depois.
+    const handleToggleActive = async product => {
+        const active = product.is_active === false;
+        if (active && !confirm(`Colocar "${product.name}" de volta no site? Ele volta a aparecer para os clientes e para a revisão do Google. Confirme antes com a responsável técnica.`)) return;
+        try {
+            const saved = await api.setActive(product.id, active);
+            setProducts(prev => prev.map(item => item.id === saved.id ? saved : item));
+            toast.success(active ? 'Produto de volta no site.' : 'Produto fora do site. Ele continua aqui no painel.');
+        } catch (error) {
+            console.error('Error changing product visibility:', error);
+            toast.error(error.message || 'Não foi possível alterar o produto.');
+        }
+    };
+
+    const hiddenCount = products.filter(product => product.is_active === false).length;
+    const visibilityFilters = [
+        { id: 'all', label: `Todos (${products.length})` },
+        { id: 'active', label: `No site (${products.length - hiddenCount})` },
+        { id: 'hidden', label: `Fora do site (${hiddenCount})` },
+    ];
+    const shownProducts = products.filter(product => visibility === 'all' || (visibility === 'hidden') === (product.is_active === false));
 
     const handleDelete = async (id) => {
         if (!confirm('Tem certeza que deseja excluir este produto?')) return;
@@ -237,6 +268,23 @@ const AdminProducts = ({ api = adminProductsApi }) => {
                 </Button>
             </div>
 
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                <div role="group" aria-label="Filtrar produtos" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {visibilityFilters.map(item => (
+                        <button
+                            key={item.id}
+                            type="button"
+                            aria-pressed={visibility === item.id}
+                            onClick={() => setVisibility(item.id)}
+                            style={{ padding: '8px 14px', borderRadius: '999px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-white)', background: visibility === item.id ? 'rgba(34,199,232,0.16)' : 'rgba(255,255,255,0.04)', border: `1px solid ${visibility === item.id ? 'var(--primary)' : 'rgba(255,255,255,0.14)'}` }}
+                        >
+                            {item.label}
+                        </button>
+                    ))}
+                </div>
+                <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-light)' }}>Produto fora do site não aparece na loja nem pode ser comprado. Ele continua aqui e pode voltar quando quiser.</p>
+            </div>
+
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -250,21 +298,22 @@ const AdminProducts = ({ api = adminProductsApi }) => {
                     gap: '1.5rem'
                 }}>
                     <SortableContext
-                        items={products.map(p => p.id)}
+                        items={shownProducts.map(p => p.id)}
                         strategy={rectSortingStrategy}
                     >
-                        {products.length === 0 && !loading && (
+                        {shownProducts.length === 0 && !loading && (
                             <p style={{ opacity: 0.5, gridColumn: '1/-1', textAlign: 'center', padding: '2rem' }}>
-                                Nenhum produto cadastrado.
+                                {products.length === 0 ? 'Nenhum produto cadastrado.' : 'Nenhum produto neste filtro.'}
                             </p>
                         )}
 
-                        {products.map(product => (
+                        {shownProducts.map(product => (
                             <SortableProductCard
                                 key={product.id}
                                 product={product}
                                 handleOpenModal={handleOpenModal}
                                 handleDelete={handleDelete}
+                                handleToggleActive={handleToggleActive}
                             />
                         ))}
                     </SortableContext>
@@ -373,6 +422,31 @@ const AdminProducts = ({ api = adminProductsApi }) => {
                                     onChange={e => setDescription(e.target.value)}
                                     style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', outline: 'none', resize: 'vertical' }}
                                 />
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label htmlFor="product-composition" style={{ fontSize: '0.9rem', opacity: 0.8 }}>Composição</label>
+                                <textarea
+                                    id="product-composition"
+                                    rows="2"
+                                    maxLength={2000}
+                                    value={composition}
+                                    onChange={e => setComposition(e.target.value)}
+                                    style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', outline: 'none', resize: 'vertical' }}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label htmlFor="product-warnings" style={{ fontSize: '0.9rem', opacity: 0.8 }}>Advertências</label>
+                                <textarea
+                                    id="product-warnings"
+                                    rows="2"
+                                    maxLength={2000}
+                                    value={warnings}
+                                    onChange={e => setWarnings(e.target.value)}
+                                    style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', outline: 'none', resize: 'vertical' }}
+                                />
+                                <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>Preencha composição e advertências com a responsável técnica. Só aparecem no site quando preenchidas.</span>
                             </div>
 
                             <ProductOptionsEditor value={options} onChange={setOptions} catalog={catalog} onAddFlavor={handleAddFlavor} onRemoveFlavor={handleRemoveFlavor} />

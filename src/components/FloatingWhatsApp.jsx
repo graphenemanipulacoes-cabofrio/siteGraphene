@@ -5,7 +5,7 @@ import { getWhatsAppUrl } from '../config';
 const FloatingWhatsApp = () => {
     return (
         <a
-            href={getWhatsAppUrl('Olá, gostaria de tirar dúvidas e solicitar uma cotação na Graphène.')}
+            href={getWhatsAppUrl('Olá, gostaria de tirar dúvidas sobre os produtos da Graphène.')}
             target="_blank"
             rel="noopener noreferrer"
             className="clean-floating-wa"

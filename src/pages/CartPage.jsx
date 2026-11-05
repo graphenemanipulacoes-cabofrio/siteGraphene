@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Minus, Plus, ShoppingBag, Trash2, ArrowRight, ArrowLeft, LockKeyhole, MessageCircle } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 import StoreLayout from '../components/StoreLayout';
 import PurchaseSteps from '../components/PurchaseSteps';
 import CouponPanel from '../components/CouponPanel';
@@ -11,9 +13,36 @@ import { variantText } from '../utils/productOptions';
 import { WHATSAPP_URL, deliveryText, useShippingConfig, useShippingQuote } from '../utils/shipping';
 import '../styles/purchase.css';
 
+// Produtos que saíram do site depois de entrar no carrinho (o público só lê os ativos).
+// Se a consulta falhar, nada é bloqueado aqui: o checkout confere de novo no servidor.
+function useUnavailableProducts(cart) {
+    const [unavailable, setUnavailable] = useState([]);
+    const idsKey = [...new Set(cart.map(item => String(item.id)))].filter(id => /^\d+$/.test(id)).sort().join(',');
+    useEffect(() => {
+        if (!idsKey) return undefined;
+        let active = true;
+        const ids = idsKey.split(',');
+        (async () => {
+            try {
+                const { data, error } = await supabase.from('produtos').select('id').in('id', ids);
+                if (!active || error || !Array.isArray(data)) return;
+                const available = new Set(data.map(row => String(row.id)));
+                setUnavailable(ids.filter(id => !available.has(id)));
+            } catch (error) {
+                console.error('Erro ao conferir o carrinho:', error);
+            }
+        })();
+        return () => { active = false; };
+    }, [idsKey]);
+    return unavailable;
+}
+
 export default function CartPage() {
     const { cart, subtotal, itemCount, updateQuantity, removeItem, zip, cartReady, cartSyncing, cartSyncError, syncCart, customer } = useStore();
     const { coupon } = useCoupon();
+    const unavailable = useUnavailableProducts(cart);
+    const isUnavailable = item => unavailable.includes(String(item.id));
+    const hasUnavailable = cart.some(isUnavailable);
     const config = useShippingConfig();
     const { quote } = useShippingQuote(zip, subtotal);
     const delivery = deliveryText(quote);
@@ -34,6 +63,7 @@ export default function CartPage() {
                         <div className="purchase-item-body"><Link to={`/produto/${item.id}`}><h2>{item.name}</h2></Link>{variantText(item) && <p className="purchase-variant">{variantText(item)}</p>}<p>{Number(item.price) > 0 ? `${money(item.price)} cada` : 'Preço não informado'}</p>
                             <div className="purchase-item-controls"><div className="purchase-quantity"><button disabled={item.quantity <= 1} onClick={() => updateQuantity(item.key, item.quantity - 1)} aria-label={`Diminuir unidades de ${item.name}`}><Minus size={16} /></button><output aria-label={`Unidades de ${item.name}`}>{item.quantity}</output><button disabled={item.quantity >= 20} onClick={() => updateQuantity(item.key, item.quantity + 1)} aria-label={`Aumentar unidades de ${item.name}`}><Plus size={16} /></button></div><button className="purchase-remove" onClick={() => removeItem(item.key)} aria-label={`Remover ${item.name}`}><Trash2 size={16} /><span>Remover</span></button></div>
                             {item.quantity >= 20 && <small>Limite de 20 unidades por produto.</small>}
+                            {isUnavailable(item) && <p className="purchase-error" role="status">Este produto não está mais disponível no site. Remova-o para continuar.</p>}
                         </div><strong className="purchase-item-total">{Number(item.price) > 0 ? money(item.price * item.quantity) : '—'}</strong>
                     </article>)}
                 </div>
@@ -46,7 +76,7 @@ export default function CartPage() {
                 <ShippingEstimator subtotal={subtotal} compact />
                 {coupon && <div className="purchase-amount purchase-discount"><span>Cupom {coupon.code}</span><strong>− {money(coupon.discountAmount)}</strong></div>}
                 <div className="purchase-amount purchase-total"><span>{quote?.ok ? 'Total estimado' : 'Total sem frete'}</span><strong>{money(total)}</strong></div>
-                {invalidPrice ? <p className="purchase-error" role="alert">Remova os produtos sem preço para continuar.</p> : <Link to="/checkout" className="purchase-primary">Continuar para entrega <ArrowRight size={18} /></Link>}
+                {hasUnavailable ? <p className="purchase-error" role="alert">Remova os produtos indisponíveis para continuar.</p> : invalidPrice ? <p className="purchase-error" role="alert">Remova os produtos sem preço para continuar.</p> : <Link to="/checkout" className="purchase-primary">Continuar para entrega <ArrowRight size={18} /></Link>}
                 <p className="purchase-hint"><LockKeyhole size={14} /> Pagamento seguro pelo Mercado Pago. Você confirma o valor final na revisão.</p>
                 <Link to="/#produtos" className="purchase-continue">Escolher mais produtos</Link>
             </aside></div>}

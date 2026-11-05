@@ -22,7 +22,7 @@ const server = await createServer({
     plugins: [{ name: 'isolated-storefront-test', enforce: 'pre', transform(code, id) {
         if (!id.replaceAll('\\', '/').split('?')[0].endsWith('/src/components/ProductGrid.jsx')) return;
         return {
-            code: code.replace('useState(defaultProducts)', `useState(${JSON.stringify(products)})`)
+            code: code.replace('const [productsList, setProductsList] = useState([])', `const [productsList, setProductsList] = useState(${JSON.stringify(products)})`)
                 .replace("useState('todos')", `useState('${initialGoal}')`), map: null,
         };
     } }],
@@ -31,7 +31,8 @@ try {
     let { default: ProductGrid } = await server.ssrLoadModule('/src/components/ProductGrid.jsx');
     const render = searchTerm => renderToStaticMarkup(createElement(MemoryRouter, null, createElement(ProductGrid, { searchTerm })));
     const all = render('');
-    assert.equal((all.match(/aria-pressed=/g) || []).length, 6);
+    assert.equal((all.match(/aria-pressed=/g) || []).length, 5);
+    assert.ok(!all.includes('Emagrecimento'));
     assert.equal((all.match(/aria-pressed="true"/g) || []).length, 1);
     assert.equal((all.match(/<article/g) || []).length, 17);
     assert.ok(!all.includes('Ver todos os 10 produtos'));
@@ -45,7 +46,7 @@ try {
     assert.ok(!all.includes('R$ null'));
     assert.ok(all.includes('aria-label="Comprar Melatonina de teste"'));
     assert.ok(all.includes('href="/produto/100"'));
-    assert.ok(all.includes('href="/receita"'));
+    assert.ok(!all.includes('href="/receita"'));
     assert.ok(!all.includes('O que você procura?'));
     assert.ok(!all.includes('vt-goal-icon'));
     const search = render('Melatonina');

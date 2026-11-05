@@ -94,9 +94,15 @@ export default function SeoManager() {
 
 // This hook is colocated to share SEO tag helpers; it is consumed by ProductPage.
 // eslint-disable-next-line react-refresh/only-export-components
-export function useProductSeo(product) {
+export function useProductSeo(product, unavailable = false) {
     useEffect(() => {
+        if (unavailable) {
+            setMeta('meta[name="robots"]', { name: 'robots', content: 'noindex, follow' });
+            document.head.querySelector('link[rel="canonical"]')?.remove();
+            return;
+        }
         if (!product) return;
+        setMeta('meta[name="robots"]', { name: 'robots', content: 'index, follow, max-image-preview:large' });
         const name = String(product.name || 'Produto Graphène').trim();
         const title = `${name} | Graphène Manipulações em Cabo Frio`;
         const description = `Consulte apresentação, informações e preço de ${name} na Graphène, em Cabo Frio.`;
@@ -110,5 +116,5 @@ export function useProductSeo(product) {
             setMeta('meta[property="og:image"]', { property: 'og:image', content: product.image_url });
             setMeta('meta[name="twitter:image"]', { name: 'twitter:image', content: product.image_url });
         }
-    }, [product]);
+    }, [product, unavailable]);
 }

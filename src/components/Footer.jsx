@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { MapPin, Instagram, Clock, ShieldCheck, MessageCircle } from 'lucide-react';
 import { getWhatsAppUrl } from '../config';
 import { business } from '../data/business';
+import { PRESCRIPTION_PAGES_ENABLED } from '../data/publicChannels';
+import { LEGAL_NOTICE } from '../data/storeTexts';
 
 const Footer = () => {
     return (
@@ -11,7 +13,7 @@ const Footer = () => {
                 <div className="footer-col">
                     <img src="/assets/brand/graphene-logo.png" alt="Graphène Farmácia de Manipulação" className="footer-logo" width="278" height="112" />
                     <p className="footer-bio">
-                        A Graphène é uma farmácia de manipulação em Cabo Frio — RJ. Conheça os produtos da loja, conte com atendimento farmacêutico e solicite orçamento para fórmulas individualizadas.
+                        A Graphène é uma farmácia de manipulação em Cabo Frio — RJ. Conheça os produtos da loja e conte com atendimento farmacêutico.
                     </p>
                     <a href="https://www.instagram.com/graphene_manipulacoes" target="_blank" rel="noopener noreferrer" className="footer-social">
                         <Instagram size={16} /> @graphene_manipulacoes
@@ -29,10 +31,10 @@ const Footer = () => {
                     <h4>Navegação</h4>
                     <ul className="footer-links">
                         <li><Link to="/">Início & Produtos</Link></li>
-                        <li><Link to="/ativos">Matérias-primas</Link></li>
-                        <li><Link to="/receita">Solicitar Orçamento</Link></li>
+                        {PRESCRIPTION_PAGES_ENABLED && <li><Link to="/ativos">Matérias-primas</Link></li>}
+                        {PRESCRIPTION_PAGES_ENABLED && <li><Link to="/receita">Solicitar Orçamento</Link></li>}
                         <li><Link to="/laboratorio">O Laboratório & Loja</Link></li>
-                        <li><Link to="/prescritores">Profissionais de Saúde</Link></li>
+                        {PRESCRIPTION_PAGES_ENABLED && <li><Link to="/prescritores">Profissionais de Saúde</Link></li>}
                         <li><Link to="/parceiros">Programa de Parceiros</Link></li>
                         <li><Link to="/avaliacoes">Avaliações</Link></li>
                     </ul>
@@ -43,9 +45,10 @@ const Footer = () => {
                     <ul className="footer-links">
                         <li><Link to="/sobre">Sobre a Graphène</Link></li>
                         <li><Link to="/compras">Compra, pagamento e entrega</Link></li>
+                        <li><Link to="/trocas">Trocas e devoluções</Link></li>
                         <li><Link to="/privacidade">Privacidade e dados pessoais</Link></li>
                     </ul>
-                    <p className="footer-reg">O atendimento e a preparação de fórmulas seguem os requisitos sanitários aplicáveis a cada caso. Consulte a equipe para informações sobre a unidade.</p>
+                    <p className="footer-reg">O atendimento segue os requisitos sanitários aplicáveis. Consulte a equipe para informações sobre a unidade.</p>
                     <div className="footer-badge"><ShieldCheck size={15} color="var(--brand-green)" /> Atendimento farmacêutico</div>
                 </div>
             </div>
@@ -60,7 +63,10 @@ const Footer = () => {
                     <div><dt>Responsável técnica</dt><dd>{business.pharmacist.name}<span>Farmacêutica · CRF-RJ {business.pharmacist.registration}</span></dd></div>
                     <div><dt>Registro do estabelecimento</dt><dd>CRF-RJ {business.establishmentRegistration}<span>Validade indicada na certidão: {business.certificate.validUntil}</span></dd></div>
                     <div><dt>Autorização de funcionamento — AFE</dt><dd>Anvisa nº {business.afe.number}<span>Concessão publicada no DOU em {business.afe.publication}</span></dd></div>
+                    {business.sanitaryLicense && <div><dt>Licença sanitária</dt><dd>{business.sanitaryLicense}</dd></div>}
+                    {business.specialAuthorization && <div><dt>Autorização especial — AE</dt><dd>{business.specialAuthorization}</dd></div>}
                 </dl>
+                <p className="footer-notice">{LEGAL_NOTICE}</p>
             </section>
 
             <div className="container footer-copyright-row">
@@ -95,6 +101,7 @@ const Footer = () => {
                 .footer-identity-grid dt { color: #a9bbc9; font-size: .75rem; margin-bottom: 6px; }
                 .footer-identity-grid dd { margin: 0; color: #edf4f8; font-size: .82rem; line-height: 1.65; overflow-wrap: anywhere; }
                 .footer-identity-grid dd span { display: block; color: #bdcbd6; font-size: .78rem; }
+                .footer-notice { margin: 18px 0 0; color: #bdcbd6; font-size: .78rem; line-height: 1.6; }
                 @media (max-width: 960px) { .store-footer-grid { grid-template-columns: 1fr 1fr; } }
                 @media (max-width: 600px) { .store-footer-grid, .footer-identity-grid { grid-template-columns: 1fr; } .footer-copyright-row { flex-direction: column; gap: 8px; text-align: center; } }
             `}</style>

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, MessageCircle, FileUp, Search, Truck, MapPin, Clock, Phone, ShoppingBag, UserRound, LockKeyhole, ChevronRight, ShieldCheck, BadgeCheck } from 'lucide-react';
 import { getWhatsAppUrl } from '../config';
 import { useStore } from '../context/StoreContext';
+import { PRESCRIPTION_PAGES_ENABLED } from '../data/publicChannels';
 import '../styles/header.css';
 
 const LOGO = '/assets/brand/graphene-logo';
@@ -11,10 +12,10 @@ const HOURS = 'Seg a sex 8h–18h30 · Sáb 8h–13h';
 
 const NAV = [
     { label: 'Produtos', to: '/#produtos', match: '/' },
-    { label: 'Matérias-primas', to: '/ativos' },
+    ...(PRESCRIPTION_PAGES_ENABLED ? [{ label: 'Matérias-primas', to: '/ativos' }] : []),
     { label: 'O laboratório', to: '/laboratorio' },
     { label: 'Avaliações', to: '/avaliacoes' },
-    { label: 'Profissionais de saúde', to: '/prescritores' },
+    ...(PRESCRIPTION_PAGES_ENABLED ? [{ label: 'Profissionais de saúde', to: '/prescritores' }] : []),
     { label: 'Programa de parceiros', to: '/parceiros' },
 ];
 
@@ -124,7 +125,9 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                             <span className="gh-cart-icon"><ShoppingBag size={20} aria-hidden="true" />{itemCount > 0 && <b aria-hidden="true">{itemCount > 9 ? '9+' : itemCount}</b>}</span>
                             <span>Carrinho</span>
                         </Link>
-                        <Link to="/receita" className="gh-cta"><FileUp size={16} aria-hidden="true" /> Solicitar orçamento</Link>
+                        {PRESCRIPTION_PAGES_ENABLED
+                            ? <Link to="/receita" className="gh-cta"><FileUp size={16} aria-hidden="true" /> Solicitar orçamento</Link>
+                            : <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="gh-cta"><MessageCircle size={16} aria-hidden="true" /> Falar no WhatsApp</a>}
                         <button type="button" className="gh-menu-toggle" onClick={() => setMenuOpen(true)} aria-label="Abrir menu" aria-expanded={menuOpen} aria-controls="gh-drawer"><Menu size={24} /></button>
                     </nav>
                 </div>
@@ -156,7 +159,7 @@ const Header = ({ onSearchChange, searchTerm, showSearch = false }) => {
                     {!partnerStatus && <Link to="/parceiros/entrar">Painel do parceiro<ChevronRight size={17} aria-hidden="true" /></Link>}
                 </nav>
                 <div className="gh-drawer-foot">
-                    <Link to="/receita" className="gh-cta"><FileUp size={17} aria-hidden="true" /> Solicitar orçamento</Link>
+                    {PRESCRIPTION_PAGES_ENABLED && <Link to="/receita" className="gh-cta"><FileUp size={17} aria-hidden="true" /> Solicitar orçamento</Link>}
                     <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="gh-drawer-wa"><MessageCircle size={17} aria-hidden="true" /> Falar no WhatsApp</a>
                     <address>
                         <span>Rua Itajuru, 300 (Lojas 5 e 6) · Centro, Cabo Frio, RJ</span>

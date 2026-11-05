@@ -30,7 +30,8 @@ export function pharmacistProductsApi(sessionToken, onUnauthorized) {
     };
     return {
         list: async () => (await call({ action: 'products_list' })).products || [],
-        save: async product => (await call({ action: 'product_save', id: product.id, name: product.name, description: product.description, price: product.price, imageUrl: product.image_url, options: product.options })).product,
+        save: async product => (await call({ action: 'product_save', id: product.id, name: product.name, description: product.description, price: product.price, imageUrl: product.image_url, options: product.options, composition: product.composition, warnings: product.warnings })).product,
+        setActive: async (id, active) => (await call({ action: 'product_active', id, active })).product,
         remove: async id => { await call({ action: 'product_delete', id }); },
         reorder: async ids => { await call({ action: 'products_reorder', ids }); },
         uploadImage: async file => {
@@ -45,6 +46,6 @@ export function pharmacistProductsApi(sessionToken, onUnauthorized) {
 
 // Admin: mesmo caminho, com o token do painel lido na hora de cada ação.
 export const adminProductsApi = Object.fromEntries(
-    ['list', 'save', 'remove', 'reorder', 'uploadImage', 'addFlavor', 'removeFlavor']
+    ['list', 'save', 'setActive', 'remove', 'reorder', 'uploadImage', 'addFlavor', 'removeFlavor']
         .map(method => [method, (...args) => pharmacistProductsApi(getSession()?.token || '')[method](...args)]),
 );

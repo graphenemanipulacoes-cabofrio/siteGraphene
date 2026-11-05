@@ -1,5 +1,7 @@
-import { ArrowUpRight, FileUp, ShoppingBag, ShieldCheck } from 'lucide-react';
+import { ArrowUpRight, FileUp, MessageCircle, ShoppingBag, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getWhatsAppUrl } from '../config';
+import { PRESCRIPTION_PAGES_ENABLED } from '../data/publicChannels';
 
 const HeroBanner = () => (
     <section className="premium-hero" aria-labelledby="store-hero-title">
@@ -12,10 +14,12 @@ const HeroBanner = () => (
             <div className="premium-hero-copy">
                 <div className="premium-eyebrow"><span /> Manipulações · Cabo Frio</div>
                 <h1 id="store-hero-title">Graphène.<br /><span>Atenção a cada detalhe.</span></h1>
-                <p>Conheça os produtos da nossa loja e conte com a equipe farmacêutica para prescrições e orçamentos de fórmulas individualizadas.</p>
+                <p>Suplementos, vitaminas e cuidados com a pele, com atendimento farmacêutico em Cabo Frio e entrega para todo o Brasil.</p>
                 <div className="hero-cta-row">
                     <a href="#produtos" className="btn-commerce hero-btn"><ShoppingBag size={18} /> Ver produtos <ArrowUpRight size={18} /></a>
-                    <Link to="/receita" className="btn-cta-outline hero-btn"><FileUp size={18} /> Solicitar orçamento</Link>
+                    {PRESCRIPTION_PAGES_ENABLED
+                        ? <Link to="/receita" className="btn-cta-outline hero-btn"><FileUp size={18} /> Solicitar orçamento</Link>
+                        : <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="btn-cta-outline hero-btn"><MessageCircle size={18} /> Falar no WhatsApp</a>}
                 </div>
                 <div className="premium-hero-note"><ShieldCheck size={17} /><span>Atendimento farmacêutico em Cabo Frio, RJ.</span></div>
             </div>

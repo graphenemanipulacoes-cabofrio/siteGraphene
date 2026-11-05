@@ -26,6 +26,7 @@ const auditLabels = {
     create_coupon: 'Criou cupom', toggle_coupon: 'Ativou ou pausou cupom', update_coupon_discount: 'Alterou desconto do cupom', save_product_discounts: 'Alterou desconto por produto',
     add_partner_product_credit: 'Concedeu crédito de produtos', record_partner_product_usage: 'Registrou uso de crédito', delete_partner_credit_entry: 'Apagou lançamento de crédito',
     update_request_status: 'Moveu solicitação', delete_request: 'Excluiu solicitação', update: 'Atualizou pedido',
+    product_active: 'Tirou ou colocou produto no site',
 };
 
 const Admin = () => {

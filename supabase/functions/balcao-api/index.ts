@@ -9,7 +9,7 @@ const requestFields = 'id,created_at,nome_cliente,whatsapp,status,observacoes';
 const adminActions = new Set(['list_accounts', 'save_account', 'revoke_account', 'delete_account']);
 const counterActions = new Set(['session', 'logout', 'summary', 'list_orders', 'order_detail', 'list_requests', 'request_detail']);
 // Cadastro de produtos: só contas do tipo farmacêutico (e administradores).
-const productActions = new Set(['products_list', 'product_save', 'product_delete', 'products_reorder', 'product_image_upload', 'flavor_save', 'flavor_delete']);
+const productActions = new Set(['products_list', 'product_save', 'product_active', 'product_delete', 'products_reorder', 'product_image_upload', 'flavor_save', 'flavor_delete']);
 const materialActions = new Set(['materials_list', 'material_save', 'material_delete', 'material_image_upload']);
 const roles = new Set(['balcao', 'farmaceutico']);
 // Regras de frete (painel admin > Frete e entrega): só administradores alteram.
@@ -284,12 +284,23 @@ Deno.serve(async (req: Request) => {
         if (error) return json({ error: 'unable_to_save_product' }, 500, origin);
         return data?.length ? json({ ok: true }, 200, origin) : json({ error: 'not_found' }, 404, origin);
       }
+      // Fora do site: some da loja e do checkout, mas segue no painel e pode voltar.
+      if (action === 'product_active') {
+        if (productId === null || typeof body.active !== 'boolean') return json({ error: 'invalid_product' }, 400, origin);
+        const { data, error } = await admin.from('produtos').update({ is_active: body.active }).eq('id', productId).select('*').maybeSingle();
+        if (error) return json({ error: 'unable_to_save_product' }, 500, origin);
+        if (!data) return json({ error: 'not_found' }, 404, origin);
+        await logAdminAction(admin, account.username, 'product_active', data.name, { id: productId, active: body.active });
+        return json({ product: data }, 200, origin);
+      }
       const name = text(body.name, 180);
       const description = text(body.description, 4000) || null;
       const imageUrl = text(body.imageUrl, 1200) || null;
       const price = body.price === '' || body.price === null || body.price === undefined ? 0 : Number(body.price);
       if (!name || !Number.isFinite(price) || price < 0 || price > 1_000_000 || (imageUrl && !productImagePattern.test(imageUrl))) return json({ error: 'invalid_product' }, 400, origin);
       const values: Record<string, unknown> = { name, description, image_url: imageUrl, price: Math.round(price * 100) / 100 };
+      if (body.composition !== undefined) values.composition = text(body.composition, 2000) || null;
+      if (body.warnings !== undefined) values.warnings = text(body.warnings, 2000) || null;
       if (body.options !== undefined) {
         const { data: catalog, error: catalogError } = await admin.from('sabores').select('id');
         if (catalogError) return json({ error: 'unable_to_save_product' }, 500, origin);

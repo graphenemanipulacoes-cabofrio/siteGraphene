@@ -8,10 +8,10 @@ Este arquivo é a fonte de contexto do projeto. Não há notas externas (Obsidia
 - Supabase: Auth (clientes), Postgres, Storage e Edge Functions (`supabase/functions`).
 - Pagamento: Mercado Pago (checkout e webhook nas Edge Functions).
 - CSS puro com variáveis; sem Tailwind. Ícones `lucide-react`, avisos `sonner`, arrastar e soltar `@dnd-kit` (ordem dos produtos no admin).
-- Deploy na Vercel (`vercel.json`: cabeçalhos de segurança e rotas). O `postbuild` gera páginas estáticas de SEO (`scripts/generate-seo-pages.mjs`).
+- Deploy na Vercel (`vercel.json`: cabeçalhos de segurança e rotas). O `postbuild` gera páginas estáticas de SEO com conteúdo no próprio HTML (`scripts/generate-seo-pages.mjs`, `src/seo/staticHtml.js`). As funções da pasta `api/` servem `/produto/:id`, `/feed.xml` e `/sitemap-produtos.xml`.
 
 ## Áreas do site
-- **Loja pública:** `/`, `/produto/:id`, `/ativos`, `/laboratorio`, `/receita` (envio de receita), `/prescritores`, `/avaliacoes`, `/parceiros`, `/sobre`, `/compras`, `/privacidade`.
+- **Loja pública:** `/`, `/produto/:id`, `/laboratorio`, `/avaliacoes`, `/parceiros`, `/sobre`, `/compras`, `/trocas`, `/privacidade`. `/ativos`, `/receita` e `/prescritores` estão fora do ar por causa dos anúncios (ver "Anúncios no Google").
 - **Compra:** `/carrinho`, `/entrar`, `/minha-conta`, `/checkout`, `/pedido/retorno`, `/redefinir-senha`. Carrinho em `src/context/StoreContext.jsx`.
   Carrinhos autenticados ficam em `customer_carts`/RPC `customer_cart_sync`; `src/utils/cartPersistence.js` mantém cache separado por conta e operações pendentes idempotentes. Não voltar a usar um único localStorage para todos os clientes. Checkout usa sempre `create_checkout_order_v2`, incluindo frete, e `src/lib/checkoutApi.js` cuida da sessão/erros sem repetir pagamentos.
 - **Admin** (`/admin`, login em `/login`): solicitações, pedidos, produtos, financeiro, parceiros, acessos do balcão, administradores.
@@ -46,6 +46,19 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - **CSP** em `vercel.json`: `script-src 'self'`, sem script inline. Serviço externo novo (script, imagem, API) precisa entrar na CSP, senão o navegador bloqueia. Para testar: `npm run build` e `node scripts/serve-dist.mjs` (porta 5180), que serve `dist/` com os cabeçalhos da produção.
 - Verificação: `node --experimental-vm-modules scripts/verify-security.mjs`. Plano de segurança do comércio: `ECOMMERCE_SECURITY.md`.
 
+## Anúncios no Google
+- Regra para o Brasil: farmácia on-line registrada na Anvisa, certificada pelo Google e sem promover medicamentos controlados em anúncios, páginas de destino e palavras-chave. O Google também analisa o site, não só o anúncio. Referências em `PENDENCIAS_GOOGLE_E_SITE.md`.
+- `PRESCRIPTION_PAGES_ENABLED` (`src/data/publicChannels.js`), hoje `false`: tira `/receita`, `/ativos` e `/prescritores` do ar, do menu e do mapa do site (redirecionam para `/`). O código e os dados continuam; `receita-intake` segue publicada, sem link. O comentário do arquivo explica como voltar.
+- **Produto fora do site:** `produtos.is_active = false`. O público não lê (RLS), o checkout recusa (`invalid_or_unpriced_product`) e o carrinho pede para remover. Admin e farmacêutico veem todos, com filtro e botão "Tirar do site"/"Colocar no site" (ação `product_active` da `balcao-api`, no registro de ações). Sugestão inicial na migração `catalogo_para_anuncios`, sujeita à responsável técnica. Os textos anteriores ficam em `produtos_textos_anteriores`, sem acesso pelo navegador.
+- A vitrine vem só do banco. Não recriar lista reserva de produtos no código: ela aparecia antes do banco responder.
+- **Conteúdo no HTML:** cada página pública já traz texto, CNPJ, AFE, CRF e o aviso legal sem depender de JavaScript; o React substitui essa versão ao montar. É o mesmo conteúdo para todos. `api/produto.js` lê o catálogo com a chave pública e preenche nome, preço e dados estruturados, com cache de 5 minutos. Produto fora do site responde 404 e `noindex`; se o banco falhar, entrega a página comum. A página inicial não lista produtos no HTML, porque ficaria desatualizada até a próxima publicação.
+- **Google Shopping:** `/feed.xml` é o feed do Merchant Center, só com produtos ativos e com preço. Falta o dono criar a conta e cadastrar o feed.
+- **Dados para preencher:** `business.sanitaryLicense` e `business.specialAuthorization` (`src/data/business.js`) só aparecem quando preenchidos. Composição e advertências ficam no cadastro do produto (`produtos.composition` e `produtos.warnings`), com dados da responsável técnica; sem dado, a seção não aparece. Nunca inventar.
+- **Trocas:** `/trocas` usa o texto de `RETURN_POLICY` (`src/data/storeTexts.js`). As regras específicas da loja ainda dependem do dono.
+- **Referência:** em 04/11/2026 o site antigo da UOL tinha anúncios exibidos até 03/11 pela mesma conta verificada, e 5 concorrentes anunciavam com loja, chamada para receita e categorias de emagrecimento. A hipótese principal é a certificação de farmácia on-line, a confirmar na conta. Isso não torna permitidas as promessas deles.
+- Nada de conteúdo diferente para quem revisa, nem reativar produto depois da aprovação para contornar a revisão: há risco de suspensão sem aviso. Contestação e pedido de certificação precisam descrever a farmácia como ela é.
+- Verificação: `npm run build`, `node scripts/verify-ads-ready.mjs`, `node scripts/verify-product-pages.mjs` e `scripts/verify-product-active-db.sql` (fixtures sintéticas com rollback). `node scripts/serve-dist.mjs` também roda as funções de `api/` com o `.env`. O script confere os textos fixos; produto novo no admin precisa de revisão própria.
+
 ## Cupons de parceiros
 - `CouponPanel` fica sempre aberto no carrinho e na entrega, antes dos produtos/formulário. Busca a partir de 3 caracteres por prefixo do código ou primeiro nome do recebedor, com seleção por mouse/toque/teclado e digitação em maiúsculas. Não criar cupons de exemplo.
 - `CouponContext` mantém a escolha entre carrinho e checkout; só o código escolhido é salvo em localStorage separado por conta. Ao editar, o desconto anterior sai do resumo; o código é validado novamente quando o subtotal muda. Não aceitar um rascunho como cupom aplicado.
@@ -55,7 +68,7 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - Testes: `node --experimental-vm-modules scripts/verify-coupons.mjs`, `node scripts/verify-coupons-ui.mjs` e `scripts/verify-coupons-db.sql` (fixtures sintéticas com rollback, nenhum pagamento).
 
 ## Matérias-primas
-- O catálogo de `/ativos` fica em `materias_primas`, não em uma lista fixa no código. Os 12 cadastros originais foram preservados pela migração `20261023163541_raw_materials_catalog.sql`.
+- O catálogo de `/ativos` (página fora do ar por enquanto; o cadastro segue ativo) fica em `materias_primas`, não em uma lista fixa no código. Os 12 cadastros originais foram preservados pela migração `20261023163541_raw_materials_catalog.sql`.
 - Admin: menu **Matérias-primas** (desktop e mobile). Farmacêutico: aba **Matérias-primas**. Ambos usam `AdminMaterials`, `materialsApi` e as ações `material_*`/`materials_list` da `balcao-api` v7; balcão/visitantes/clientes não podem alterar.
 - Imagens: miniaturas de 56–60 px, envio assinado JPG/PNG/WEBP até 5 MB no bucket público `receitas`, prefixo `products/material_`. Remover imagem na edição remove a referência do cadastro; não apaga arquivos compartilhados do Storage.
 - Verificação: `node scripts/verify-materials-ui.mjs`, `node --experimental-vm-modules scripts/verify-counter.mjs` e `scripts/verify-materials-db.sql` (apenas fixture sintética com rollback).

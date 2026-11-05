@@ -7,7 +7,7 @@ const messages = {
     invalid_cart: 'Revise as quantidades no carrinho. O limite é de 20 unidades por produto.',
     invalid_shipping: 'Confira os dados de entrega.',
     invalid_shipping_address: 'Confira os dados de entrega.',
-    invalid_or_unpriced_product: 'Um dos produtos não tem preço para compra. Revise o carrinho.',
+    invalid_or_unpriced_product: 'Um dos produtos não está disponível ou não tem preço para compra. Revise o carrinho.',
     invalid_shipping_zip: 'Confira o CEP: não conseguimos calcular a entrega para ele.',
     invalid_variant: 'Um produto precisa da escolha de quantidade ou sabor. Remova-o e adicione de novo pela página do produto.',
     unable_to_create_order: 'Não foi possível validar o pedido. Revise os produtos e tente novamente.',

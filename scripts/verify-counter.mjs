@@ -268,6 +268,18 @@ assert.equal((await send({ action: 'flavor_save', sessionToken: 'a'.repeat(64), 
 state.session.counter_accounts.role = 'farmaceutico';
 assert.equal((await send({ action: 'products_reorder', sessionToken: 'a'.repeat(64), ids: [3, 3] })).status, 400);
 assert.equal((await send({ action: 'products_reorder', sessionToken: 'a'.repeat(64), ids: [3, 1, 2] })).status, 200);
+assert.equal((await send({ action: 'product_save', sessionToken: 'a'.repeat(64), id: 7, name: 'Teste', composition: '  Composição fictícia  ', warnings: '' })).status, 200);
+assert.equal(lastProductWrite().composition, 'Composição fictícia');
+assert.equal(lastProductWrite().warnings, null);
+assert.equal((await send({ action: 'product_active', sessionToken: 'a'.repeat(64), id: 7 })).status, 400);
+assert.equal((await send({ action: 'product_active', sessionToken: 'a'.repeat(64), active: false })).status, 400);
+assert.equal((await send({ action: 'product_active', sessionToken: 'a'.repeat(64), id: 7, active: 'false' })).status, 400);
+assert.equal((await send({ action: 'product_active', sessionToken: 'a'.repeat(64), id: 7, active: false })).status, 200);
+assert.equal(calls.filter(call => call.table === 'produtos' && call.operation === 'update').at(-1).value.is_active, false);
+assert.equal(calls.filter(call => call.table === 'admin_audit_log').at(-1).value.action, 'product_active');
+state.session.counter_accounts.role = 'balcao';
+assert.equal((await send({ action: 'product_active', sessionToken: 'a'.repeat(64), id: 7, active: true })).status, 403);
+state.session.counter_accounts.role = 'farmaceutico';
 assert.equal((await send({ action: 'product_delete', sessionToken: 'a'.repeat(64), id: 7 })).status, 200);
 assert.equal((await send({ action: 'product_image_upload', sessionToken: 'a'.repeat(64), extension: 'exe' })).status, 400);
 assert.equal((await send({ action: 'product_image_upload', sessionToken: 'a'.repeat(64), extension: 'png' })).status, 200);

@@ -15,7 +15,7 @@ const LaboratorioPage = () => {
                     <div className="container">
                         <div className="store-badge"><span>Conheça nossa estrutura</span></div>
                         <h1>O Laboratório <span className="highlight-blue">Graphène</span></h1>
-                        <p>Conheça nossa unidade em Cabo Frio, a rotina de atendimento e os cuidados adotados na preparação de fórmulas individualizadas.</p>
+                        <p>Conheça nossa unidade em Cabo Frio, a rotina de atendimento e os cuidados adotados na preparação dos produtos.</p>
                     </div>
                 </section>
 
@@ -55,7 +55,7 @@ const LaboratorioPage = () => {
                                     </div>
                                     <div>
                                         <h3>Acompanhamento Farmacêutico</h3>
-                                        <p>Nossa equipe está disponível para orientar sobre o atendimento e esclarecer dúvidas relacionadas à prescrição.</p>
+                                        <p>Nossa equipe está disponível para orientar sobre o atendimento e esclarecer dúvidas sobre os produtos.</p>
                                     </div>
                                 </div>
                             </div>
@@ -75,7 +75,7 @@ const LaboratorioPage = () => {
                                     <div>O que você pode consultar</div>
                                 </div>
                                 {[
-                                    ['Solicitação', 'Recebimento dos dados para orçamento', 'Informações necessárias para análise'],
+                                    ['Compra', 'Pedido pelo site, com pagamento no Mercado Pago', 'Produtos, entrega e total antes de pagar'],
                                     ['Matérias-primas', 'Consulta de composição e disponibilidade', 'Documentação disponível dos insumos'],
                                     ['Atendimento', 'Retorno pelos nossos canais', 'Prazos e próximos passos'],
                                 ].map(([crit, g, o], idx) => (

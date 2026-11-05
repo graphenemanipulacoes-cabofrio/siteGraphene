@@ -62,7 +62,7 @@ const PartnerProgramPage = () => {
         },
         {
             q: 'Quem pode se inscrever no programa de parceiros?',
-            a: 'Criadores de conteúdo e parceiros comerciais podem solicitar avaliação. O programa não se destina a remunerar prescrições, encaminhamento de pacientes ou decisões de profissionais de saúde.'
+            a: 'Criadores de conteúdo e parceiros comerciais podem solicitar avaliação. O programa não remunera indicações feitas por profissionais de saúde no exercício da profissão.'
         }
     ];
 

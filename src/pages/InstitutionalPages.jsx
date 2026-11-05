@@ -3,10 +3,12 @@ import { ArrowRight, Clock3, Instagram, MapPin, MessageCircle, ShieldCheck } fro
 import StoreLayout from '../components/StoreLayout';
 import { config, getWhatsAppUrl } from '../config';
 import { business } from '../data/business';
+import { PURCHASE_STEPS, RETURN_POLICY } from '../data/storeTexts';
 
 const institutionalLinks = [
     { to: '/sobre', label: 'Sobre a Graphène' },
     { to: '/compras', label: 'Compra, pagamento e entrega' },
+    { to: '/trocas', label: 'Trocas e devoluções' },
     { to: '/privacidade', label: 'Privacidade e dados' },
 ];
 
@@ -52,8 +54,8 @@ export function AboutPage() {
             >
                 <section>
                     <h2>Atendimento próximo, com atenção a cada etapa</h2>
-                    <p>A Graphène é uma farmácia de manipulação com unidade em Cabo Frio, no Rio de Janeiro. Pelo site, você pode conhecer os produtos apresentados pela loja e entrar em contato para tirar dúvidas ou solicitar um orçamento.</p>
-                    <p>Solicitações de fórmulas são avaliadas pela equipe conforme as informações e a documentação necessárias para cada caso. A apresentação no site não substitui orientação profissional nem a avaliação da equipe responsável.</p>
+                    <p>A Graphène é uma farmácia de manipulação com unidade em Cabo Frio, no Rio de Janeiro. Pelo site, você pode conhecer os produtos apresentados pela loja e entrar em contato para tirar dúvidas.</p>
+                    <p>As informações apresentadas no site não substituem orientação profissional nem a avaliação da equipe responsável.</p>
                 </section>
                 <section>
                     <h2>Unidade e horário de atendimento</h2>
@@ -68,6 +70,8 @@ export function AboutPage() {
                         <div className="institutional-detail-wide"><dt>Razão social</dt><dd>{business.legalName}</dd></div>
                         <div className="institutional-detail-wide"><dt>Responsável técnica</dt><dd>{business.pharmacist.name}<span>Farmacêutica · CRF-RJ {business.pharmacist.registration}</span></dd></div>
                         <div><dt>Registro do estabelecimento</dt><dd>CRF-RJ {business.establishmentRegistration}</dd></div>
+                        {business.sanitaryLicense && <div><dt>Licença sanitária</dt><dd>{business.sanitaryLicense}</dd></div>}
+                        {business.specialAuthorization && <div><dt>Autorização especial — AE</dt><dd>{business.specialAuthorization}</dd></div>}
                     </dl>
                 </section>
                 <section>
@@ -85,7 +89,7 @@ export function AboutPage() {
                 </section>
                 <section>
                     <h2>Fale com a equipe</h2>
-                    <p>Para confirmar atendimento, tirar dúvidas sobre produtos, orçamento ou entrega, use os canais oficiais. Condições e prazos podem variar conforme o pedido e devem ser confirmados antes da compra.</p>
+                    <p>Para confirmar atendimento, tirar dúvidas sobre produtos ou entrega, use os canais oficiais. Condições e prazos podem variar conforme o pedido e devem ser confirmados antes da compra.</p>
                     <div className="institutional-actions">
                         <a className="institutional-button" href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer"><MessageCircle size={17} /> WhatsApp {config.WHATSAPP_NUMBER.replace(/^55(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3')}</a>
                         <a className="institutional-secondary" href="https://www.instagram.com/graphene_manipulacoes" target="_blank" rel="noopener noreferrer"><Instagram size={17} /> Instagram</a>
@@ -107,11 +111,7 @@ export function PurchaseInfoPage() {
                 <section>
                     <h2>Como fazer um pedido</h2>
                     <ol className="institutional-steps">
-                        <li>Escolha os produtos e adicione-os ao carrinho.</li>
-                        <li>Entre ou crie uma conta para continuar.</li>
-                        <li>Informe os dados do destinatário e o endereço de entrega.</li>
-                        <li>Revise os produtos, descontos aplicáveis, entrega e total antes de prosseguir.</li>
-                        <li>Finalize o pagamento no ambiente do Mercado Pago.</li>
+                        {PURCHASE_STEPS.map(step => <li key={step}>{step}</li>)}
                     </ol>
                 </section>
                 <section>
@@ -124,13 +124,30 @@ export function PurchaseInfoPage() {
                 </section>
                 <section>
                     <h2>Cancelamento, troca e devolução</h2>
-                    <p>Para solicitar cancelamento, troca ou devolução, fale com o atendimento e informe o número do pedido. Não envie documentos pessoais ou dados de saúde no primeiro contato.</p>
-                    <p>Nos casos abrangidos pelo artigo 49 do Código de Defesa do Consumidor, compras realizadas fora do estabelecimento têm prazo de 7 dias para exercício do direito de arrependimento, contado da assinatura ou do recebimento do produto ou serviço. A equipe orientará sobre os procedimentos de devolução e reembolso conforme os direitos aplicáveis ao pedido.</p>
+                    <p>Veja como solicitar na página de <Link to="/trocas">trocas e devoluções</Link>.</p>
                 </section>
                 <section>
                     <h2>Precisa de ajuda com um pedido?</h2>
                     <p>Tenha em mãos o e-mail da conta e, se já existir, o número do pedido. A equipe poderá orientar sobre o status e os próximos passos. As orientações de atendimento não limitam os direitos previstos na legislação.</p>
                     <a className="institutional-button" href={getWhatsAppUrl('Olá! Preciso de ajuda com uma compra no site Graphène.')} target="_blank" rel="noopener noreferrer"><MessageCircle size={17} /> Falar com atendimento</a>
+                </section>
+            </InstitutionalLayout>
+        </StoreLayout>
+    );
+}
+
+export function ReturnsPage() {
+    return (
+        <StoreLayout>
+            <InstitutionalLayout
+                eyebrow="Informações para comprar"
+                title="Trocas e devoluções"
+                intro="Veja como pedir cancelamento, troca ou devolução de uma compra feita no site."
+            >
+                <section>
+                    <h2>Como solicitar</h2>
+                    {RETURN_POLICY.map(paragraph => <p key={paragraph}>{paragraph}</p>)}
+                    <a className="institutional-button" href={getWhatsAppUrl('Olá! Preciso de ajuda com uma troca ou devolução no site Graphène.')} target="_blank" rel="noopener noreferrer"><MessageCircle size={17} /> Falar com atendimento</a>
                 </section>
             </InstitutionalLayout>
         </StoreLayout>
@@ -145,7 +162,7 @@ export function PrivacyPage() {
                 title="Privacidade e dados pessoais"
                 intro="Explicamos quais informações o site utiliza para conta, orçamento, atendimento e compra, e como falar com a Graphène sobre seus dados."
             >
-                <p className="institutional-updated">Atualizado em 2 de outubro de 2026.</p>
+                <p className="institutional-updated">Atualizado em 4 de novembro de 2026.</p>
                 <section>
                     <h2>Quem recebe e trata os dados</h2>
                     <p>A empresa responsável pelo tratamento das informações enviadas neste site é {business.legalName}, CNPJ {business.cnpj}, que atua com o nome comercial {business.name}. A unidade fica na {business.address.street}, {business.address.neighborhood}, {business.address.city} — {business.address.region}. Para dúvidas e solicitações relacionadas a dados pessoais, entre em contato pelo WhatsApp oficial, (22) 99936-1256.</p>
@@ -163,7 +180,7 @@ export function PrivacyPage() {
                 <section>
                     <h2>Para que são utilizados</h2>
                     <p>Os dados são usados para autenticar a conta, responder pedidos de orçamento, analisar solicitações encaminhadas à equipe, validar e processar pedidos, registrar pagamentos, organizar a entrega e prestar atendimento. O envio de informações deve se limitar ao necessário para a solicitação feita.</p>
-                    <p>Arquivos de prescrição podem conter dados referentes à saúde, que recebem proteção especial pela legislação. Envie documentos apenas quando forem necessários para a análise solicitada. A Graphène não deve usar esses documentos para publicidade.</p>
+                    <p>Arquivos enviados em pedidos de orçamento podem conter dados referentes à saúde, que recebem proteção especial pela legislação. Envie documentos apenas quando forem necessários para a análise solicitada. A Graphène não deve usar esses documentos para publicidade.</p>
                 </section>
                 <section>
                     <h2>Serviços envolvidos e armazenamento</h2>

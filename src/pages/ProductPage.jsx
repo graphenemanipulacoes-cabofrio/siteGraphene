@@ -48,12 +48,13 @@ export default function ProductPage() {
     useEffect(() => {
         let active = true;
         supabase.from('produtos').select('*').eq('id', id).maybeSingle().then(({ data, error }) => {
-            if (active) setResult({ id, product: data, error: error ? 'Não foi possível carregar este produto.' : data ? '' : 'Produto não encontrado.' });
+            if (active) setResult({ id, product: data, error: error ? 'Não foi possível carregar este produto.' : '' });
         });
         return () => { active = false; };
     }, [id]);
     const product = result.id === id ? result.product : null;
-    useProductSeo(product);
+    // Produto fora do site ou inexistente não deve ser indexado.
+    useProductSeo(product, result.id === id && !result.product && !result.error);
 
     const options = productOptions(product);
     const selected = choice.id === id ? choice : { id, size: null, flavor: null };
@@ -101,11 +102,11 @@ export default function ProductPage() {
 
     return <StoreLayout><section className="purchase-page product-page"><div className="purchase-container">
         <Link to="/#produtos" className="purchase-back"><ArrowLeft size={16} /> Continuar comprando</Link>
-        {!product ? <div className="purchase-empty" role="status"><h1>{result.id === id ? result.error : 'Carregando produto…'}</h1><Link to="/#produtos">Ver produtos</Link></div> :
+        {!product ? <div className="purchase-empty" role="status"><h1>{result.id === id ? result.error || 'Este produto não está disponível no site.' : 'Carregando produto…'}</h1><Link to="/#produtos">Ver produtos</Link></div> :
             <div className="purchase-product">
                 <div className="purchase-product-photo"><img src={resolveProductImage(product)} alt={product.name} /></div>
                 <div className="purchase-product-panel">
-                    <span className="purchase-eyebrow">Manipulado pela Graphène · Cabo Frio, RJ</span>
+                    <span className="purchase-eyebrow">Graphène · Cabo Frio, RJ</span>
                     <h1>{product.name}</h1>
                     {product.description && <p className="purchase-description">{product.description}</p>}
                     {medical && <p className="purchase-medical">Produto de uso orientado por profissional de saúde. Em caso de dúvida, fale com nosso farmacêutico antes de comprar.</p>}
@@ -142,12 +143,14 @@ export default function ProductPage() {
                     {purchasable && <ShippingEstimator subtotal={(price || lowest || 0) * units} />}
 
                     <ul className="purchase-trust">
-                        <li><FlaskConical size={18} aria-hidden="true" /><span><strong>Manipulado no nosso laboratório</strong> em Cabo Frio, com farmacêutico responsável.</span></li>
+                        <li><FlaskConical size={18} aria-hidden="true" /><span><strong>Preparado no nosso laboratório</strong> em Cabo Frio, com farmacêutico responsável.</span></li>
                         <li><ShieldCheck size={18} aria-hidden="true" /><span><strong>Pagamento seguro</strong> pelo Mercado Pago: Pix ou cartão de crédito.</span></li>
                         <li><MessageCircle size={18} aria-hidden="true" /><span><strong>Dúvidas?</strong> <a href={`${WHATSAPP_URL}?text=${encodeURIComponent(`Olá! Tenho uma dúvida sobre ${product.name}.`)}`} target="_blank" rel="noreferrer">Fale com um farmacêutico no WhatsApp</a>.</span></li>
                     </ul>
 
                     <div className="purchase-details">
+                        {product.composition && <details><summary>Composição <ChevronDown size={16} aria-hidden="true" /></summary><p style={{ whiteSpace: 'pre-line' }}>{product.composition}</p></details>}
+                        {product.warnings && <details><summary>Advertências <ChevronDown size={16} aria-hidden="true" /></summary><p style={{ whiteSpace: 'pre-line' }}>{product.warnings}</p></details>}
                         <details><summary>Entrega e prazos <ChevronDown size={16} aria-hidden="true" /></summary>
                             <p>Enviamos para todo o Brasil. Informe seu CEP acima para ver o valor e o prazo de entrega antes de comprar.</p>
                             <p>Na Região dos Lagos, a entrega é feita por motoboy ou você pode retirar na loja: {STORE_ADDRESS}. Depois da compra, a equipe combina o melhor jeito com você pelo WhatsApp.</p>

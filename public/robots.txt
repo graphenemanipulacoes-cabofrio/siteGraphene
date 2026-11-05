@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /api/
 
 Sitemap: https://www.graphenemanipulacoes.com.br/sitemap.xml
+Sitemap: https://www.graphenemanipulacoes.com.br/sitemap-produtos.xml

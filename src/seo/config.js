@@ -1,18 +1,12 @@
+import { PRESCRIPTION_PAGES_ENABLED } from '../data/publicChannels.js';
+
 export const SITE_URL = 'https://www.graphenemanipulacoes.com.br';
 export const DEFAULT_IMAGE = `${SITE_URL}/assets/graphene_banner_top.png`;
 
-export const pageMetadata = {
-    '/': {
-        title: 'Graphène Manipulações em Cabo Frio | Atendimento farmacêutico',
-        description: 'A Graphène é uma farmácia de manipulação em Cabo Frio, RJ. Conheça a unidade, consulte os produtos da loja e solicite orçamento para fórmulas individualizadas.'
-    },
+const prescriptionPages = {
     '/ativos': {
         title: 'Ativos e matérias-primas | Graphène Cabo Frio',
         description: 'Conheça matérias-primas e ativos apresentados pela Graphène, farmácia de manipulação em Cabo Frio. Consulte a equipe sobre composição e orçamento.'
-    },
-    '/laboratorio': {
-        title: 'Unidade Graphène em Cabo Frio | Atendimento farmacêutico',
-        description: 'Conheça nossa unidade em Cabo Frio, o atendimento farmacêutico e as etapas envolvidas na preparação de fórmulas.'
     },
     '/receita': {
         title: 'Solicite orçamento de fórmula | Graphène',
@@ -21,6 +15,18 @@ export const pageMetadata = {
     '/prescritores': {
         title: 'Atendimento a prescritores | Graphène Cabo Frio',
         description: 'Canal de atendimento da Graphène para profissionais prescritores. Fale com a equipe farmacêutica.'
+    },
+};
+
+export const pageMetadata = {
+    '/': {
+        title: 'Graphène Manipulações em Cabo Frio | Atendimento farmacêutico',
+        description: 'Suplementos, vitaminas e cuidados com a pele da Graphène, em Cabo Frio, RJ, com atendimento farmacêutico e entrega para todo o Brasil.'
+    },
+    ...(PRESCRIPTION_PAGES_ENABLED ? prescriptionPages : {}),
+    '/laboratorio': {
+        title: 'Unidade Graphène em Cabo Frio | Atendimento farmacêutico',
+        description: 'Conheça nossa unidade em Cabo Frio, o atendimento farmacêutico e os cuidados na preparação dos produtos.'
     },
     '/avaliacoes': {
         title: 'Graphène no Google Maps | Avaliações e localização',
@@ -37,6 +43,10 @@ export const pageMetadata = {
     '/compras': {
         title: 'Compra, pagamento e entrega | Graphène',
         description: 'Veja o fluxo de compra da Graphène, as opções de pagamento no Mercado Pago e como conferir a entrega antes de pagar.'
+    },
+    '/trocas': {
+        title: 'Trocas e devoluções | Graphène',
+        description: 'Veja como pedir cancelamento, troca ou devolução de uma compra feita no site da Graphène.'
     },
     '/privacidade': {
         title: 'Privacidade e dados pessoais | Graphène',
