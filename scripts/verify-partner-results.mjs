@@ -128,10 +128,11 @@ near(report.allPaid[0].monthAmount, 16.8, 'marketing sobre todas as vendas, incl
 assert.equal(report.products.find(item => item.id === 2).costPercent, 20);
 assert.equal(report.products.find(item => item.id === 1).costPercent, null);
 
-// O painel da parceira nunca recebe custo, margem ou lucro.
+// O painel da parceira nunca recebe mínimo, meta, custo, margem ou lucro.
 const goal = partnerGoal(terms, partner.status, 108, { reels: 1, stories: 2 });
-assert.deepEqual(Object.keys(goal).sort(), ['daysLeft', 'goal', 'minimum', 'missing', 'monthSales', 'phase', 'reels', 'status', 'stories', 'testEnd']);
-near(goal.missing, 492, 'quanto falta para o mínimo');
+assert.deepEqual(Object.keys(goal).sort(), ['daysLeft', 'monthSales', 'phase', 'reels', 'status', 'stories', 'testEnd']);
+near(goal.monthSales, 108, 'vendas do mês no painel');
+assert.equal(/600|1200/.test(JSON.stringify(goal)), false, 'mínimo e meta não podem chegar ao painel');
 assert.equal(partnerGoal(null, partner.status, 0, null), null);
 assert.equal(partnerGoal({ ...terms, phase: 'ended' }, partner.status, 0, null), null);
 

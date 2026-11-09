@@ -243,17 +243,13 @@ export function buildPartnerReport(input: ReportInput) {
   };
 }
 
-// Dados para o painel da própria parceira: nunca inclui custo, margem ou lucro.
+// Dados para o painel da própria parceira. Mínimo, meta, custo, margem e lucro são internos e nunca saem daqui.
 export function partnerGoal(terms: Terms | null, status: ReturnType<typeof partnerStatus>, monthSales: number, delivery: { reels?: unknown; stories?: unknown } | null) {
   if (!terms || terms.phase === 'ended') return null;
-  const minimum = toNumber(terms.monthly_minimum);
   return {
     status: status.code,
     phase: terms.phase,
     monthSales: cents(monthSales),
-    minimum,
-    goal: toNumber(terms.monthly_goal),
-    missing: cents(Math.max(minimum - monthSales, 0)),
     daysLeft: status.daysLeft,
     testEnd: status.testEnd,
     reels: { done: toNumber(delivery?.reels), required: toNumber(terms.reels_per_month) },
