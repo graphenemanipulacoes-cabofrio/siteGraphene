@@ -11,7 +11,7 @@ const PHONE = '(22) 99936-1256';
 const HOURS = 'Seg a sex 8h–18h30 · Sáb 8h–13h';
 
 const NAV = [
-    { label: 'Produtos', to: '/#produtos', match: '/' },
+    { label: 'Produtos', to: '/produtos' },
     ...(PRESCRIPTION_PAGES_ENABLED ? [{ label: 'Matérias-primas', to: '/ativos' }] : []),
     { label: 'O laboratório', to: '/laboratorio' },
     { label: 'Avaliações', to: '/avaliacoes' },

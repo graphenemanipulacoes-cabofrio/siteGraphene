@@ -25,6 +25,7 @@ const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
 const CustomerAccessPage = lazy(() => import('./pages/CustomerAccessPage'));
 const AccountPage = lazy(() => import('./pages/AccountPage'));
 const ProductPage = lazy(() => import('./pages/ProductPage'));
+const ProductsPage = lazy(() => import('./pages/ProductsPage'));
 const CouponLandingPage = lazy(() => import('./pages/CouponLandingPage'));
 const PaymentReturnPage = lazy(() => import('./pages/PaymentReturnPage'));
 const PasswordResetPage = lazy(() => import('./pages/PasswordResetPage'));
@@ -56,6 +57,7 @@ function App() {
           <Route path="/parceiros/cadastro" element={<PartnerRegistration />} />
           <Route path="/parceiros/entrar" element={<PartnerAccess />} />
           <Route path="/parceiros/painel" element={<PartnerPortal />} />
+          <Route path="/produtos" element={<ProductsPage />} />
           <Route path="/produto/:id" element={<ProductPage />} />
           <Route path="/cupom/:code" element={<CouponLandingPage />} />
           <Route path="/carrinho" element={<CartPage />} />

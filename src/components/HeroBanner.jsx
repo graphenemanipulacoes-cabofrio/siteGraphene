@@ -16,7 +16,7 @@ const HeroBanner = () => (
                 <h1 id="store-hero-title">Graphène.<br /><span>Atenção a cada detalhe.</span></h1>
                 <p>Suplementos, vitaminas e cuidados com a pele, com atendimento farmacêutico em Cabo Frio e entrega para todo o Brasil.</p>
                 <div className="hero-cta-row">
-                    <a href="#produtos" className="btn-commerce hero-btn"><ShoppingBag size={18} /> Ver produtos <ArrowUpRight size={18} /></a>
+                    <Link to="/produtos" className="btn-commerce hero-btn"><ShoppingBag size={18} /> Ver produtos <ArrowUpRight size={18} /></Link>
                     {PRESCRIPTION_PAGES_ENABLED
                         ? <Link to="/receita" className="btn-cta-outline hero-btn"><FileUp size={18} /> Solicitar orçamento</Link>
                         : <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="btn-cta-outline hero-btn"><MessageCircle size={18} /> Falar no WhatsApp</a>}

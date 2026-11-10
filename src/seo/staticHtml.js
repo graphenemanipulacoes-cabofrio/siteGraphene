@@ -54,7 +54,7 @@ export function renderPage(shell, { title, description, canonical, robots = INDE
 }
 
 const prescriptionLinks = PRESCRIPTION_PAGES_ENABLED ? '<a href="/receita">Solicitar orçamento</a><a href="/ativos">Matérias-primas</a><a href="/prescritores">Profissionais de saúde</a>' : '';
-const siteLinks = `<nav aria-label="Seções do site"><a href="/#produtos">Produtos</a>${prescriptionLinks}<a href="/laboratorio">O laboratório</a><a href="/avaliacoes">Avaliações</a><a href="/parceiros">Programa de parceiros</a><a href="/sobre">Sobre a Graphène</a><a href="/compras">Compra, pagamento e entrega</a><a href="/trocas">Trocas e devoluções</a><a href="/privacidade">Privacidade</a><a href="${WHATSAPP}">WhatsApp</a></nav>`;
+const siteLinks = `<nav aria-label="Seções do site"><a href="/produtos">Produtos</a>${prescriptionLinks}<a href="/laboratorio">O laboratório</a><a href="/avaliacoes">Avaliações</a><a href="/parceiros">Programa de parceiros</a><a href="/sobre">Sobre a Graphène</a><a href="/compras">Compra, pagamento e entrega</a><a href="/trocas">Trocas e devoluções</a><a href="/privacidade">Privacidade</a><a href="${WHATSAPP}">WhatsApp</a></nav>`;
 
 const paymentAndDelivery = '<section><h2>Pagamento e entrega</h2><p>O pagamento é feito no ambiente do Mercado Pago, com Pix ou cartão de crédito. Enviamos para todo o Brasil: informe o CEP para ver o valor e o prazo antes de comprar. Na Região dos Lagos, a entrega é feita por motoboy ou você pode retirar na loja.</p></section>';
 
@@ -75,7 +75,8 @@ const pageFrame = content => `<main class="pre"><p><a href="/"><strong>Graphène
 const purchaseSteps = `<section><h2>Como comprar</h2><ol>${PURCHASE_STEPS.map(step => `<li>${escapeHtml(step)}</li>`).join('')}</ol></section>`;
 
 const pageSections = {
-    '/': () => `<section><h2>Categorias</h2><ul>${GOALS.map(goal => `<li>${escapeHtml(goal.label)}</li>`).join('')}</ul><p><a href="/#produtos">Ver todos os produtos</a></p></section>${purchaseSteps}${paymentAndDelivery}`,
+    '/': () => `<section><h2>Categorias</h2><ul>${GOALS.map(goal => `<li>${escapeHtml(goal.label)}</li>`).join('')}</ul><p><a href="/produtos">Ver todos os produtos</a></p></section>${purchaseSteps}${paymentAndDelivery}`,
+    '/produtos': () => `<section><h2>Categorias</h2><ul>${GOALS.map(goal => `<li><a href="/produtos?categoria=${goal.id}">${escapeHtml(goal.label)}</a></li>`).join('')}</ul></section>${purchaseSteps}${paymentAndDelivery}`,
     '/compras': () => `${purchaseSteps}${paymentAndDelivery}`,
     '/trocas': () => `<section><h2>Como solicitar</h2>${RETURN_POLICY.map(paragraph => `<p>${escapeHtml(paragraph)}</p>`).join('')}</section>`,
 };
@@ -155,6 +156,6 @@ export function renderUnavailableProduct(shell) {
         title: 'Produto indisponível | Graphène',
         description: 'Este produto não está disponível no site da Graphène. Veja os demais produtos da loja.',
         robots: 'noindex, follow',
-        body: pageFrame('<h1>Este produto não está disponível no site.</h1><p><a href="/#produtos">Ver os produtos da loja</a></p>'),
+        body: pageFrame('<h1>Este produto não está disponível no site.</h1><p><a href="/produtos">Ver os produtos da loja</a></p>'),
     });
 }

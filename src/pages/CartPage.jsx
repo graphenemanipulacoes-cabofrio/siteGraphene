@@ -50,11 +50,11 @@ export default function CartPage() {
     const shipping = quote?.ok ? Number(quote.amount) || 0 : null;
     const total = subtotal - (coupon?.discountAmount || 0) + (shipping || 0);
     return <StoreLayout><section className="purchase-page"><div className="purchase-container">
-        <Link to="/#produtos" className="purchase-back"><ArrowLeft size={16} /> Continuar comprando</Link>
+        <Link to="/produtos" className="purchase-back"><ArrowLeft size={16} /> Continuar comprando</Link>
         <PurchaseSteps current={1} />
         <div className="purchase-heading"><div><h1>Meu carrinho</h1><p>{cart.length ? 'Confira os produtos e calcule o frete. Você revisa tudo antes de pagar.' : ''}</p></div>{cart.length > 0 && <span>{itemCount} {itemCount === 1 ? 'unidade' : 'unidades'}</span>}</div>
         {customer && cartReady && <p className={cartSyncError ? 'purchase-error' : 'purchase-hint'} role="status">{cartSyncError || (cartSyncing ? 'Salvando seu carrinho na conta…' : 'Carrinho salvo na sua conta. Você pode continuar em outro aparelho.')}{cartSyncError && <button className="purchase-text-link" disabled={cartSyncing} onClick={() => void syncCart()}>Tentar sincronizar</button>}</p>}
-        {!cartReady ? <div className="purchase-empty" role="status">Carregando seu carrinho…</div> : !cart.length ? <div className="purchase-empty"><ShoppingBag size={36} /><h2>Seu carrinho está vazio</h2><p>Escolha seus produtos e adicione tudo o que precisar por aqui.</p><Link to="/#produtos" className="purchase-primary">Ver produtos <ArrowRight size={18} /></Link></div> :
+        {!cartReady ? <div className="purchase-empty" role="status">Carregando seu carrinho…</div> : !cart.length ? <div className="purchase-empty"><ShoppingBag size={36} /><h2>Seu carrinho está vazio</h2><p>Escolha seus produtos e adicione tudo o que precisar por aqui.</p><Link to="/produtos" className="purchase-primary">Ver produtos <ArrowRight size={18} /></Link></div> :
             <div className="purchase-layout"><div className="purchase-cart-main">
                 <CouponPanel />
                 <div className="purchase-card purchase-items">
@@ -78,7 +78,7 @@ export default function CartPage() {
                 <div className="purchase-amount purchase-total"><span>{quote?.ok ? 'Total estimado' : 'Total sem frete'}</span><strong>{money(total)}</strong></div>
                 {hasUnavailable ? <p className="purchase-error" role="alert">Remova os produtos indisponíveis para continuar.</p> : invalidPrice ? <p className="purchase-error" role="alert">Remova os produtos sem preço para continuar.</p> : <Link to="/checkout" className="purchase-primary">Continuar para entrega <ArrowRight size={18} /></Link>}
                 <p className="purchase-hint"><LockKeyhole size={14} /> Pagamento seguro pelo Mercado Pago. Você confirma o valor final na revisão.</p>
-                <Link to="/#produtos" className="purchase-continue">Escolher mais produtos</Link>
+                <Link to="/produtos" className="purchase-continue">Escolher mais produtos</Link>
             </aside></div>}
     </div></section></StoreLayout>;
 }

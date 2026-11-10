@@ -30,59 +30,76 @@ const server = await createServer({
 });
 try {
     let { default: ProductGrid } = await server.ssrLoadModule('/src/components/ProductGrid.jsx');
-    const render = searchTerm => renderToStaticMarkup(createElement(MemoryRouter, null, createElement(ProductGrid, { searchTerm })));
+    const render = (searchTerm, props = {}, url = '/') => renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [url] }, createElement(ProductGrid, { searchTerm, ...props })));
+    const articles = html => (html.match(/<article/g) || []).length;
+    const reload = async goal => {
+        initialGoal = goal;
+        server.moduleGraph.invalidateAll();
+        ({ default: ProductGrid } = await server.ssrLoadModule('/src/components/ProductGrid.jsx'));
+    };
+
+    // Tela inicial: os 8 primeiros produtos na faixa e o caminho para a página com todos.
     const all = render('');
     assert.equal((all.match(/aria-pressed=/g) || []).length, 5);
     assert.ok(!all.includes('Emagrecimento'));
     assert.equal((all.match(/aria-pressed="true"/g) || []).length, 1);
-    assert.equal((all.match(/<article/g) || []).length, 17);
-    assert.ok(!all.includes('Ver todos os 10 produtos'));
+    assert.equal(articles(all), 8);
+    assert.ok(all.includes('Ver todos os 17 produtos') && all.includes('href="/produtos"'));
+    assert.ok(all.includes('Ver todos os produtos'), 'atalho para a página no topo da vitrine');
     assert.ok(all.includes('id="vt-products-rail"'));
     assert.ok(!all.includes('id="vt-soon-rail"'));
     assert.ok(!/em breve/i.test(all));
-    assert.ok(all.includes('aria-label="Ver produto Produto de consulta 1"'));
-    assert.ok(all.includes('aria-label="Comprar Produto de consulta 0"'));
-    assert.ok(all.includes('href="/produto/201"'));
-    assert.ok(all.includes('Consulte o valor'));
-    assert.ok(!all.includes('R$ null'));
     assert.ok(all.includes('aria-label="Comprar Melatonina de teste"'));
     assert.ok(all.includes('href="/produto/100"'));
     assert.equal(all.includes('href="/receita"'), PRESCRIPTION_PAGES_ENABLED, 'a chamada para orçamento segue a chave das páginas de receita');
     assert.ok(!all.includes('O que você procura?'));
     assert.ok(!all.includes('vt-goal-icon'));
+    assert.ok(!/R\$\s*(?:null|undefined|NaN|0,00)/.test(all));
+
+    // Busca na tela inicial mostra todos os resultados, sem cortar em 8.
     const search = render('Melatonina');
-    assert.equal((search.match(/<article/g) || []).length, 1);
+    assert.equal(articles(search), 1);
     assert.ok(search.includes('1 resultado'));
     const unpricedSearch = render('consulta');
-    assert.equal((unpricedSearch.match(/<article/g) || []).length, 7);
+    assert.equal(articles(unpricedSearch), 7);
     assert.ok(unpricedSearch.includes('aria-label="Ver produto Produto de consulta 6"'));
+    assert.equal(articles(render('Creatina')), 9);
     const empty = render('não existe');
-    assert.equal((empty.match(/<article/g) || []).length, 0);
+    assert.equal(articles(empty), 0);
     assert.ok(empty.includes('Nenhum produto encontrado'));
-    initialGoal = 'sono';
-    server.moduleGraph.invalidateAll();
-    ({ default: ProductGrid } = await server.ssrLoadModule('/src/components/ProductGrid.jsx'));
+
+    // Página /produtos: todos em grade, com título próprio e a categoria no endereço.
+    const page = render('', { variant: 'page' }, '/produtos');
+    assert.equal(articles(page), 17);
+    assert.ok(page.includes('<h1') && page.includes('Todos os produtos'));
+    assert.ok(!page.includes('id="vt-products-rail"') && !page.includes('Ver todos os 17'));
+    assert.ok(page.includes('aria-label="Ver produto Produto de consulta 1"'));
+    assert.ok(page.includes('aria-label="Comprar Produto de consulta 0"'));
+    assert.ok(page.includes('href="/produto/201"'));
+    assert.ok(page.includes('Consulte o valor'));
+    assert.ok(!/R\$\s*(?:null|undefined|NaN|0,00)/.test(page));
+    const pageTraining = render('', { variant: 'page' }, '/produtos?categoria=treino');
+    assert.equal(articles(pageTraining), 9, 'categoria do endereço mostra todos os produtos dela');
+    assert.ok(pageTraining.includes('aria-pressed="true">Treino e força'));
+    assert.equal(articles(render('', { variant: 'page' }, '/produtos?categoria=inexistente')), 17, 'categoria desconhecida mostra todos');
+    assert.equal(articles(render('consulta', { variant: 'page' }, '/produtos')), 7);
+
+    // Categorias na tela inicial: até 8, com "Ver todos" só quando há mais.
+    await reload('sono');
     const category = render('');
-    assert.equal((category.match(/<article/g) || []).length, 1);
-    assert.ok(category.includes('Melatonina de teste'));
-    assert.ok(!category.includes('Creatina de teste'));
-    assert.ok(!category.includes('vt-products-rail'));
-    initialGoal = 'treino';
-    server.moduleGraph.invalidateAll();
-    ({ default: ProductGrid } = await server.ssrLoadModule('/src/components/ProductGrid.jsx'));
+    assert.equal(articles(category), 1);
+    assert.ok(category.includes('Melatonina de teste') && !category.includes('Creatina de teste'));
+    assert.ok(!category.includes('vt-products-rail') && !category.includes('Ver todos os 1 '));
+    await reload('treino');
     const training = render('');
-    assert.equal((training.match(/<article/g) || []).length, 8);
-    assert.ok(training.includes('Ver todos os 9 produtos'));
+    assert.equal(articles(training), 8);
+    assert.ok(training.includes('Ver todos os 9 produtos de treino e força') && training.includes('href="/produtos?categoria=treino"'));
     assert.ok(!training.includes('vt-products-rail'));
-    assert.equal((render('Creatina').match(/<article/g) || []).length, 9);
-    initialGoal = 'saude';
-    server.moduleGraph.invalidateAll();
-    ({ default: ProductGrid } = await server.ssrLoadModule('/src/components/ProductGrid.jsx'));
+    await reload('saude');
     const consultation = render('');
-    assert.equal((consultation.match(/<article/g) || []).length, 7);
+    assert.equal(articles(consultation), 7);
     assert.ok(!consultation.includes('vt-products-rail'));
-    assert.ok(!/R\$\s*(?:null|undefined|NaN|0,00)/.test(all));
-    console.log('Storefront render checks passed: all 17 products in one horizontal catalog, no coming-soon labels, unpriced products in their categories, priced variants, safe missing-price display, unchanged category grids, search, purchase buttons and product links. No real catalog data changed.');
+    console.log('Storefront render checks passed: home shows the first 8 products with "Ver todos", /produtos shows all 17 in a grid with the category in the address, unpriced products, priced variants, safe missing-price display, search, purchase buttons and product links. No real catalog data changed.');
 } finally {
     await server.close();
 }

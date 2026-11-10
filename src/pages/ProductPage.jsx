@@ -101,8 +101,8 @@ export default function ProductPage() {
     const priceLabel = !purchasable ? 'Consulte o valor' : price ? money(off(price)) : `A partir de ${money(off(lowest))}`;
 
     return <StoreLayout><section className="purchase-page product-page"><div className="purchase-container">
-        <Link to="/#produtos" className="purchase-back"><ArrowLeft size={16} /> Continuar comprando</Link>
-        {!product ? <div className="purchase-empty" role="status"><h1>{result.id === id ? result.error || 'Este produto não está disponível no site.' : 'Carregando produto…'}</h1><Link to="/#produtos">Ver produtos</Link></div> :
+        <Link to="/produtos" className="purchase-back"><ArrowLeft size={16} /> Continuar comprando</Link>
+        {!product ? <div className="purchase-empty" role="status"><h1>{result.id === id ? result.error || 'Este produto não está disponível no site.' : 'Carregando produto…'}</h1><Link to="/produtos">Ver produtos</Link></div> :
             <div className="purchase-product">
                 <div className="purchase-product-photo"><img src={productPhoto(product)} alt={product.name} width="800" height="800" onError={restoreOriginalImage} /></div>
                 <div className="purchase-product-panel">

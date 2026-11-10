@@ -23,6 +23,10 @@ export const pageMetadata = {
         title: 'Graphène Manipulações em Cabo Frio | Atendimento farmacêutico',
         description: 'Suplementos, vitaminas e cuidados com a pele da Graphène, em Cabo Frio, RJ, com atendimento farmacêutico e entrega para todo o Brasil.'
     },
+    '/produtos': {
+        title: 'Produtos | Graphène Manipulações em Cabo Frio',
+        description: 'Todos os produtos da Graphène: suplementos, vitaminas e cuidados com a pele, com atendimento farmacêutico e entrega para todo o Brasil.'
+    },
     ...(PRESCRIPTION_PAGES_ENABLED ? prescriptionPages : {}),
     '/laboratorio': {
         title: 'Unidade Graphène em Cabo Frio | Atendimento farmacêutico',

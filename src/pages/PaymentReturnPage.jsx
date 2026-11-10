@@ -56,7 +56,7 @@ function CustomerPaymentReturn() {
             <p>{paid ? 'Seu pedido foi recebido. Acompanhe a preparação e a entrega na sua conta.' : refunded ? 'Consulte os detalhes deste pedido na sua conta.' : failed ? 'Confira o pedido na sua conta antes de tentar novamente. Os produtos continuam no carrinho.' : unavailable ? 'Não conseguimos consultar o pedido agora. Verifique o status na sua conta antes de fazer outro pagamento.' : 'A confirmação pode levar alguns instantes. Consulte seus pedidos antes de realizar um novo pagamento.'}</p>
             {order && <div className="purchase-amount purchase-total"><span>Pedido #{order.id.slice(-8).toUpperCase()}</span><strong>{money(order.total)}</strong></div>}
             <Link className="purchase-primary" to="/minha-conta">Acompanhar meus pedidos</Link>
-            <Link className="purchase-continue" to={failed ? '/carrinho' : '/#produtos'}>{failed ? 'Voltar ao carrinho' : 'Continuar comprando'}</Link>
+            <Link className="purchase-continue" to={failed ? '/carrinho' : '/produtos'}>{failed ? 'Voltar ao carrinho' : 'Continuar comprando'}</Link>
         </div>
     </div></section></StoreLayout>;
 }

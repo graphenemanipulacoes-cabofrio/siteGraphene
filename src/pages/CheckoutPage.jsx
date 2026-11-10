@@ -133,7 +133,7 @@ function CustomerCheckout() {
         <Link to="/carrinho" className="purchase-back"><ArrowLeft size={16} /> Voltar ao carrinho</Link>
         <PurchaseSteps current={review ? 3 : 2} />
         <div className="purchase-heading"><div><span className="purchase-eyebrow">Finalizar compra</span><h1 ref={headingRef} tabIndex={-1}>{review ? 'Confira seu pedido' : 'Entrega'}</h1><p>{review ? 'Confira produtos, entrega e valor total. O pagamento acontece na próxima tela.' : 'Comece pelo CEP: o endereço é preenchido sozinho.'}</p></div></div>
-        {!authReady || !cartReady ? <div className="purchase-empty" role="status">Carregando sua conta e seu carrinho…</div> : !cart.length && !preview ? <div className="purchase-empty"><h2>Seu carrinho está vazio</h2><Link to="/#produtos" className="purchase-primary">Escolher produtos</Link></div> : !customer && !preview ? <Navigate to="/entrar" replace state={{ returnTo: '/checkout', intent: 'checkout' }} /> :
+        {!authReady || !cartReady ? <div className="purchase-empty" role="status">Carregando sua conta e seu carrinho…</div> : !cart.length && !preview ? <div className="purchase-empty"><h2>Seu carrinho está vazio</h2><Link to="/produtos" className="purchase-primary">Escolher produtos</Link></div> : !customer && !preview ? <Navigate to="/entrar" replace state={{ returnTo: '/checkout', intent: 'checkout' }} /> :
         <div className="purchase-layout">
             <div className="purchase-cart-main">
                 {!review && <CouponPanel disabled={loading} />}
