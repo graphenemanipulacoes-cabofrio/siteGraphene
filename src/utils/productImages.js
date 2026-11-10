@@ -66,3 +66,14 @@ export const resolveProductImage = (product) => {
 
     return rawUrl || '/assets/products/coenzima_q10.png';
 };
+
+// Versão leve (WebP) das fotos locais, gerada por scripts/optimize-images.py.
+// A PNG original continua valendo para compartilhamento (og:image) e para o feed.
+export const lightImage = url => (/^\/assets\/products\/[^/]+\.png$/.test(url || '') ? url.replace(/\.png$/, '.webp') : url);
+export const productPhoto = product => lightImage(resolveProductImage(product));
+// Se a versão leve faltar, a tela volta para a original em vez de ficar sem foto.
+export const restoreOriginalImage = event => {
+    const image = event.currentTarget;
+    if (/\/assets\/products\/[^/]+\.webp$/.test(image.getAttribute('src') || '')) image.src = image.getAttribute('src').replace(/\.webp$/, '.png');
+    else image.style.visibility = 'hidden';
+};

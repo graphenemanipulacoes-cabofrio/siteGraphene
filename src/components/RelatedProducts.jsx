@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { money } from '../utils/commerce';
-import { resolveProductImage } from '../utils/productImages';
+import { productPhoto, restoreOriginalImage } from '../utils/productImages';
 import { productOptions } from '../utils/productOptions';
 import { goalOf } from '../utils/productGoals';
 
@@ -34,7 +34,7 @@ export default function RelatedProducts({ product }) {
                 const from = options.availableSizes.length > 1 || options.flavorPrice > 0;
                 return <li key={item.id}>
                     <Link to={`/produto/${item.id}`}>
-                        <span className="purchase-related-photo"><img src={resolveProductImage(item)} alt="" loading="lazy" /></span>
+                        <span className="purchase-related-photo"><img src={productPhoto(item)} alt="" loading="lazy" onError={restoreOriginalImage} /></span>
                         <strong>{item.name}</strong>
                         <small>{priced(item) ? <>{from ? 'A partir de ' : ''}<b>{money(item.price)}</b></> : 'Consulte o valor'}</small>
                     </Link>

@@ -11,7 +11,7 @@ import { useCoupon } from '../context/CouponContext';
 import { couponRate, discountedPrice, percentLabel } from '../lib/couponsApi';
 import { useStore } from '../context/StoreContext';
 import { money } from '../utils/commerce';
-import { resolveProductImage } from '../utils/productImages';
+import { productPhoto, restoreOriginalImage } from '../utils/productImages';
 import { NATURAL_FLAVOR, flavorName, productOptions, useFlavors, variantPrice } from '../utils/productOptions';
 import { STORE_ADDRESS, WHATSAPP_URL, useShippingConfig } from '../utils/shipping';
 import { useProductSeo } from '../components/SeoManager';
@@ -83,7 +83,7 @@ export default function ProductPage() {
             document.querySelector('.purchase-options.is-missing, .purchase-options')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
-        const added = addItem({ ...product, image_url: resolveProductImage(product) }, {
+        const added = addItem({ ...product, image_url: productPhoto(product) }, {
             size, sizeLabel, flavor, flavorLabel: flavor ? flavorName(catalog, flavor) : null, price,
         }, units);
         if (!added) return;
@@ -104,7 +104,7 @@ export default function ProductPage() {
         <Link to="/#produtos" className="purchase-back"><ArrowLeft size={16} /> Continuar comprando</Link>
         {!product ? <div className="purchase-empty" role="status"><h1>{result.id === id ? result.error || 'Este produto não está disponível no site.' : 'Carregando produto…'}</h1><Link to="/#produtos">Ver produtos</Link></div> :
             <div className="purchase-product">
-                <div className="purchase-product-photo"><img src={resolveProductImage(product)} alt={product.name} /></div>
+                <div className="purchase-product-photo"><img src={productPhoto(product)} alt={product.name} width="800" height="800" onError={restoreOriginalImage} /></div>
                 <div className="purchase-product-panel">
                     <span className="purchase-eyebrow">Graphène · Cabo Frio, RJ</span>
                     <h1>{product.name}</h1>

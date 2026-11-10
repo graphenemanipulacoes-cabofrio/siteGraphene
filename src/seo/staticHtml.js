@@ -4,7 +4,7 @@ import { business } from '../data/business.js';
 import { PRESCRIPTION_PAGES_ENABLED } from '../data/publicChannels.js';
 import { LEGAL_NOTICE, PURCHASE_STEPS, RETURN_POLICY } from '../data/storeTexts.js';
 import { GOALS } from '../utils/productGoals.js';
-import { resolveProductImage } from '../utils/productImages.js';
+import { lightImage, resolveProductImage } from '../utils/productImages.js';
 import { DEFAULT_IMAGE, SITE_URL, pageMetadata, productMetadata } from './config.js';
 
 const INDEX = 'index, follow, max-image-preview:large';
@@ -126,7 +126,7 @@ function productBody(product) {
     const details = (title, text) => (text ? `<section><h2>${title}</h2><p style="white-space:pre-line">${escapeHtml(text)}</p></section>` : '');
     return pageFrame([
         `<h1>${escapeHtml(product.name)}</h1>`,
-        `<p><img src="${escapeHtml(resolveProductImage(product))}" alt="${escapeHtml(product.name)}" width="220" height="220" /></p>`,
+        `<p><img src="${escapeHtml(lightImage(resolveProductImage(product)))}" alt="${escapeHtml(product.name)}" width="220" height="220" /></p>`,
         product.description ? `<p>${escapeHtml(product.description)}</p>` : '',
         `<p><strong>${priceLine}</strong></p>`,
         sizes.length > 1 ? `<ul>${sizes.map(size => `<li>${escapeHtml(size.label)}: ${money.format(Number(size.price))}</li>`).join('')}</ul>` : '',

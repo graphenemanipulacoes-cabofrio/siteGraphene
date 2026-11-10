@@ -7,7 +7,7 @@ const HeroBanner = () => (
     <section className="premium-hero" aria-labelledby="store-hero-title">
         <div className="premium-hero-grid" aria-hidden="true" />
         <div className="premium-hero-banner">
-            <img src="/assets/graphene_banner_top.png" alt="Linha de produtos Graphène Manipulações" className="premium-hero-image" fetchPriority="high" />
+            <img src="/assets/graphene_banner_top.webp" srcSet="/assets/graphene_banner_top-900.webp 900w, /assets/graphene_banner_top.webp 2048w" sizes="100vw" width="2048" height="768" alt="Linha de produtos Graphène Manipulações" className="premium-hero-image" fetchPriority="high" />
         </div>
         <div className="premium-hero-overlay" aria-hidden="true" />
         <div className="container premium-hero-inner">

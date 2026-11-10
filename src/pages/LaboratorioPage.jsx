@@ -24,8 +24,8 @@ const LaboratorioPage = () => {
                     <div className="container">
                         <div className="lab-layout">
                             <div className="lab-photo-frame">
-                                <img src="/assets/graphene_pharmacist_lab.jpg" alt="Laboratório Graphène" className="lab-photo"
-                                    onError={(e) => { e.target.src = '/assets/graphene_banner_top.png'; }} />
+                                <img src="/assets/graphene_pharmacist_lab.webp" alt="Laboratório Graphène" className="lab-photo" loading="lazy"
+                                    onError={(e) => { if (!e.target.src.endsWith('.jpg')) e.target.src = '/assets/graphene_pharmacist_lab.jpg'; }} />
                             </div>
 
                             <div className="lab-pillars">
