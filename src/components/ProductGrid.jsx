@@ -197,7 +197,7 @@ const ProductGrid = ({ searchTerm = '', featured = null, variant = 'home' }) => 
                     </Link>}
                 </div>}
 
-                {PRESCRIPTION_PAGES_ENABLED && <div className="vt-prescription">
+                {PRESCRIPTION_PAGES_ENABLED && page && <div className="vt-prescription">
                     <p>Um cuidado mais individualizado?</p>
                     <Link to="/receita">Solicite um orçamento para a sua fórmula <ArrowRight size={16} aria-hidden="true" /></Link>
                 </div>}

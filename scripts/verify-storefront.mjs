@@ -1,5 +1,6 @@
 // Render-only regression checks. Synthetic catalog; no requests or purchases.
 import assert from 'node:assert/strict';
+import { existsSync, statSync } from 'node:fs';
 import { createServer } from 'vite';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -51,7 +52,7 @@ try {
     assert.ok(!/em breve/i.test(all));
     assert.ok(all.includes('aria-label="Comprar Melatonina de teste"'));
     assert.ok(all.includes('href="/produto/100"'));
-    assert.equal(all.includes('href="/receita"'), PRESCRIPTION_PAGES_ENABLED, 'a chamada para orçamento segue a chave das páginas de receita');
+    assert.ok(!all.includes('href="/receita"'), 'na tela inicial, o banner de receita substitui o link do fim da vitrine');
     assert.ok(!all.includes('O que você procura?'));
     assert.ok(!all.includes('vt-goal-icon'));
     assert.ok(!/R\$\s*(?:null|undefined|NaN|0,00)/.test(all));
@@ -78,6 +79,7 @@ try {
     assert.ok(page.includes('href="/produto/201"'));
     assert.ok(page.includes('Consulte o valor'));
     assert.ok(!/R\$\s*(?:null|undefined|NaN|0,00)/.test(page));
+    assert.equal(page.includes('href="/receita"'), PRESCRIPTION_PAGES_ENABLED, 'a chamada para orçamento segue a chave das páginas de receita');
     const pageTraining = render('', { variant: 'page' }, '/produtos?categoria=treino');
     assert.equal(articles(pageTraining), 9, 'categoria do endereço mostra todos os produtos dela');
     assert.ok(pageTraining.includes('aria-pressed="true">Treino e força'));
@@ -99,6 +101,20 @@ try {
     const consultation = render('');
     assert.equal(articles(consultation), 7);
     assert.ok(!consultation.includes('vt-products-rail'));
+    // Banners da tela inicial: fotos reais leves, texto no site e a receita só com a chave ligada.
+    const { default: HomeBanners } = await server.ssrLoadModule('/src/components/HomeBanners.jsx');
+    const { HOME_BANNERS } = await server.ssrLoadModule('/src/data/homeBanners.js');
+    const banners = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(HomeBanners)));
+    assert.equal(banners.includes('href="/receita"'), PRESCRIPTION_PAGES_ENABLED);
+    assert.ok(banners.includes('href="/produtos"') && banners.includes('Da nossa loja em Cabo Frio para todo o Brasil.'));
+    for (const banner of HOME_BANNERS) {
+        assert.ok(banner.alt.includes('Graphène'), `${banner.id}: texto alternativo descreve a foto`);
+        for (const width of [768, 1280]) {
+            const file = `public/assets/banners/${banner.image}-${width}.webp`;
+            assert.ok(existsSync(file), `${file}: falta a imagem`);
+            assert.ok(statSync(file).size < 120 * 1024, `${file}: maior que 120 KB`);
+        }
+    }
     console.log('Storefront render checks passed: home shows the first 8 products with "Ver todos", /produtos shows all 17 in a grid with the category in the address, unpriced products, priced variants, safe missing-price display, search, purchase buttons and product links. No real catalog data changed.');
 } finally {
     await server.close();

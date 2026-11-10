@@ -6,6 +6,7 @@ import BenefitsBar from '../components/BenefitsBar';
 import ProductGrid from '../components/ProductGrid';
 import AuthenticityRibbon from '../components/AuthenticityRibbon';
 import CouponBar, { CouponLandingIntro } from '../components/CouponBar';
+import HomeBanners from '../components/HomeBanners';
 import Footer from '../components/Footer';
 import FloatingWhatsApp from '../components/FloatingWhatsApp';
 import { Toaster } from 'sonner';
@@ -58,6 +59,7 @@ const HomePage = ({ landingCode = '' }) => {
                 {(!landing || landingFailed) && <HeroBanner />}
                 {!landing && <BenefitsBar />}
                 <ProductGrid searchTerm={searchTerm} featured={featured} />
+                <HomeBanners />
                 {landing && <BenefitsBar />}
                 {PRESCRIPTION_PAGES_ENABLED && <AuthenticityRibbon />}
             </main>
