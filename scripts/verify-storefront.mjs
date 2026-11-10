@@ -115,6 +115,24 @@ try {
             assert.ok(statSync(file).size < 120 * 1024, `${file}: maior que 120 KB`);
         }
     }
+    // Carrossel do topo: o slide da marca primeiro, um só h1, slides escondidos fora do foco e imagens leves.
+    const { default: HeroBanner } = await server.ssrLoadModule('/src/components/HeroBanner.jsx');
+    const { HERO_SLIDES } = await server.ssrLoadModule('/src/data/heroSlides.js');
+    const hero = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(HeroBanner)));
+    assert.equal((hero.match(/aria-roledescription="slide"/g) || []).length, HERO_SLIDES.length + 1);
+    assert.equal((hero.match(/<h1/g) || []).length, 1, 'só o slide da marca tem h1');
+    assert.equal((hero.match(/inert=""/g) || []).length, HERO_SLIDES.length, 'só o slide visível recebe foco');
+    assert.equal((hero.match(/class="hero-dot"/g) || []).length, HERO_SLIDES.length + 1);
+    assert.ok(hero.includes('aria-label="Pausar a troca automática"'));
+    for (const slide of HERO_SLIDES) {
+        assert.ok(slide.alt.startsWith('Ilustração'), `${slide.id}: imagem com cenário gerado se apresenta como ilustração`);
+        assert.ok(hero.includes(`href="${slide.to.replace('&', '&amp;')}"`), `${slide.id}: botão leva à categoria`);
+        for (const width of [900, 2048]) {
+            const file = `public/assets/hero/${slide.image}-${width}.webp`;
+            assert.ok(existsSync(file), `${file}: falta a imagem`);
+            assert.ok(statSync(file).size < 150 * 1024, `${file}: maior que 150 KB`);
+        }
+    }
     console.log('Storefront render checks passed: home shows the first 8 products with "Ver todos", /produtos shows all 17 in a grid with the category in the address, unpriced products, priced variants, safe missing-price display, search, purchase buttons and product links. No real catalog data changed.');
 } finally {
     await server.close();

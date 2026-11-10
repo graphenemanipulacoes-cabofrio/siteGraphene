@@ -1,0 +1,26 @@
+/* Carrossel do banner do topo. Cada slide usa o mesmo layout do banner original (premium.css). */
+.hero-viewport { position: relative; overflow: hidden; }
+.hero-track { display: flex; transition: transform .75s cubic-bezier(.22, .7, .2, 1); }
+.hero-slide { position: relative; flex: 0 0 100%; min-width: 0; }
+.premium-hero .hero-title { margin: 0; color: inherit; font-size: clamp(2.6rem, 4vw, 3.6rem); line-height: 1.06; letter-spacing: -.045em; font-weight: 500; }
+.premium-hero .hero-title > span { color: #b6d8eb; }
+
+.hero-controls { position: absolute; z-index: 4; left: 0; right: 0; bottom: 22px; pointer-events: none; }
+.hero-controls .container { display: flex; justify-content: flex-end; }
+.hero-controls-box { display: inline-flex; align-items: center; gap: 2px; padding: 4px 6px; border: 1px solid rgba(157, 202, 224, .2); border-radius: 999px; background: rgba(6, 15, 22, .6); backdrop-filter: blur(8px); pointer-events: auto; }
+.hero-dot { display: grid; place-items: center; width: 32px; height: 36px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.hero-dot::before { content: ''; width: 8px; height: 8px; border-radius: 99px; background: rgba(214, 236, 245, .45); transition: width .3s ease, background .3s ease; }
+.hero-dot[aria-current="true"]::before { width: 24px; background: #67dcf3; }
+.hero-dot:hover::before { background: rgba(214, 236, 245, .8); }
+.hero-arrow { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #e6f3fa; cursor: pointer; }
+.hero-arrow:hover { background: rgba(157, 202, 224, .14); }
+.hero-carousel :is(.hero-dot, .hero-arrow):focus-visible { outline: 2px solid #67dcf3; outline-offset: 2px; }
+
+@media (max-width: 1100px) { .premium-hero .hero-title { font-size: 2.8rem; } }
+@media (max-width: 960px) {
+    .hero-controls { position: static; padding-top: 16px; }
+    .hero-controls .container { justify-content: center; }
+    .premium-hero .hero-title { font-size: clamp(2.8rem, 7vw, 3.8rem); max-width: 540px; }
+}
+@media (max-width: 600px) { .premium-hero .hero-title { font-size: clamp(2.5rem, 10.5vw, 3.5rem); line-height: 1.1; } }
+@media (prefers-reduced-motion: reduce) { .hero-track, .hero-dot::before { transition: none; } }
