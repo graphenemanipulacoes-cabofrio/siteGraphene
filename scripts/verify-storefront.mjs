@@ -124,15 +124,20 @@ try {
     assert.equal((hero.match(/inert=""/g) || []).length, HERO_SLIDES.length, 'só o slide visível recebe foco');
     assert.equal((hero.match(/class="hero-dot"/g) || []).length, HERO_SLIDES.length + 1);
     assert.ok(hero.includes('aria-label="Pausar a troca automática"'));
+    // Slides de cor: fotos dos frascos sem cenário gerado, grafismo em SVG e um tema de cor por slide.
+    assert.equal((hero.match(/class="hero-motif"/g) || []).length, HERO_SLIDES.length);
     for (const slide of HERO_SLIDES) {
-        assert.ok(slide.alt.startsWith('Ilustração'), `${slide.id}: imagem com cenário gerado se apresenta como ilustração`);
+        assert.ok(slide.alt.includes('Graphène') && !slide.alt.startsWith('Ilustração'), `${slide.id}: texto alternativo descreve os frascos`);
+        assert.ok(hero.includes(`data-theme="${slide.id}"`), `${slide.id}: slide sem tema de cor`);
+        assert.ok(['stripes', 'rings', 'sun'].includes(slide.motif), `${slide.id}: grafismo desconhecido`);
         assert.ok(hero.includes(`href="${slide.to.replace('&', '&amp;')}"`), `${slide.id}: botão leva à categoria`);
-        for (const width of [900, 2048]) {
+        for (const width of [620, 1240]) {
             const file = `public/assets/hero/${slide.image}-${width}.webp`;
             assert.ok(existsSync(file), `${file}: falta a imagem`);
-            assert.ok(statSync(file).size < 150 * 1024, `${file}: maior que 150 KB`);
+            assert.ok(statSync(file).size < 100 * 1024, `${file}: maior que 100 KB`);
         }
     }
+    assert.ok(statSync('public/assets/hero/grao.png').size < 20 * 1024, 'textura do fundo pesada demais');
     console.log('Storefront render checks passed: home shows the first 8 products with "Ver todos", /produtos shows all 17 in a grid with the category in the address, unpriced products, priced variants, safe missing-price display, search, purchase buttons and product links. No real catalog data changed.');
 } finally {
     await server.close();
