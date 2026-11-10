@@ -107,7 +107,7 @@ const LaboratorioPage = () => {
                                     <MapPin size={18} color="var(--brand-blue)" />
                                     <div>
                                         <strong>Endereço</strong>
-                                        <span>Rua Itajuru, 300, Lojas 5 e 6<br/>Centro — Cabo Frio, RJ<br/>CEP 28907-000</span>
+                                        <span>Rua Itajuru, 300, Lojas 5 e 6<br/>Centro — Cabo Frio, RJ<br/>CEP 28905-060</span>
                                     </div>
                                 </div>
 
