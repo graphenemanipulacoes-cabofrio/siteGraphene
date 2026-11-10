@@ -92,3 +92,10 @@
 @media (max-width:760px) { .vt-grid.vt-rail { grid-auto-columns:43%; gap:14px; } .vt-rail-toolbar p { max-width:180px; font-size:.69rem; } }
 @media (max-width:360px) { .vt-grid.vt-rail { grid-auto-columns:46%; gap:10px; } }
 @media (prefers-reduced-motion:reduce) { .vt *, .vt *::after { transition:none !important; } .vt-card:hover .vt-card-photo img { transform:none; } }
+
+/* Preço com cupom aplicado e produtos em destaque no link da parceira. */
+.vt-price-old { color:var(--vt-muted); font-size:.74rem; text-decoration:line-through; }
+.vt-price-tag { align-self:flex-start; padding:2px 7px; border-radius:5px; background:#e3f1f6; color:#195970; font-size:.66rem; font-weight:650; line-height:1.5; }
+.vt-featured { margin-bottom:48px; padding-bottom:40px; border-bottom:1px solid var(--vt-line); }
+.vt-featured .vt-header { margin-bottom:24px; }
+@media (max-width:760px) { .vt-featured { margin-bottom:36px; padding-bottom:30px; } }

@@ -60,3 +60,21 @@
 
 .purchase-buybox .product-coupon{grid-template-columns:minmax(0,1fr);gap:14px;margin:0;padding:16px 18px}
 .purchase-buybox .product-coupon-form{width:100%}
+
+/* Faixa do cupom aplicado na vitrine e abertura do link da parceira (/cupom/CODIGO). */
+.coupon-bar{position:relative;z-index:5;background:#0d2333;border-bottom:1px solid rgba(103,220,243,.28);color:#d5e9f1}
+.coupon-bar-inner{display:flex;align-items:center;gap:10px;min-height:44px;padding-top:10px;padding-bottom:10px;font-size:.84rem;line-height:1.5}
+.coupon-bar svg{flex:none;color:#67dcf3}
+.coupon-bar p{margin:0}
+.coupon-bar strong{color:#fff;font-weight:650}
+.coupon-bar.is-error{background:#241c22;border-bottom-color:rgba(240,170,170,.3)}
+.coupon-bar.is-error svg{color:#f0aaaa}
+.coupon-landing{position:relative;z-index:5;padding:34px 0 4px;color:#d5e9f1}
+.coupon-landing-eyebrow{display:block;margin-bottom:12px;color:#9db2bf;font-size:.68rem;font-weight:500;letter-spacing:.13em;text-transform:uppercase}
+.coupon-landing h1{max-width:760px;margin:0 0 16px;color:#fff;font-family:var(--font-heading);font-size:clamp(1.75rem,5.4vw,2.7rem);font-weight:500;line-height:1.14;letter-spacing:-.03em}
+.coupon-landing h1 span{color:#b8dde6}
+.coupon-landing p{max-width:620px;margin:0;color:#b5c7d1;font-size:.9rem;line-height:1.7}
+.coupon-landing .coupon-landing-tag{display:inline-flex;align-items:flex-start;gap:9px;margin-bottom:14px;padding:10px 14px;border:1px solid rgba(103,220,243,.32);border-radius:10px;background:#0d2333;color:#dff3f8;font-size:.86rem;line-height:1.5}
+.coupon-landing-tag svg{flex:none;margin-top:2px;color:#67dcf3}
+.coupon-landing-tag strong{color:#fff;font-weight:650}
+@media(max-width:600px){.coupon-bar-inner{align-items:flex-start;font-size:.8rem}.coupon-bar svg{margin-top:2px}.coupon-landing{padding-top:24px}.coupon-landing .coupon-landing-tag{display:flex}}

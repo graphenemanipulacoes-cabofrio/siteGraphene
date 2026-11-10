@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient.ts';
 import { ShoppingBag, ChevronDown, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { resolveProductImage } from '../utils/productImages';
+import { productPhoto, restoreOriginalImage } from '../utils/productImages';
 import { NATURAL_FLAVOR, flavorName, productOptions, requiresChoice, useFlavors, variantPrice } from '../utils/productOptions';
 import { GOALS, goalLabel, goalOf } from '../utils/productGoals';
 import { money } from '../utils/commerce';
+import { useCoupon } from '../context/CouponContext';
+import { couponRate, discountedPrice, percentLabel } from '../lib/couponsApi';
 import { PRESCRIPTION_PAGES_ENABLED } from '../data/publicChannels';
 import ProductRail from './ProductRail';
 import '../styles/vitrine.css';
@@ -22,7 +24,10 @@ const INITIAL_LIMIT = 8;
 
 const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
 
-const ProductGrid = ({ searchTerm = '' }) => {
+// featured: { ids, title, eyebrow } com os produtos que a parceira destaca no link dela.
+const ProductGrid = ({ searchTerm = '', featured = null }) => {
+    // Com cupom aplicado, o cartão já mostra o preço com desconto (o fechamento confirma o valor).
+    const coupon = useCoupon()?.coupon;
     const [goal, setGoal] = useState('todos');
     const [expanded, setExpanded] = useState(false);
     // A vitrine vem só do banco: nenhum produto fica escrito no código, para não
@@ -49,7 +54,7 @@ const ProductGrid = ({ searchTerm = '' }) => {
                     price: item.price && parseFloat(item.price) > 0 ? parseFloat(item.price).toFixed(2).replace('.', ',') : null,
                     rawPrice: Number(item.price) || 0,
                     options: item.options || {},
-                    image_url: resolveProductImage(item)
+                    image_url: productPhoto(item)
                 })));
                 setCatalogStatus('ready');
             } catch (err) {
@@ -96,10 +101,62 @@ const ProductGrid = ({ searchTerm = '' }) => {
         if (expanded) sectionRef.current?.querySelector('[data-part="catalog"]')?.scrollIntoView({ block: 'start' });
     };
     const goalName = goal === 'todos' ? '' : goalLabel(goal);
+    const featuredProducts = searching ? [] : (featured?.ids || []).map(id => withGoal.find(item => item.id === String(id))).filter(Boolean);
+
+    const card = item => {
+        const selected = choiceOf(item);
+        const withChoice = requiresChoice(item);
+        const lowestPrice = selected.options.hasSizes
+            ? (selected.options.availableSizes.length ? Math.min(...selected.options.availableSizes.map(size => size.price)) : 0)
+            : Number(item.rawPrice) || 0;
+        const hasPrice = lowestPrice > 0;
+        const fromLabel = hasPrice && withChoice && (selected.options.availableSizes.length > 1 || selected.options.flavorPrice > 0);
+        const basePrice = selected.price || lowestPrice;
+        const rate = hasPrice ? couponRate(coupon, item.id) : 0;
+        return <article key={item.id} className="vt-card">
+            <Link to={`/produto/${item.id}`} state={{ product: item }} className="vt-card-photo" tabIndex={-1} aria-hidden="true">
+                <img src={item.image_url} alt="" loading="lazy" onError={restoreOriginalImage} />
+            </Link>
+            <div className="vt-card-body">
+                <Link to={`/produto/${item.id}`} state={{ product: item }} className="vt-card-name"><h4>{item.name}</h4></Link>
+                {item.description && <p className="vt-card-desc">{item.description}</p>}
+                {withChoice && hasPrice && <div className="vt-chips">
+                    {selected.options.hasSizes && <div className="vt-chip-row" role="radiogroup" aria-label={`Quantidade de ${item.name}`}>
+                        {selected.options.availableSizes.map(size => <button type="button" key={size.id} role="radio" aria-checked={selected.size === size.id} className={`vt-chip${selected.size === size.id ? ' is-on' : ''}`} onClick={() => choose(item.id, { size: size.id })}>{size.label}</button>)}
+                    </div>}
+                    {selected.options.hasFlavors && <div className="vt-chip-row" role="radiogroup" aria-label={`Sabor de ${item.name}`}>
+                        {selected.flavorIds.map(id => <button type="button" key={id} role="radio" aria-checked={selected.flavor === id} className={`vt-chip${selected.flavor === id ? ' is-on' : ''}`} onClick={() => choose(item.id, { flavor: id })}>
+                            <i style={{ background: flavorColors[id] || '#94a3b8' }} aria-hidden="true" />{id === NATURAL_FLAVOR ? 'Natural' : flavorName(flavors, id)}
+                        </button>)}
+                    </div>}
+                </div>}
+                <div className="vt-card-buy">
+                    <p className={`vt-price${hasPrice ? '' : ' vt-price-unset'}`}>
+                        {!selected.price && fromLabel && <small>A partir de</small>}
+                        {rate > 0 && <s className="vt-price-old"><span className="vt-sr-only">Sem o cupom: </span>{money(basePrice)}</s>}
+                        <strong>{hasPrice ? money(rate > 0 ? discountedPrice(basePrice, rate) : basePrice) : 'Consulte o valor'}</strong>
+                        {rate > 0 && <span className="vt-price-tag">−{percentLabel(rate)} com o cupom</span>}
+                    </p>
+                    <button type="button" className="vt-buy" onClick={() => openProduct(item)} aria-label={`${hasPrice ? 'Comprar' : 'Ver produto'} ${item.name}`}>{hasPrice && <ShoppingBag size={16} aria-hidden="true" />}<span>{hasPrice ? 'Comprar' : 'Ver produto'}</span></button>
+                </div>
+            </div>
+        </article>;
+    };
 
     return (
         <section id="produtos" className="store-section products-section vt" ref={sectionRef} aria-labelledby="store-products-title">
             <div className="container">
+                {featuredProducts.length > 0 && <div className="vt-featured" data-part="featured">
+                    <header className="vt-header">
+                        <div>
+                            <span className="vt-eyebrow">{featured.eyebrow}</span>
+                            <h2>{featured.title}</h2>
+                        </div>
+                    </header>
+                    <h3 className="vt-sr-only">Produtos em destaque</h3>
+                    <div className="vt-grid">{featuredProducts.map(card)}</div>
+                </div>}
+
                 <header className="vt-header">
                     <div>
                         <span className="vt-eyebrow">A seleção Graphène</span>
@@ -120,41 +177,7 @@ const ProductGrid = ({ searchTerm = '' }) => {
                     <h3 className="vt-sr-only">{goalName ? `${goalName}: produtos` : 'Produtos da loja'}</h3>
                     {visible.length === 0 ? <p className="vt-empty" role="status">{catalogStatus === 'loading' ? 'Carregando produtos…' : catalogStatus === 'error' ? 'Não foi possível carregar os produtos. Atualize a página ou fale com a equipe pelo WhatsApp.' : goalName ? `Nenhum produto encontrado em ${goalName.toLowerCase()}.` : 'Nenhum produto encontrado.'}</p> :
                         <ProductLayout className="vt-grid" {...(allProducts ? { id: 'vt-products-rail', label: 'Todos os produtos', resetKey: term } : {})}>
-                            {shownProducts.map(item => {
-                                const selected = choiceOf(item);
-                                const withChoice = requiresChoice(item);
-                                const lowestPrice = selected.options.hasSizes
-                                    ? (selected.options.availableSizes.length ? Math.min(...selected.options.availableSizes.map(size => size.price)) : 0)
-                                    : Number(item.rawPrice) || 0;
-                                const hasPrice = lowestPrice > 0;
-                                const fromLabel = hasPrice && withChoice && (selected.options.availableSizes.length > 1 || selected.options.flavorPrice > 0);
-                                return <article key={item.id} className="vt-card">
-                                    <Link to={`/produto/${item.id}`} state={{ product: item }} className="vt-card-photo" tabIndex={-1} aria-hidden="true">
-                                        <img src={item.image_url} alt="" loading="lazy" onError={event => { event.currentTarget.style.visibility = 'hidden'; }} />
-                                    </Link>
-                                    <div className="vt-card-body">
-                                        <Link to={`/produto/${item.id}`} state={{ product: item }} className="vt-card-name"><h4>{item.name}</h4></Link>
-                                        {item.description && <p className="vt-card-desc">{item.description}</p>}
-                                        {withChoice && hasPrice && <div className="vt-chips">
-                                            {selected.options.hasSizes && <div className="vt-chip-row" role="radiogroup" aria-label={`Quantidade de ${item.name}`}>
-                                                {selected.options.availableSizes.map(size => <button type="button" key={size.id} role="radio" aria-checked={selected.size === size.id} className={`vt-chip${selected.size === size.id ? ' is-on' : ''}`} onClick={() => choose(item.id, { size: size.id })}>{size.label}</button>)}
-                                            </div>}
-                                            {selected.options.hasFlavors && <div className="vt-chip-row" role="radiogroup" aria-label={`Sabor de ${item.name}`}>
-                                                {selected.flavorIds.map(id => <button type="button" key={id} role="radio" aria-checked={selected.flavor === id} className={`vt-chip${selected.flavor === id ? ' is-on' : ''}`} onClick={() => choose(item.id, { flavor: id })}>
-                                                    <i style={{ background: flavorColors[id] || '#94a3b8' }} aria-hidden="true" />{id === NATURAL_FLAVOR ? 'Natural' : flavorName(flavors, id)}
-                                                </button>)}
-                                            </div>}
-                                        </div>}
-                                        <div className="vt-card-buy">
-                                            <p className={`vt-price${hasPrice ? '' : ' vt-price-unset'}`}>
-                                                {!selected.price && fromLabel && <small>A partir de</small>}
-                                                <strong>{hasPrice ? money(selected.price || lowestPrice) : 'Consulte o valor'}</strong>
-                                            </p>
-                                            <button type="button" className="vt-buy" onClick={() => openProduct(item)} aria-label={`${hasPrice ? 'Comprar' : 'Ver produto'} ${item.name}`}>{hasPrice && <ShoppingBag size={16} aria-hidden="true" />}<span>{hasPrice ? 'Comprar' : 'Ver produto'}</span></button>
-                                        </div>
-                                    </div>
-                                </article>;
-                            })}
+                            {shownProducts.map(card)}
                         </ProductLayout>}
                     {!allProducts && !searching && visible.length > INITIAL_LIMIT && <button type="button" className="vt-more" onClick={toggle} aria-expanded={expanded}>
                         {expanded ? 'Mostrar menos' : `Ver todos os ${visible.length} produtos`}<ChevronDown size={17} aria-hidden="true" />

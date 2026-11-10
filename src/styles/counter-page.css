@@ -390,7 +390,7 @@
   .counter-workspace { display: block !important; }
   .counter-sidebar, .counter-header, .counter-mobile-tabs, .counter-queues, .counter-search, .counter-list,
   .counter-footer, .counter-notice, .counter-error, .counter-detail-heading button, .counter-detail-body button,
-  .counter-catalog, .privacy-notice { display: none !important; }
+  .counter-catalog { display: none !important; }
   .counter-main { padding: 0; max-width: none; }
   .counter-split { display: block; }
   .counter-detail { display: block !important; border: 0; box-shadow: none; overflow: visible; }

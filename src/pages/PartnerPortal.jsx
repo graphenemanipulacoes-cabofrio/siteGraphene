@@ -24,6 +24,7 @@ import {
 import { supabase } from '../lib/supabaseClient';
 import { Toaster, toast } from 'sonner';
 import PartnerGoalCard from '../components/PartnerGoalCard';
+import PartnerLinks from '../components/PartnerLinks';
 
 const DIRECTOR_WHATSAPP_PHONE = '5522998994412';
 const DIRECTOR_WHATSAPP_DISPLAY = '(22) 99899-4412';
@@ -414,6 +415,8 @@ const PartnerPortal = () => {
             <Copy size={16}/> Copiar Cupom
           </button>
         </section>
+
+        {data.coupon?.code && <PartnerLinks code={data.coupon.code} partnerId={profile.id} adminView={adminView} />}
 
         {/* SEÇÃO 3: Métricas de Comissões em Dinheiro (Repasses via Pix) */}
         <div className="section-title-wrap">

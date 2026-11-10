@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import { PRESCRIPTION_PAGES_ENABLED } from './data/publicChannels';
 import SeoManager from './components/SeoManager';
-import PrivacyNotice from './components/PrivacyNotice';
 import ScrollToTop from './components/ScrollToTop';
 import OAuthReturn from './components/OAuthReturn';
 
@@ -26,6 +25,7 @@ const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
 const CustomerAccessPage = lazy(() => import('./pages/CustomerAccessPage'));
 const AccountPage = lazy(() => import('./pages/AccountPage'));
 const ProductPage = lazy(() => import('./pages/ProductPage'));
+const CouponLandingPage = lazy(() => import('./pages/CouponLandingPage'));
 const PaymentReturnPage = lazy(() => import('./pages/PaymentReturnPage'));
 const PasswordResetPage = lazy(() => import('./pages/PasswordResetPage'));
 const AboutPage = lazy(() => import('./pages/InstitutionalPages').then(module => ({ default: module.AboutPage })));
@@ -39,7 +39,6 @@ function App() {
       <SeoManager />
       <ScrollToTop />
       <OAuthReturn />
-      <PrivacyNotice />
       <Suspense fallback={<main role="status" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: 'var(--text-main)' }}>Carregando Graphène…</main>}>
         <Routes>
           <Route path="/" element={<HomePage />} />
@@ -58,6 +57,7 @@ function App() {
           <Route path="/parceiros/entrar" element={<PartnerAccess />} />
           <Route path="/parceiros/painel" element={<PartnerPortal />} />
           <Route path="/produto/:id" element={<ProductPage />} />
+          <Route path="/cupom/:code" element={<CouponLandingPage />} />
           <Route path="/carrinho" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/entrar" element={<CustomerAccessPage />} />

@@ -27,6 +27,7 @@
         { "source": "/trocas", "destination": "/trocas.html" },
         { "source": "/privacidade", "destination": "/privacidade.html" },
         { "source": "/produto/:id", "destination": "/api/produto?id=:id" },
+        { "source": "/cupom/:code", "destination": "/index.html" },
         { "source": "/feed.xml", "destination": "/api/feed" },
         { "source": "/sitemap-produtos.xml", "destination": "/api/sitemap-produtos" },
         { "source": "/admin", "destination": "/private.html" },

@@ -25,7 +25,7 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - O papel vem do e-mail: `admins.email` (admin, todas as áreas) e `counter_accounts.email` (balcão/farmacêutico). Parceiro = `partner_profiles.id` igual ao id da conta. Migração `20261030173953_login_por_email.sql`.
 - `admin-login` e a ação `login` do `balcao-api` recebem a sessão (Authorization) e devolvem os tokens internos de sempre (`x-admin-token` 8 h; token da equipe sem vencimento). `ensureAdminSession` (`src/lib/accountAuth.js`) renova o token do painel sozinho.
 - Admin cadastra admins e equipe pelo e-mail; e-mail sem conta exige senha inicial (cria a conta já confirmada). Conta com senha que ainda não é da equipe também exige senha nova. Cada um troca a senha em `/minha-conta`.
-- Admin abre o painel de qualquer parceiro (`/parceiros/painel?parceiro=id`, só leitura). Sair do admin, balcão ou farmacêutico sai também da conta do site.
+- Admin abre o painel de qualquer parceiro (`/parceiros/painel?parceiro=id`, só leitura, exceto os produtos em destaque do link dela). Sair do admin, balcão ou farmacêutico sai também da conta do site.
 - Google sempre volta por `/entrar?oauth=google` e segue para o destino salvo em `graphene_oauth_intent`.
 - O papel da conta fica em `StoreContext` (`staffRole`, via RPC `current_staff_role`). Admin/equipe veem no cabeçalho o botão dourado "Painel admin"/"Área da equipe" (`.gh-staff-btn`) que leva a `/colaboradores`; no login normal sem destino pedido, também vão direto para lá. `/colaboradores` mostra só as áreas do papel, já conectadas.
 - Quem tem parceria vê no cabeçalho o mesmo botão dourado, "Painel do parceiro", que leva a `/parceiros/painel` (`partnerStatus` em `StoreContext`, via RPC `current_partner_status`; `refreshAccountRoles` atualiza depois do cadastro). No painel, "Voltar ao site" mantém a conta conectada; só "Sair" encerra a sessão.
@@ -87,6 +87,14 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - Financeiro → **Vendas e cupons**: parceiro ao lado do código, busca, datas em Brasília, status, somente cupons e CSV com proteção contra fórmulas. Mostra explicitamente o recorte dos até 300 pedidos mais recentes; não apresentar o recorte como histórico integral.
 - Testes: `node --experimental-vm-modules scripts/verify-coupons.mjs`, `node scripts/verify-coupons-ui.mjs` e `scripts/verify-coupons-db.sql` (fixtures sintéticas com rollback, nenhum pagamento).
 
+## Link da parceira
+- `/cupom/CODIGO` (`CouponLandingPage`) abre a loja com o cupom aplicado: troca o banner pela confirmação "Indicação de …" e mostra primeiro os produtos que a parceira destacou. `/produto/ID?cupom=CODIGO` leva direto a um produto. Visitante sem conta valida um código exato; a busca por nome continua exigindo login.
+- Com cupom aplicado, `CouponBar` aparece no topo da página inicial e os cartões da vitrine mostram o preço sem cupom riscado e o preço com desconto (`couponRate`). É estimativa: o valor final continua sendo o do `create_checkout_order_v2`.
+- Seleção de até 12 produtos por parceira em `partner_showcase`, sem acesso direto pelo navegador. Leitura pública só pela RPC `partner_showcase_products(código)`, que devolve os números dos produtos ativos. Gravação pela RPC `save_partner_showcase`: a própria parceira aprovada ou um administrador (fica no registro de ações). É a única coisa que o admin altera ao ver o painel de uma parceira.
+- No painel (`PartnerLinks`): copiar o link geral, copiar o link de um produto e marcar os destaques. Textos e links em `src/utils/couponDisplay.js`.
+- O nome exibido é o primeiro nome cadastrado no recebedor do cupom. Não escrever que a parceira usa ou recomenda um produto: a página só diz que a indicação é dela.
+- Verificação: `node scripts/verify-partner-links.mjs` e `scripts/verify-partner-showcase-db.sql` (fixtures sintéticas com rollback).
+
 ## Matérias-primas
 - O catálogo de `/ativos` fica em `materias_primas`, não em uma lista fixa no código. Os 12 cadastros originais foram preservados pela migração `20261023163541_raw_materials_catalog.sql`.
 - Admin: menu **Matérias-primas** (desktop e mobile). Farmacêutico: aba **Matérias-primas**. Ambos usam `AdminMaterials`, `materialsApi` e as ações `material_*`/`materials_list` da `balcao-api` v7; balcão/visitantes/clientes não podem alterar.
@@ -98,6 +106,8 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - Variáveis em `src/styles/global.css`; a loja pública sobrescreve a paleta em `src/styles/premium.css` (classes `.page-root` e `.partner-program-page`). Admin e balcão têm estilos próprios (`counter.css`, `purchase.css` e estilos dentro dos componentes).
 - Não existe classe `glass-card`. O utilitário de vidro é `.glass` em `glassmorphism.css`, usado com moderação.
 - `Button.jsx`: a prop `variant` só muda o efeito ao passar o mouse; o fundo vem do `style` passado. Não "corrigir" isso sem pedido, porque mudaria o visual do admin.
+- **Imagens leves:** as fotos locais (`public/assets/products/*.png`, banner e foto do laboratório) têm versão WebP gerada por `python scripts/optimize-images.py`, que entra no commit. Na tela use `productPhoto` (`src/utils/productImages.js`); `resolveProductImage` continua devolvendo a PNG, usada em `og:image` e no feed. Ao trocar ou incluir uma foto local, rode o script de novo. Foto enviada pelo admin vai para o Storage e não passa por ele.
+- **Aviso de privacidade:** é uma linha no rodapé, não um aviso flutuante (cobria o botão Comprar no celular). Vale enquanto o site usar só armazenamento necessário. Pixel ou análise de visitas com cookies exige voltar a pedir a escolha do visitante.
 
 ## Regras de código
 - Toda chamada ao Supabase com `try...catch`, aviso amigável ao usuário (toast) e sem quebrar a tela.

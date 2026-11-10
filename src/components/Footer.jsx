@@ -67,6 +67,7 @@ const Footer = () => {
                     {business.specialAuthorization && <div><dt>Autorização especial — AE</dt><dd>{business.specialAuthorization}</dd></div>}
                 </dl>
                 <p className="footer-notice">{LEGAL_NOTICE}</p>
+                <p className="footer-notice">Este site usa só o armazenamento necessário para manter seu carrinho e sua sessão. <Link to="/privacidade">Veja como seus dados são tratados</Link>.</p>
             </section>
 
             <div className="container footer-copyright-row">
@@ -102,6 +103,8 @@ const Footer = () => {
                 .footer-identity-grid dd { margin: 0; color: #edf4f8; font-size: .82rem; line-height: 1.65; overflow-wrap: anywhere; }
                 .footer-identity-grid dd span { display: block; color: #bdcbd6; font-size: .78rem; }
                 .footer-notice { margin: 18px 0 0; color: #bdcbd6; font-size: .78rem; line-height: 1.6; }
+                .footer-notice + .footer-notice { margin-top: 8px; }
+                .footer-notice a { color: #9fdde9; text-decoration: underline; text-underline-offset: 3px; }
                 @media (max-width: 960px) { .store-footer-grid { grid-template-columns: 1fr 1fr; } }
                 @media (max-width: 600px) { .store-footer-grid, .footer-identity-grid { grid-template-columns: 1fr; } .footer-copyright-row { flex-direction: column; gap: 8px; text-align: center; } }
             `}</style>
