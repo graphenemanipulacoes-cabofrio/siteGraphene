@@ -1,6 +1,7 @@
 // Conteúdo que vai no próprio HTML: aparece antes de o JavaScript carregar e para quem abre sem ele.
 // É o mesmo para todos os visitantes e robôs. O React substitui esta versão quando monta a página.
 import { business } from '../data/business.js';
+import { PRESCRIPTION_PAGES_ENABLED } from '../data/publicChannels.js';
 import { LEGAL_NOTICE, PURCHASE_STEPS, RETURN_POLICY } from '../data/storeTexts.js';
 import { GOALS } from '../utils/productGoals.js';
 import { resolveProductImage } from '../utils/productImages.js';
@@ -52,7 +53,8 @@ export function renderPage(shell, { title, description, canonical, robots = INDE
     return setRootContent(setHeadTag(html, /<style id="pre-style">[\s\S]*?<\/style>/, STYLE), body);
 }
 
-const siteLinks = `<nav aria-label="Seções do site"><a href="/#produtos">Produtos</a><a href="/laboratorio">O laboratório</a><a href="/avaliacoes">Avaliações</a><a href="/parceiros">Programa de parceiros</a><a href="/sobre">Sobre a Graphène</a><a href="/compras">Compra, pagamento e entrega</a><a href="/trocas">Trocas e devoluções</a><a href="/privacidade">Privacidade</a><a href="${WHATSAPP}">WhatsApp</a></nav>`;
+const prescriptionLinks = PRESCRIPTION_PAGES_ENABLED ? '<a href="/receita">Solicitar orçamento</a><a href="/ativos">Matérias-primas</a><a href="/prescritores">Profissionais de saúde</a>' : '';
+const siteLinks = `<nav aria-label="Seções do site"><a href="/#produtos">Produtos</a>${prescriptionLinks}<a href="/laboratorio">O laboratório</a><a href="/avaliacoes">Avaliações</a><a href="/parceiros">Programa de parceiros</a><a href="/sobre">Sobre a Graphène</a><a href="/compras">Compra, pagamento e entrega</a><a href="/trocas">Trocas e devoluções</a><a href="/privacidade">Privacidade</a><a href="${WHATSAPP}">WhatsApp</a></nav>`;
 
 const paymentAndDelivery = '<section><h2>Pagamento e entrega</h2><p>O pagamento é feito no ambiente do Mercado Pago, com Pix ou cartão de crédito. Enviamos para todo o Brasil: informe o CEP para ver o valor e o prazo antes de comprar. Na Região dos Lagos, a entrega é feita por motoboy ou você pode retirar na loja.</p></section>';
 

@@ -13,13 +13,15 @@ import { pageMetadata } from '../src/seo/config.js';
 // Termos que a política do Google ou a Anvisa costumam barrar em página de destino.
 const forbidden = /prescri[cç]|prescritor|receita|medicamento|tarja|emagrec|queima cal|medidas abdominais|ins[oô]nia|libido|anti-inflamat|colesterol|rugas|cicatriza|para tratar|tratamento (?:de|para) (?!dados)|\bcura\b/i;
 const textOf = markup => markup.replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<style[\s\S]*?<\/style>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+// Com as páginas de receita no ar (decisão de 10/11/2026: divulgação por influenciadoras e
+// Meta, sem Google), os termos não são conferidos. A identificação da empresa é sempre.
+const adsMode = !PRESCRIPTION_PAGES_ENABLED;
 // O aviso legal do rodapé cita receita de propósito: é o aviso exigido, não uma promoção.
 const clean = (label, text) => {
+    if (!adsMode) return;
     const rest = text.replaceAll(LEGAL_NOTICE, ' ');
     assert.ok(!forbidden.test(rest), `${label}: termo barrado em "${rest.match(forbidden)?.[0]}"`);
 };
-
-assert.equal(PRESCRIPTION_PAGES_ENABLED, false, 'as páginas de receita devem estar fora do ar para anunciar');
 
 // Páginas geradas: título e descrição de cada uma.
 for (const file of readdirSync('dist').filter(name => name.endsWith('.html'))) {
@@ -49,10 +51,10 @@ try {
         clean(label, text);
         return text;
     };
-    assert.ok((await render('banner', '/src/components/HeroBanner.jsx')).includes('Falar no WhatsApp'));
+    assert.ok((await render('banner', '/src/components/HeroBanner.jsx')).includes(adsMode ? 'Falar no WhatsApp' : 'Solicitar orçamento'));
     await render('barra de benefícios', '/src/components/BenefitsBar.jsx');
     const footer = await render('rodapé', '/src/components/Footer.jsx');
-    assert.ok(!footer.includes('Solicitar Orçamento'));
+    assert.equal(footer.includes('Solicitar Orçamento'), !adsMode, 'o rodapé segue a chave das páginas de receita');
     // A empresa continua identificada: CNPJ, responsável técnica e AFE ficam à vista.
     for (const identity of ['50.380.346/0001-30', 'CRF-RJ', 'AFE', 'farmácia de manipulação']) assert.ok(footer.includes(identity), `rodapé sem ${identity}`);
     const goals = await server.ssrLoadModule('/src/utils/productGoals.js');
@@ -63,7 +65,9 @@ try {
         const source = readFileSync(file, 'utf8').replace(/<style>[\s\S]*?<\/style>/g, '').replace(/^\s*(import|\/\/).*$/gm, '');
         clean(file, source.replace(/institutionalStyles[\s\S]*$/, ''));
     }
-    console.log('Ads checks passed: fixed public text, page metadata and categories have no blocked terms; prescription pages off; company identity still visible.');
+    console.log(adsMode
+        ? 'Ads checks passed: fixed public text, page metadata and categories have no blocked terms; prescription pages off; company identity still visible.'
+        : 'Public page checks passed: prescription pages on, so the site is NOT prepared for Google Ads and blocked terms were not checked; company identity visible in every page.');
 } finally {
     await server.close();
 }

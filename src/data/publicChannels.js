@@ -1,10 +1,12 @@
 // Páginas públicas de fórmulas com receita: /receita, /ativos e /prescritores.
-// Ficam fora do ar para o domínio poder anunciar no Google: a política para o Brasil
-// não aceita promover medicamentos sujeitos a receita em anúncios e páginas de destino.
-// A mudança vale para todos os visitantes, sem conteúdo diferente para quem revisa o site.
+// No ar desde 10/11/2026, por decisão do dono: a divulgação passou a ser por influenciadoras
+// e pelo Meta, e não pelo Google. Entre 04/11 e 10/11/2026 ficaram fora do ar, porque a
+// política do Google para o Brasil não aceita promover medicamentos sujeitos a receita em
+// anúncios e páginas de destino.
 //
-// Para trazer de volta: troque para true e, na mesma publicação, recoloque em vercel.json
-// as três rotas (no lugar dos redirecionamentos) e em public/sitemap.xml os três endereços.
-// `node scripts/verify-seo.mjs` acusa se faltar algum. Antes, confira se a conta do Google
-// Ads tem certificação e se a política ainda permite: voltar sem isso pode suspender a conta.
-export const PRESCRIPTION_PAGES_ENABLED = false;
+// Para tirar do ar de novo (voltar a tentar o Google): troque para false e, na mesma
+// publicação, passe as três rotas de "rewrites" para "redirects" (destino "/") em vercel.json
+// e tire os três endereços de public/sitemap.xml. `node scripts/verify-seo.mjs` acusa se
+// faltar algum. A mudança vale para todos os visitantes, sem conteúdo diferente para quem
+// revisa o site.
+export const PRESCRIPTION_PAGES_ENABLED = true;

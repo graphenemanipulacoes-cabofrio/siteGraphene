@@ -3,7 +3,13 @@
 Lista de acompanhamento em linguagem simples. Atualizada em 2 de outubro de 2026.
 As informações do site não equivalem a uma aprovação do Google nem confirmam, sozinhas, a situação atual de todos os documentos.
 
-## Situação dos anúncios (4 de novembro de 2026)
+## Decisão de 10 de novembro de 2026
+
+O proprietário decidiu não insistir no Google por enquanto. A divulgação passa a ser por influenciadoras e por anúncios no Meta (Instagram e Facebook). Por isso voltaram ao site as páginas de orçamento com receita, matérias-primas e profissionais de saúde, e os 10 produtos que tinham saído. Os textos de produto sem promessa de resultado continuam.
+
+Com isso, o site deixou de estar preparado para o Google: os itens abaixo só voltam a valer se a farmácia retomar esse caminho. O Meta também exige autorização própria para anunciar medicamento com receita e farmácia on-line, então os anúncios devem levar para suplementos e cosméticos.
+
+## Situação dos anúncios no Google (4 de novembro de 2026)
 
 O Google reprovou os anúncios por "serviços de medicamentos", segundo o relato do proprietário. O site foi preparado: páginas de receita fora do ar, produtos de maior risco fora do site e textos sem promessa de tratamento. Isso não garante a aprovação. A política para o Brasil também exige a certificação abaixo, e não cita farmácia de manipulação.
 

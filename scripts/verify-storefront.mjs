@@ -4,6 +4,7 @@ import { createServer } from 'vite';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
+import { PRESCRIPTION_PAGES_ENABLED } from '../src/data/publicChannels.js';
 
 const products = Array.from({ length: 10 }, (_, index) => ({
     id: String(index + 100), name: index === 0 ? 'Melatonina de teste' : `Creatina de teste ${index}`,
@@ -46,7 +47,7 @@ try {
     assert.ok(!all.includes('R$ null'));
     assert.ok(all.includes('aria-label="Comprar Melatonina de teste"'));
     assert.ok(all.includes('href="/produto/100"'));
-    assert.ok(!all.includes('href="/receita"'));
+    assert.equal(all.includes('href="/receita"'), PRESCRIPTION_PAGES_ENABLED, 'a chamada para orçamento segue a chave das páginas de receita');
     assert.ok(!all.includes('O que você procura?'));
     assert.ok(!all.includes('vt-goal-icon'));
     const search = render('Melatonina');
