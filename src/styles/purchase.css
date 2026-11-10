@@ -79,9 +79,6 @@
 .purchase-methods span{padding:9px 14px;border:1px solid var(--purchase-line);border-radius:6px;font-size:.8rem}
 .purchase-note{padding:16px;border-radius:7px;background:#edf6f1;display:flex;align-items:center;gap:10px;color:#225641!important;font-size:.8rem!important;margin-top:26px}
 .purchase-note svg{flex-shrink:0}
-.purchase-signin{max-width:520px;padding:34px}
-.purchase-signin h2{margin:16px 0 10px;font-size:1.35rem}
-.purchase-signin .purchase-primary{margin-top:24px}
 .purchase-product{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start;padding:22px 0}
 .purchase-product-photo{background:white;border:1px solid var(--purchase-line);border-radius:12px;display:grid;place-items:center;padding:35px}
 .purchase-product-photo img{width:100%;height:370px;object-fit:contain}
@@ -93,7 +90,7 @@
 .purchase-product .purchase-text-link{display:inline-block;margin-top:18px}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(max-width:850px){.purchase-layout{grid-template-columns:minmax(0,1fr) 310px;gap:18px}.purchase-form,.purchase-summary{padding:22px}.purchase-items{padding:0 18px}.purchase-product{gap:28px}}
-@media(max-width:700px){.purchase-page{padding:24px 16px 48px}.purchase-layout,.purchase-product{grid-template-columns:1fr}.purchase-summary{position:static}.purchase-steps{gap:14px;margin-bottom:26px}.purchase-steps li{gap:6px;font-size:.67rem}.purchase-steps li span{height:23px;width:23px}.purchase-heading{align-items:start}.purchase-heading>span{white-space:nowrap}.purchase-form{padding:22px 18px}.purchase-item{grid-template-columns:64px minmax(0,1fr);gap:14px}.purchase-item-total{grid-column:2}.purchase-thumbnail{height:76px}.purchase-thumbnail img{height:68px}.purchase-fields{gap:18px 12px}.purchase-back{margin-bottom:24px}.purchase-product-photo img{height:260px}.purchase-product{padding-top:0}.purchase-summary{padding:24px}.purchase-signin{padding:26px}}
+@media(max-width:700px){.purchase-page{padding:24px 16px 48px}.purchase-layout,.purchase-product{grid-template-columns:1fr}.purchase-summary{position:static}.purchase-steps{gap:14px;margin-bottom:26px}.purchase-steps li{gap:6px;font-size:.67rem}.purchase-steps li span{height:23px;width:23px}.purchase-heading{align-items:start}.purchase-heading>span{white-space:nowrap}.purchase-form{padding:22px 18px}.purchase-item{grid-template-columns:64px minmax(0,1fr);gap:14px}.purchase-item-total{grid-column:2}.purchase-thumbnail{height:76px}.purchase-thumbnail img{height:68px}.purchase-fields{gap:18px 12px}.purchase-back{margin-bottom:24px}.purchase-product-photo img{height:260px}.purchase-product{padding-top:0}.purchase-summary{padding:24px}}
 @media(max-width:380px){.purchase-fields{grid-template-columns:1fr}.purchase-fields>span{display:none}.purchase-steps{gap:9px}.purchase-steps li{font-size:.62rem}}
 @media(prefers-reduced-motion:reduce){.purchase-page *{scroll-behavior:auto;transition:none;animation:none}}
 /* Escolha de quantidade e sabor na página do produto */

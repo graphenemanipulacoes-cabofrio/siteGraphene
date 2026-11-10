@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CreditCard, LockKeyhole, LoaderCircle, MapPin, UserRound, Check, Truck } from 'lucide-react';
 import StoreLayout from '../components/StoreLayout';
 import PurchaseSteps from '../components/PurchaseSteps';
@@ -25,7 +25,7 @@ export default function CheckoutPage() {
 }
 
 function CustomerCheckout() {
-    const { cart, subtotal, itemCount, customer, authReady, cartReady, syncCart, zip: savedZip, setZip } = useStore();
+    const { cart, subtotal, customer, authReady, cartReady, syncCart, zip: savedZip, setZip } = useStore();
     const location = useLocation();
     const preview = isAdminPreview(location.search);
     const [form, setForm] = useState({ name: customer?.user_metadata?.full_name || '', cpf: '', phone: '', zip: formatZip(savedZip), address: '', number: '', complement: '', neighborhood: '', city: '', state: '' });
@@ -133,7 +133,7 @@ function CustomerCheckout() {
         <Link to="/carrinho" className="purchase-back"><ArrowLeft size={16} /> Voltar ao carrinho</Link>
         <PurchaseSteps current={review ? 3 : 2} />
         <div className="purchase-heading"><div><span className="purchase-eyebrow">Finalizar compra</span><h1 ref={headingRef} tabIndex={-1}>{review ? 'Confira seu pedido' : 'Entrega'}</h1><p>{review ? 'Confira produtos, entrega e valor total. O pagamento acontece na próxima tela.' : 'Comece pelo CEP: o endereço é preenchido sozinho.'}</p></div></div>
-        {!authReady || !cartReady ? <div className="purchase-empty" role="status">Carregando sua conta e seu carrinho…</div> : !cart.length && !preview ? <div className="purchase-empty"><h2>Seu carrinho está vazio</h2><Link to="/#produtos" className="purchase-primary">Escolher produtos</Link></div> : !customer && !preview ? <div className="purchase-card purchase-signin"><UserRound size={28}/><h2>Entre para concluir sua compra</h2><p>Seus {itemCount} {itemCount === 1 ? 'item está' : 'itens estão'} no carrinho. Use sua conta para informar a entrega e acompanhar o pedido.</p><Link className="purchase-primary" to="/entrar" state={{ returnTo: '/checkout', intent: 'checkout' }}>Entrar ou criar conta <ArrowRight size={18}/></Link><Link to="/#produtos" className="purchase-continue">Continuar comprando</Link></div> :
+        {!authReady || !cartReady ? <div className="purchase-empty" role="status">Carregando sua conta e seu carrinho…</div> : !cart.length && !preview ? <div className="purchase-empty"><h2>Seu carrinho está vazio</h2><Link to="/#produtos" className="purchase-primary">Escolher produtos</Link></div> : !customer && !preview ? <Navigate to="/entrar" replace state={{ returnTo: '/checkout', intent: 'checkout' }} /> :
         <div className="purchase-layout">
             <div className="purchase-cart-main">
                 {!review && <CouponPanel disabled={loading} />}

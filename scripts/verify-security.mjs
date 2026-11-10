@@ -185,7 +185,8 @@ for (const signature of ['protect_staff_email\\(\\)', 'secure_account_on_externa
   assert.match(guards, new RegExp(`revoke all on function public\\.${signature} from public, anon, authenticated`));
 }
 const signup = readFileSync('src/pages/CustomerAccessPage.jsx', 'utf8');
-assert.match(signup, /password !== confirmPassword/, 'o cadastro confere as duas senhas');
+assert.match(signup, /<PasswordField/, 'a senha do cadastro tem o botão para mostrar o que foi digitado');
+assert.doesNotMatch(signup, /confirmPassword/, 'o cadastro pede a senha uma vez só');
 assert.match(signup, /too_many_requests: tooManyAttempts/, 'excesso de tentativas tem mensagem própria');
 assert.match(signup, /functions\.invoke\('customer-signup'/, 'o cadastro passa pela função com limite');
 assert.doesNotMatch(signup, /auth\.signUp\(/, 'o site não cadastra direto pela API pública');

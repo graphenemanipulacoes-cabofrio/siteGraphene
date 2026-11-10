@@ -14,6 +14,7 @@ Este arquivo é a fonte de contexto do projeto. Não há notas externas (Obsidia
 - **Loja pública:** `/`, `/produto/:id`, `/laboratorio`, `/avaliacoes`, `/parceiros`, `/sobre`, `/compras`, `/trocas`, `/privacidade`, `/ativos`, `/receita` e `/prescritores`. As três últimas dependem de uma chave (ver "Anúncios no Google").
 - **Compra:** `/carrinho`, `/entrar`, `/minha-conta`, `/checkout`, `/pedido/retorno`, `/redefinir-senha`. Carrinho em `src/context/StoreContext.jsx`.
   Carrinhos autenticados ficam em `customer_carts`/RPC `customer_cart_sync`; `src/utils/cartPersistence.js` mantém cache separado por conta e operações pendentes idempotentes. Não voltar a usar um único localStorage para todos os clientes. Checkout usa sempre `create_checkout_order_v2`, incluindo frete, e `src/lib/checkoutApi.js` cuida da sessão/erros sem repetir pagamentos.
+  Comprar exige conta (decisão do dono em 10/11/2026, pela segurança do cliente e pelo pós-venda; o site não envia e-mail). Sem conta, `/checkout` leva direto a `/entrar`, que abre em "Criar conta" (`intent: 'checkout'`) e volta para a entrega; o carrinho de visitante passa para a conta. Dentro do Instagram e de apps parecidos (`isEmbeddedBrowser`), o e-mail vem antes do Google. O botão do Google fica abaixo do formulário, porque quem só tem conta Google precisa dele. Verificação: `node scripts/verify-account-at-checkout.mjs`.
 - **Admin** (`/admin`, login em `/login`): solicitações, pedidos, clientes, produtos, financeiro, parceiros, acessos do balcão, administradores.
 - **Parceiros:** `/parceiros/cadastro`, `/parceiros/entrar`, `/parceiros/painel`.
 - **Balcão** (`/balcaographene`): consulta da equipe da loja. Detalhes em `BALCAO_GRAPHENE.md`.
@@ -40,7 +41,7 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
   - `ensureAuthAccount`: conta com senha que ainda não é da equipe só recebe papel com senha nova; as sessões antigas são apagadas (`reset_account_access`). Conta só com Google não precisa de senha.
   - Gatilho `secure_account_on_external_login`: ao ligar o Google a uma conta com senha, a senha e as sessões antigas deixam de valer. A pessoa continua entrando com Google e pode criar outra senha em `/minha-conta`.
   - Verificação: `scripts/verify-account-guards-db.sql` (dados sintéticos com rollback).
-- **Campos de senha:** sempre `PasswordField` (olhinho para mostrar ou ocultar). O cadastro em `/entrar` pede a senha duas vezes.
+- **Campos de senha:** sempre `PasswordField` (olhinho para mostrar ou ocultar). O cadastro em `/entrar` pede a senha uma vez, para encurtar a compra (decisão de 10/11/2026), com um lembrete para conferir pelo olhinho.
 - **Limites:** `takeRateLimit` (`_shared/counter-security.ts`, RPC `take_rate_limit`, só service_role) guarda o endereço em hash. `customer-coupons` aceita 120 consultas em 5 minutos por endereço.
 - **Registro de ações:** `logAdminAction` grava em `admin_audit_log` (sem acesso pelo navegador); aparece em Gerenciar Admins › Registro de ações.
 - **CSP** em `vercel.json`: `script-src 'self'`, sem script inline. Serviço externo novo (script, imagem, API) precisa entrar na CSP, senão o navegador bloqueia. Para testar: `npm run build` e `node scripts/serve-dist.mjs` (porta 5180), que serve `dist/` com os cabeçalhos da produção.
