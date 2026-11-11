@@ -42,7 +42,7 @@ export const pageMetadata = {
     },
     '/sobre': {
         title: 'Sobre a Graphène | Cabo Frio, RJ',
-        description: 'Conheça a Graphène em Cabo Frio: endereço, horários, CNPJ, responsável técnica e informações dos registros CRF-RJ e AFE da Anvisa.'
+        description: 'Conheça a Graphène em Cabo Frio: endereço, horários, CNPJ e informações dos registros CRF-RJ e AFE da Anvisa.'
     },
     '/compras': {
         title: 'Compra, pagamento e entrega | Graphène',

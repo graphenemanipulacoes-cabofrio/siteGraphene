@@ -60,10 +60,11 @@ const paymentAndDelivery = '<section><h2>Pagamento e entrega</h2><p>O pagamento 
 
 function identitySection() {
     const { address, pharmacist, afe, hours } = business;
+    const technical = pharmacist ? `${escapeHtml(pharmacist.role)}: ${escapeHtml(pharmacist.name)}, ${escapeHtml(pharmacist.profession.toLowerCase())}, CRF-RJ ${escapeHtml(pharmacist.registration)}. ` : '';
     const lines = [
         `<strong>${escapeHtml(business.name)}</strong>, razão social ${escapeHtml(business.legalName)}, CNPJ ${escapeHtml(business.cnpj)}.`,
         `Farmácia de manipulação na ${escapeHtml(address.street)}, ${escapeHtml(address.neighborhood)}, ${escapeHtml(address.city)}, ${escapeHtml(address.region)}. Atendimento de segunda a sexta, ${escapeHtml(hours.weekdays)}, e sábado, ${escapeHtml(hours.saturday)}.`,
-        `Responsável técnica: ${escapeHtml(pharmacist.name)}, farmacêutica, CRF-RJ ${escapeHtml(pharmacist.registration)}. Registro do estabelecimento: CRF-RJ ${escapeHtml(business.establishmentRegistration)}.`,
+        `${technical}Registro do estabelecimento: CRF-RJ ${escapeHtml(business.establishmentRegistration)}.`,
         `Autorização de funcionamento (AFE) da Anvisa nº ${escapeHtml(afe.number)}.`,
     ];
     if (business.sanitaryLicense) lines.push(`Licença sanitária: ${escapeHtml(business.sanitaryLicense)}.`);

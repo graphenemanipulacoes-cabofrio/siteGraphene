@@ -55,7 +55,7 @@ try {
     await render('barra de benefícios', '/src/components/BenefitsBar.jsx');
     const footer = await render('rodapé', '/src/components/Footer.jsx');
     assert.equal(footer.includes('Solicitar Orçamento'), !adsMode, 'o rodapé segue a chave das páginas de receita');
-    // A empresa continua identificada: CNPJ, responsável técnica e AFE ficam à vista.
+    // A empresa continua identificada: CNPJ, registro no CRF-RJ e AFE ficam à vista (o responsável técnico entra quando houver CRF).
     for (const identity of ['50.380.346/0001-30', 'CRF-RJ', 'AFE', 'farmácia de manipulação']) assert.ok(footer.includes(identity), `rodapé sem ${identity}`);
     const goals = await server.ssrLoadModule('/src/utils/productGoals.js');
     clean('categorias da vitrine', goals.GOALS.map(goal => goal.label).join(' '));

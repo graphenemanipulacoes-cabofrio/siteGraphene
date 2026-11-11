@@ -60,7 +60,7 @@ const Footer = () => {
                 </div>
                 <dl className="footer-identity-grid">
                     <div><dt>Razão social e CNPJ</dt><dd>{business.legalName}<span>CNPJ {business.cnpj}</span></dd></div>
-                    <div><dt>Responsável técnica</dt><dd>{business.pharmacist.name}<span>Farmacêutica · CRF-RJ {business.pharmacist.registration}</span></dd></div>
+                    {business.pharmacist && <div><dt>{business.pharmacist.role}</dt><dd>{business.pharmacist.name}<span>{business.pharmacist.profession} · CRF-RJ {business.pharmacist.registration}</span></dd></div>}
                     <div><dt>Registro do estabelecimento</dt><dd>CRF-RJ {business.establishmentRegistration}<span>Validade indicada na certidão: {business.certificate.validUntil}</span></dd></div>
                     <div><dt>Autorização de funcionamento — AFE</dt><dd>Anvisa nº {business.afe.number}<span>Concessão publicada no DOU em {business.afe.publication}</span></dd></div>
                     {business.sanitaryLicense && <div><dt>Licença sanitária</dt><dd>{business.sanitaryLicense}</dd></div>}

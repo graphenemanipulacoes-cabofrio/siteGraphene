@@ -20,7 +20,7 @@ Ainda faltam, fora do site:
 - Print da reprovação e situação da certificação na conta do Google Ads (ou acesso à conta).
 - Pedido da certificação, se ainda não existir.
 - Números da licença sanitária e da AE, para incluir no site.
-- Revisão da lista de produtos pela responsável técnica, com composição e advertências de cada um.
+- Revisão da lista de produtos pelo responsável técnico, com composição e advertências de cada um.
 - Regras reais de troca e devolução da loja.
 - Conta no Google Merchant Center, com o feed `https://www.graphenemanipulacoes.com.br/feed.xml`.
 - Revisão de anúncios e palavras-chave. Nenhum deles deve citar medicamento, receita, doença ou emagrecimento.
@@ -29,10 +29,10 @@ Ainda faltam, fora do site:
 
 - Pedir ao Rodrigo o alvará sanitário vigente da unidade. Depois de conferir, incluir no site o número, órgão emissor e validade.
 - Confirmar a situação atual da AFE na Anvisa e do registro no CRF-RJ. O site identifica os documentos recebidos e suas datas, sem inventar uma validação.
-- Conferir com a responsável técnica os requisitos aplicáveis ao atendimento pela internet, inclusive o cadastro do endereço do site na Anvisa, quando exigido.
+- Conferir com o responsável técnico os requisitos aplicáveis ao atendimento pela internet, inclusive o cadastro do endereço do site na Anvisa, quando exigido.
 - Solicitar a certificação de saúde/farmácia on-line no Google Ads, na conta que vai anunciar o domínio da Graphène. Essa aprovação é diferente do registro da farmácia na Anvisa.
 - Revisar os produtos que serão anunciados: composição, classificação, nomes, imagens, rótulos, preços e descrições. Não anunciar medicamentos restritos nem promessas de cura, emagrecimento garantido ou resultados clínicos sem respaldo e permissão. O catálogo cadastrado não foi corrigido automaticamente.
-- Revisar os textos e imagens dos anúncios, palavras-chave e páginas de destino com a responsável técnica. As regras podem atingir outros conteúdos e serviços vinculados à página anunciada.
+- Revisar os textos e imagens dos anúncios, palavras-chave e páginas de destino com o responsável técnico. As regras podem atingir outros conteúdos e serviços vinculados à página anunciada.
 
 ## Completar informações para quem compra
 

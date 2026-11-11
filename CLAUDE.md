@@ -19,7 +19,7 @@ Este arquivo é a fonte de contexto do projeto. Não há notas externas (Obsidia
 - **Parceiros:** `/parceiros/cadastro`, `/parceiros/entrar`, `/parceiros/painel`.
 - **Balcão** (`/balcaographene`): consulta da equipe da loja. Detalhes em `BALCAO_GRAPHENE.md`.
 
-Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam em `src/data/business.js`. WhatsApp e limites de upload em `src/config.js`.
+Dados fixos da empresa (CNPJ, endereço, horários, responsável técnico) ficam em `src/data/business.js`. O responsável técnico agora é Rodrigo Medeiros (a anterior saiu da equipe, informado em 11/11/2026); `business.pharmacist` está `null` e o site não mostra o bloco até o dono passar o número do CRF-RJ dele. Nunca preencher sem o número confirmado. WhatsApp e limites de upload em `src/config.js`.
 
 ## Login único por e-mail
 - Todos entram com a conta do site no Supabase Auth (e-mail e senha ou Google): clientes, parceiros, equipe e admin. Não existe mais usuário/senha próprios do admin ou do balcão.
@@ -56,7 +56,7 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - **Vitrine:** a tela inicial mostra os 8 primeiros produtos da ordem definida no admin, com "Ver todos". `/produtos` mostra todos em grade (`ProductGrid variant="page"`), com busca e a categoria no endereço (`?categoria=treino`), para links de categoria. Os links "Produtos" e "Continuar comprando" levam a `/produtos`. Verificação: `node scripts/verify-storefront.mjs`.
 - **Conteúdo no HTML:** cada página pública já traz texto, CNPJ, AFE, CRF e o aviso legal sem depender de JavaScript; o React substitui essa versão ao montar. É o mesmo conteúdo para todos. `api/produto.js` lê o catálogo com a chave pública e preenche nome, preço e dados estruturados, com cache de 5 minutos. Produto fora do site responde 404 e `noindex`; se o banco falhar, entrega a página comum. A página inicial não lista produtos no HTML, porque ficaria desatualizada até a próxima publicação.
 - **Google Shopping:** `/feed.xml` é o feed do Merchant Center, só com produtos ativos e com preço. Falta o dono criar a conta e cadastrar o feed.
-- **Dados para preencher:** `business.sanitaryLicense` e `business.specialAuthorization` (`src/data/business.js`) só aparecem quando preenchidos. Composição e advertências ficam no cadastro do produto (`produtos.composition` e `produtos.warnings`), com dados da responsável técnica; sem dado, a seção não aparece. Nunca inventar.
+- **Dados para preencher:** `business.sanitaryLicense` e `business.specialAuthorization` (`src/data/business.js`) só aparecem quando preenchidos. Composição e advertências ficam no cadastro do produto (`produtos.composition` e `produtos.warnings`), com dados do responsável técnico; sem dado, a seção não aparece. Nunca inventar.
 - **Trocas:** `/trocas` usa o texto de `RETURN_POLICY` (`src/data/storeTexts.js`). As regras específicas da loja ainda dependem do dono.
 - **Referência:** em 04/11/2026 o site antigo da UOL tinha anúncios exibidos até 03/11 pela mesma conta verificada, e 5 concorrentes anunciavam com loja, chamada para receita e categorias de emagrecimento. A hipótese principal é a certificação de farmácia on-line, a confirmar na conta. Isso não torna permitidas as promessas deles.
 - Nada de conteúdo diferente para quem revisa, nem reativar produto depois da aprovação para contornar a revisão: há risco de suspensão sem aviso. Contestação e pedido de certificação precisam descrever a farmácia como ela é.
@@ -143,4 +143,5 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnica) ficam
 - Proteção contra senhas vazadas no login de clientes exige o plano Pro do Supabase.
 - A função `migrar-receitas-antigas` está desativada (responde 410) e pode ser excluída no painel do Supabase.
 - O conector do Supabase está disponível. Em 23/10/2026, a migração de carrinho foi aplicada em duas partes (`customer_cart_storage`, `customer_cart_sync`) após erro de confirmação no arquivo completo; `checkout_retry` também foi aplicada. `create-checkout` v13 aceita os domínios oficiais e a publicação estável `https://site-graphene.vercel.app`, com retorno para a mesma origem HTTPS (preserva sessão). Nunca liberar `*.vercel.app` genericamente. Não repetir migrações antigas sem conferir o schema atual.
+- Responsável técnico: falta o CRF-RJ do Rodrigo Medeiros para voltar a mostrar no rodapé, em `/sobre` e no HTML das páginas (`business.pharmacist`). A certidão de regularidade do CRF-RJ citada no site foi emitida antes da troca.
 - Itens de negócio (alvará, Google Ads, frete, trocas): `PENDENCIAS_GOOGLE_E_SITE.md`.

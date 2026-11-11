@@ -225,7 +225,7 @@ const AdminProducts = ({ api = adminProductsApi }) => {
     // Fora do site: some da loja e do checkout, mas segue aqui para voltar depois.
     const handleToggleActive = async product => {
         const active = product.is_active === false;
-        if (active && !confirm(`Colocar "${product.name}" de volta no site? Ele volta a aparecer para os clientes e para a revisão do Google. Confirme antes com a responsável técnica.`)) return;
+        if (active && !confirm(`Colocar "${product.name}" de volta no site? Ele volta a aparecer para os clientes e para a revisão do Google. Confirme antes com o responsável técnico.`)) return;
         try {
             const saved = await api.setActive(product.id, active);
             setProducts(prev => prev.map(item => item.id === saved.id ? saved : item));
@@ -446,7 +446,7 @@ const AdminProducts = ({ api = adminProductsApi }) => {
                                     onChange={e => setWarnings(e.target.value)}
                                     style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', outline: 'none', resize: 'vertical' }}
                                 />
-                                <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>Preencha composição e advertências com a responsável técnica. Só aparecem no site quando preenchidas.</span>
+                                <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>Preencha composição e advertências com o responsável técnico. Só aparecem no site quando preenchidas.</span>
                             </div>
 
                             <ProductOptionsEditor value={options} onChange={setOptions} catalog={catalog} onAddFlavor={handleAddFlavor} onRemoveFlavor={handleRemoveFlavor} />

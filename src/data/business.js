@@ -21,10 +21,11 @@ export const business = {
             { dayOfWeek: 'Saturday', opens: '08:00', closes: '13:00' },
         ],
     },
-    pharmacist: {
-        name: 'Beatriz Marinho Medeiros Cardozo Nogueira',
-        registration: '35302',
-    },
+    // Responsável técnico: a anterior saiu da equipe (informado pelo dono em 11/11/2026). O novo é
+    // Rodrigo Medeiros; o site só mostra este bloco quando nome e CRF estiverem preenchidos, por exemplo:
+    // pharmacist: { name: 'Rodrigo Medeiros', role: 'Responsável técnico', profession: 'Farmacêutico', registration: 'número do CRF-RJ' },
+    // Nunca preencher sem o número confirmado pelo dono.
+    pharmacist: null,
     establishmentRegistration: '27915',
     certificate: { issued: '05/05/2026', validUntil: '30/04/2027' },
     afe: {

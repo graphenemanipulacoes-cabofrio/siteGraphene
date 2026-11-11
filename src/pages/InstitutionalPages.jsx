@@ -68,7 +68,7 @@ export function AboutPage() {
                         <div><dt>Nome comercial</dt><dd>{business.name}</dd></div>
                         <div><dt>CNPJ</dt><dd>{business.cnpj}</dd></div>
                         <div className="institutional-detail-wide"><dt>Razão social</dt><dd>{business.legalName}</dd></div>
-                        <div className="institutional-detail-wide"><dt>Responsável técnica</dt><dd>{business.pharmacist.name}<span>Farmacêutica · CRF-RJ {business.pharmacist.registration}</span></dd></div>
+                        {business.pharmacist && <div className="institutional-detail-wide"><dt>{business.pharmacist.role}</dt><dd>{business.pharmacist.name}<span>{business.pharmacist.profession} · CRF-RJ {business.pharmacist.registration}</span></dd></div>}
                         <div><dt>Registro do estabelecimento</dt><dd>CRF-RJ {business.establishmentRegistration}</dd></div>
                         {business.sanitaryLicense && <div><dt>Licença sanitária</dt><dd>{business.sanitaryLicense}</dd></div>}
                         {business.specialAuthorization && <div><dt>Autorização especial — AE</dt><dd>{business.specialAuthorization}</dd></div>}
@@ -77,7 +77,7 @@ export function AboutPage() {
                 <section>
                     <h2>Registros e documentação</h2>
                     <h3>Certidão de regularidade do CRF-RJ</h3>
-                    <p>A certidão apresentada para o estabelecimento CRF-RJ {business.establishmentRegistration} foi emitida em {business.certificate.issued} e indica validade até {business.certificate.validUntil}. Nela constam a razão social, o CNPJ, o endereço da unidade e a responsável técnica identificados acima.</p>
+                    <p>A certidão apresentada para o estabelecimento CRF-RJ {business.establishmentRegistration} foi emitida em {business.certificate.issued} e indica validade até {business.certificate.validUntil}. Nela constam a razão social, o CNPJ e o endereço da unidade identificados acima.</p>
                     <h3>Autorização de funcionamento — Anvisa</h3>
                     <p>A publicação de concessão da AFE nº {business.afe.number} consta no Diário Oficial da União de {business.afe.publication}, Seção 1, página 107, pela {business.afe.resolution}. Processo: {business.afe.process}.</p>
                     <p>Essas informações identificam os documentos apresentados pela empresa. A publicação da AFE se refere à autorização do estabelecimento, não à aprovação individual dos produtos. A situação atual dos registros pode ser consultada nos órgãos responsáveis.</p>
