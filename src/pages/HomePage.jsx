@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import Header from '../components/Header';
-import HeroBanner from '../components/HeroBanner';
+import HomeHero from '../components/HomeHero';
 import BenefitsBar from '../components/BenefitsBar';
 import ProductGrid from '../components/ProductGrid';
 import AuthenticityRibbon from '../components/AuthenticityRibbon';
@@ -56,7 +56,7 @@ const HomePage = ({ landingCode = '' }) => {
             <Header showSearch onSearchChange={setSearchTerm} searchTerm={searchTerm} />
             <main>
                 {landing ? <CouponLandingIntro code={landingCode} /> : <CouponBar />}
-                {(!landing || landingFailed) && <HeroBanner />}
+                {(!landing || landingFailed) && <HomeHero />}
                 {!landing && <BenefitsBar />}
                 <ProductGrid searchTerm={searchTerm} featured={featured} />
                 <HomeBanners />

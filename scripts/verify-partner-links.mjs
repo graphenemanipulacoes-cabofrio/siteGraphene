@@ -88,7 +88,7 @@ try {
         assert.ok(statSync(light).size < 150 * 1024, `${light}: maior que 150 KB`);
     }
     for (const file of ['graphene_banner_top.webp', 'graphene_banner_top-900.webp', 'graphene_pharmacist_lab.webp']) assert.ok(statSync(`public/assets/${file}`).size < 200 * 1024, `${file}: maior que 200 KB`);
-    assert.ok(readFileSync('src/components/HeroBanner.jsx', 'utf8').includes('graphene_banner_top-900.webp 900w'));
+    assert.ok(readFileSync('src/components/HomeHero.jsx', 'utf8').includes('/assets/hero/vitrine/'), 'o topo usa as peças leves da vitrine');
 
     // Rota do link e aviso de privacidade sem cobrir a compra.
     const { rewrites } = JSON.parse(readFileSync('vercel.json', 'utf8'));

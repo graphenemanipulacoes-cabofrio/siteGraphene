@@ -1,0 +1,158 @@
+/* Topo da página inicial com "vitrine viva": texto fixo à esquerda; à direita, o produto em destaque
+   troca junto com o ambiente (cor) e os elementos em volta. Só transform e opacity animam (leve no celular). */
+.home-hero { padding: 18px 0 30px; }
+.home-hero-card {
+    --mx: 0; --my: 0; --amp: 1;
+    position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: center;
+    min-height: clamp(420px, 34vw, 500px); border-radius: 26px; color: var(--hh-ink);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .35); transition: color .9s ease;
+}
+
+/* Ambientes: um degradê por produto, trocados por opacidade (funciona em qualquer navegador). */
+.hh-bg { position: absolute; inset: 0; z-index: -2; opacity: 0; transition: opacity 1.2s ease; }
+.hh-bg.is-on { opacity: 1; }
+.hh-bg-treino { background: radial-gradient(circle at 72% 46%, #ffd3a3 0%, #ffbd7c 20%, #ffa95f 42%, #f99a4e 68%, #f28e40 100%); }
+.hh-bg-beleza { background: radial-gradient(circle at 72% 46%, #fff3f5 0%, #ffc9d4 20%, #f8a5b8 42%, #ee8aa3 68%, #e27a96 100%); }
+.hh-bg-pele { background: radial-gradient(circle at 72% 46%, #fbf8ff 0%, #e6d9ff 20%, #cdb6f6 42%, #b89cee 68%, #a98ae6 100%); }
+.hh-bg-vitaminas { background: radial-gradient(circle at 72% 46%, #fffbe3 0%, #ffe79a 20%, #fdd04a 42%, #f8b928 68%, #f0a516 100%); }
+.home-hero-card[data-scene="treino"] { --hh-ink: #3b1a05; --hh-soft: #4a2208; --hh-accent: #7a3204; --hh-btn-bg: #3b1a05; --hh-btn-fg: #fff3e6; --hh-chip: rgba(255, 255, 255, .55); }
+.home-hero-card[data-scene="beleza"] { --hh-ink: #3d0f1f; --hh-soft: #5a1830; --hh-accent: #7a1638; --hh-btn-bg: #3d0f1f; --hh-btn-fg: #fff1f4; --hh-chip: rgba(255, 255, 255, .55); }
+.home-hero-card[data-scene="pele"] { --hh-ink: #26124d; --hh-soft: #3a2370; --hh-accent: #4b2296; --hh-btn-bg: #26124d; --hh-btn-fg: #f4efff; --hh-chip: rgba(255, 255, 255, .55); }
+.home-hero-card[data-scene="vitaminas"] { --hh-ink: #3a2300; --hh-soft: #4d3305; --hh-accent: #7a4200; --hh-btn-bg: #3a2300; --hh-btn-fg: #fff6dc; --hh-chip: rgba(255, 255, 255, .55); }
+
+/* Texto fixo: só as cores acompanham o ambiente. */
+.home-hero-copy { position: relative; z-index: 3; flex: 1 1 0; max-width: 560px; padding: 44px 0 44px clamp(28px, 4.6vw, 64px); }
+.home-hero-eyebrow { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 22px; padding: 6px 12px; border: 1px solid currentColor; border-radius: 99px; color: var(--hh-ink); font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; transition: color .9s ease; }
+.home-hero h1 { margin: 0; color: var(--hh-ink); font-size: clamp(2.5rem, 4.1vw, 3.55rem); font-weight: 600; line-height: 1.04; letter-spacing: -.045em; transition: color .9s ease; }
+.home-hero h1 > span { color: var(--hh-accent); transition: color .9s ease; }
+.home-hero-text { max-width: 440px; margin: 18px 0 26px; color: var(--hh-soft); font-size: .95rem; line-height: 1.7; transition: color .9s ease; }
+.home-hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.home-hero-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 50px; padding: 0 22px; border-radius: 12px; font-size: .86rem; font-weight: 700; transition: transform .2s ease, background .9s ease, color .9s ease, border-color .9s ease; }
+.home-hero-btn-main { background: var(--hh-btn-bg); border: 1.5px solid var(--hh-btn-bg); color: var(--hh-btn-fg) !important; box-shadow: 0 10px 24px rgba(0, 0, 0, .16); }
+.home-hero-btn-main:hover { transform: translateY(-2px); }
+.home-hero-btn-line { border: 1.5px solid var(--hh-ink); color: var(--hh-ink) !important; }
+.home-hero-btn-line:hover { transform: translateY(-2px); }
+.home-hero-btn:focus-visible { outline: 3px solid var(--hh-ink); outline-offset: 3px; }
+.home-hero-coupon { display: flex; align-items: center; gap: 8px; margin: 22px 0 0; color: var(--hh-soft); font-size: .8rem; transition: color .9s ease; }
+.home-hero-coupon > svg { flex-shrink: 0; }
+
+/* Vitrine: área à direita com proporção fixa; tudo dentro dela é posicionado em %. */
+.hh-visual { position: absolute; top: 0; right: 0; height: 100%; aspect-ratio: 1400 / 1000; }
+.hh-blob { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; transform: translate(calc(var(--mx) * 4px), calc(var(--my) * 4px)); transition: transform .4s ease-out; }
+.hh-scene { position: absolute; inset: 0 0 12% 0; opacity: 0; visibility: hidden; transition: opacity .8s ease, visibility 0s linear .8s; }
+.hh-scene.is-on { opacity: 1; visibility: visible; transition: opacity .8s ease .15s, visibility 0s; }
+
+.hh-product { position: absolute; left: 50%; bottom: 6%; z-index: 2; height: 70%; aspect-ratio: var(--ratio); transform: translate(calc(-50% + var(--mx) * 10px), calc(36px + var(--my) * 8px)) scale(.9); transition: transform 1s cubic-bezier(.2, .8, .2, 1); }
+.hh-scene.is-on .hh-product { transform: translate(calc(-50% + var(--mx) * 10px), calc(var(--my) * 8px)) scale(1); }
+.hh-product::after { content: ''; position: absolute; left: 6%; right: 6%; bottom: -3%; height: 8%; z-index: -1; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, .35), transparent); }
+.hh-product-float { position: relative; width: 100%; height: 100%; animation: hh-bob 6s ease-in-out infinite; transform-origin: 50% 90%; }
+.hh-product-float > img { display: block; width: 100%; height: 100%; filter: drop-shadow(0 18px 24px rgba(0, 0, 0, .22)); }
+.hh-shine { position: absolute; inset: 0; pointer-events: none; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, .5) 50%, transparent 62%) no-repeat; background-size: 300% 100%; background-position: 150% 0; }
+.hh-scene.is-on .hh-shine { animation: hh-shine var(--hh-interval) ease-in-out .9s infinite; }
+
+.hh-p { position: absolute; z-index: 1; display: block; transform: translate(calc(-50% + var(--mx) * var(--depth) * 1px), calc(-50% + var(--my) * var(--depth) * 1px)); transition: transform .4s ease-out; }
+.hh-p-perto { z-index: 3; }
+/* Entrada de cada tipo de elemento e depois o movimento contínuo (duas animações na mesma imagem). */
+.hh-p > img { display: block; width: 100%; height: auto; opacity: 0; transform: rotate(var(--rot)); }
+.hh-scene.is-on .hh-p > img { opacity: 1; animation: hh-pop .9s cubic-bezier(.34, 1.3, .64, 1) calc(var(--i) * 90ms) both, hh-drift var(--dur) ease-in-out calc(.9s + var(--i) * 90ms) infinite; }
+.hh-scene[data-kind="beleza"].is-on .hh-p > img { animation: hh-fall 1.1s cubic-bezier(.34, 1.35, .64, 1) calc(var(--i) * 90ms) both, hh-drift var(--dur) ease-in-out calc(1.1s + var(--i) * 90ms) infinite; }
+.hh-scene[data-kind="pele"].is-on .hh-p > img { animation: hh-drip 1.2s cubic-bezier(.3, 1.2, .5, 1) calc(var(--i) * 110ms) both, hh-wobble var(--dur) ease-in-out calc(1.2s + var(--i) * 110ms) infinite; }
+.hh-scene[data-kind="vitaminas"].is-on .hh-p > img { animation: hh-spin-in 1.1s cubic-bezier(.2, .9, .3, 1.15) calc(var(--i) * 90ms) both, hh-tumble var(--spin) linear calc(1.1s + var(--i) * 90ms) infinite; }
+.hh-p-longe { opacity: .8; }
+.hh-p-longe > img { filter: blur(2.5px); }
+.hh-p-perto > img { filter: blur(1.5px) drop-shadow(0 10px 14px rgba(0, 0, 0, .18)); }
+.hh-p-meio > img { filter: drop-shadow(0 8px 12px rgba(0, 0, 0, .16)); }
+
+.hh-burst { position: absolute; left: 50%; top: 48%; z-index: 1; width: 92%; transform: translate(-50%, -50%); }
+.hh-burst > img { display: block; width: 100%; opacity: .95; }
+.hh-scene.is-on .hh-burst > img { animation: hh-explode 1.2s cubic-bezier(.16, 1, .3, 1) both, hh-breathe 7s ease-in-out 1.2s infinite; }
+.hh-grains { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.hh-grains > i { position: absolute; left: calc(18% + var(--n) * 6%); bottom: 18%; width: calc(4px + (var(--n) * 7 % 5) * 1px); aspect-ratio: 1; border-radius: 50%; background: #fff; opacity: 0; box-shadow: 0 0 6px rgba(255, 255, 255, .8); }
+.hh-scene.is-on .hh-grains > i { animation: hh-rise calc(4s + var(--n) * .37s) ease-out calc(var(--n) * -.53s) infinite; }
+.hh-cream { position: absolute; left: 26%; bottom: 2%; z-index: 3; width: 40%; transform: translate(calc(-50% + var(--mx) * 18px), calc(var(--my) * 10px)) rotate(-8deg); transition: transform .4s ease-out; }
+.hh-cream > img { display: block; width: 100%; filter: drop-shadow(0 12px 16px rgba(0, 0, 0, .16)); }
+.hh-scene.is-on .hh-cream > img { animation: hh-swipe 1s cubic-bezier(.2, .8, .2, 1) .3s both, hh-float-soft 7s ease-in-out 1.3s infinite; }
+
+/* Bolinhas e pausa (sem link de produto: a vitrine convida a ver a loja toda). */
+.hh-tag { position: absolute; left: 50%; bottom: 18px; z-index: 4; display: flex; align-items: center; gap: 10px; transform: translateX(-50%); white-space: nowrap; }
+.hh-dots { display: inline-flex; align-items: center; padding: 0 4px; border-radius: 99px; background: var(--hh-chip); backdrop-filter: blur(10px); transition: background .9s ease; }
+.hh-dot { display: grid; place-items: center; width: 26px; height: 44px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.hh-dot::before { content: ''; width: 7px; height: 7px; border-radius: 99px; background: var(--hh-ink); opacity: .35; transition: width .3s ease, opacity .3s ease; }
+.hh-dot[aria-current="true"]::before { width: 18px; opacity: 1; }
+.hh-pause { display: grid; place-items: center; width: 36px; height: 44px; padding: 0; border: 0; background: transparent; color: var(--hh-ink); cursor: pointer; }
+.hh-tag button:focus-visible { outline: 2px solid var(--hh-ink); outline-offset: 2px; }
+
+.home-hero-card[data-running="false"] :is(.hh-product-float, .hh-p > img, .hh-burst > img, .hh-grains > i, .hh-shine, .hh-cream > img) { animation-play-state: paused; }
+
+@keyframes hh-bob { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(calc(-12px * var(--amp))) rotate(calc(-1.2deg * var(--amp))); } }
+@keyframes hh-drift {
+    0%, 100% { transform: translateY(0) rotate(var(--rot)); }
+    50% { transform: translateY(calc(var(--dy) * -1 * var(--amp))) rotate(calc(var(--rot) + var(--dr) * var(--amp))); }
+}
+@keyframes hh-wobble {
+    0%, 100% { transform: translateY(0) scale(1, 1) rotate(var(--rot)); }
+    50% { transform: translateY(calc(var(--dy) * var(--amp))) scale(calc(1 + .05 * var(--amp)), calc(1 - .05 * var(--amp))) rotate(var(--rot)); }
+}
+@keyframes hh-tumble {
+    0% { transform: translateY(0) rotate(var(--rot)); }
+    50% { transform: translateY(calc(var(--dy) * -1)) rotate(calc(var(--rot) + 180deg)); }
+    100% { transform: translateY(0) rotate(calc(var(--rot) + 360deg)); }
+}
+@keyframes hh-pop { 0% { opacity: 0; transform: scale(.4) rotate(var(--rot)); } 100% { opacity: 1; transform: scale(1) rotate(var(--rot)); } }
+@keyframes hh-fall { 0% { opacity: 0; transform: translateY(-260%) rotate(calc(var(--rot) - 40deg)); } 55% { opacity: 1; } 100% { opacity: 1; transform: translateY(0) rotate(var(--rot)); } }
+@keyframes hh-drip { 0% { opacity: 0; transform: translateY(-180%) scale(.75, 1.3) rotate(var(--rot)); } 70% { opacity: 1; transform: translateY(8%) scale(1.08, .92) rotate(var(--rot)); } 100% { opacity: 1; transform: translateY(0) scale(1, 1) rotate(var(--rot)); } }
+@keyframes hh-spin-in { 0% { opacity: 0; transform: scale(.3) rotate(calc(var(--rot) - 220deg)); } 100% { opacity: 1; transform: scale(1) rotate(var(--rot)); } }
+@keyframes hh-explode { 0% { opacity: 0; transform: scale(.2) rotate(-12deg); } 40% { opacity: 1; } 100% { opacity: .95; transform: scale(.96) rotate(-2deg); } }
+@keyframes hh-swipe { 0% { opacity: 0; transform: translateX(-40%) scale(.9); } 100% { opacity: 1; transform: translateX(0) scale(1); } }
+@keyframes hh-float-soft { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(-8px * var(--amp))); } }
+@keyframes hh-breathe { 0%, 100% { transform: scale(.96) rotate(-2deg); } 50% { transform: scale(1.04) rotate(2deg); } }
+@keyframes hh-rise { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: .9; } 100% { opacity: 0; transform: translateY(-180px) translateX(12px); } }
+@keyframes hh-shine { 0%, 40% { background-position: 150% 0; } 75%, 100% { background-position: -50% 0; } }
+
+@media (max-width: 1100px) { .hh-visual { right: -8%; } }
+@media (max-width: 900px) { .hh-visual { right: -16%; } .home-hero-copy { max-width: 470px; } }
+
+/* Celular: vitrine em cima, texto embaixo; menos elementos para continuar leve. */
+@media (max-width: 760px) {
+    .home-hero { padding: 12px 0 22px; }
+    .home-hero-card { flex-direction: column; align-items: stretch; min-height: 0; border-radius: 22px; }
+    .hh-bg-treino { background: radial-gradient(circle at 50% 24%, #ffd3a3 0%, #ffbd7c 18%, #ffa95f 36%, #f99a4e 56%, #f28e40 100%); }
+    .hh-bg-beleza { background: radial-gradient(circle at 50% 24%, #fff3f5 0%, #ffc9d4 18%, #f8a5b8 36%, #ee8aa3 56%, #e27a96 100%); }
+    .hh-bg-pele { background: radial-gradient(circle at 50% 24%, #fbf8ff 0%, #e6d9ff 18%, #cdb6f6 36%, #b89cee 56%, #a98ae6 100%); }
+    .hh-bg-vitaminas { background: radial-gradient(circle at 50% 24%, #fffbe3 0%, #ffe79a 18%, #fdd04a 36%, #f8b928 56%, #f0a516 100%); }
+    .hh-visual { position: relative; order: -1; right: auto; width: 100%; height: auto; aspect-ratio: 1400 / 1000; }
+    .hh-p-extra, .hh-grains > i:nth-child(n + 7) { display: none; }
+    .hh-tag { bottom: 8px; }
+    .hh-dots { flex-shrink: 0; }
+    .hh-dot { height: 40px; width: 22px; }
+    .hh-pause { height: 40px; }
+    .home-hero-copy { max-width: none; padding: 14px 20px 22px; }
+    /* No celular o selo vira uma linha de texto (dentro da borda arredondada ficaria em duas linhas). */
+    .home-hero-eyebrow { display: flex; flex-wrap: wrap; gap: 2px 8px; margin-bottom: 12px; padding: 0; border: 0; border-radius: 0; font-size: .6rem; letter-spacing: .09em; line-height: 1.5; }
+    .home-hero-eyebrow > span { white-space: nowrap; }
+    .home-hero-eyebrow > .hh-sep { display: none; }
+    .home-hero h1 { font-size: clamp(2.2rem, 10vw, 2.8rem); line-height: 1.06; }
+    .home-hero-text { margin: 12px 0 18px; font-size: .88rem; line-height: 1.6; }
+    .home-hero-actions { flex-direction: column; gap: 6px; }
+    .home-hero-btn-main { width: 100%; }
+    .home-hero-btn-line { min-height: 44px; border: 0; padding: 0; font-size: .84rem; text-decoration: underline; text-underline-offset: 4px; }
+    .home-hero-coupon { margin-top: 8px; font-size: .74rem; }
+}
+
+/* "Reduzir animações" ligado: o movimento continua (pedido do dono), mais lento e menor,
+   com entradas simples e sem a profundidade que acompanha o mouse. */
+@media (prefers-reduced-motion: reduce) {
+    .home-hero-card { --amp: .45; --mx: 0 !important; --my: 0 !important; }
+    .hh-scene.is-on .hh-p > img { animation: hh-pop .8s ease calc(var(--i) * 60ms) both, hh-drift calc(var(--dur) * 1.5) ease-in-out calc(.8s + var(--i) * 60ms) infinite !important; }
+    .hh-scene.is-on .hh-burst > img { animation: hh-breathe 10s ease-in-out infinite !important; }
+    .hh-scene.is-on .hh-cream > img { animation: hh-float-soft 9s ease-in-out infinite !important; }
+    .hh-p, .hh-cream, .hh-blob { transition: none; }
+    /* premium.css desliga toda animação da loja nesse modo; aqui o topo mantém a versão suave. */
+    .home-hero .hh-product-float { animation: hh-bob 9s ease-in-out infinite !important; }
+    .home-hero .hh-scene.is-on .hh-shine { animation: hh-shine var(--hh-interval) ease-in-out .9s infinite !important; }
+    .home-hero .hh-bg { transition: opacity 1.2s ease !important; }
+    .home-hero .hh-scene { transition: opacity .8s ease !important; }
+    .home-hero .hh-product { transition: transform .6s ease !important; }
+    .home-hero :is(.home-hero-card, h1, h1 > span, .home-hero-text, .home-hero-eyebrow, .home-hero-coupon, .home-hero-btn, .hh-dots) { transition: color .9s ease, background .9s ease, border-color .9s ease !important; }
+    .home-hero-card[data-running="false"] :is(.hh-product-float, .hh-p > img, .hh-burst > img, .hh-shine, .hh-cream > img) { animation-play-state: paused !important; }
+}

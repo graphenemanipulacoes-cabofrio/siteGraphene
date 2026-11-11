@@ -83,7 +83,7 @@ const pageSections = {
 
 export function pageBody(pathname) {
     const metadata = pageMetadata[pathname] || productMetadata;
-    const heading = pathname === '/' ? 'Graphène. Atenção a cada detalhe.' : metadata.title.split(' | ')[0];
+    const heading = pathname === '/' ? 'Graphène: sua fórmula, feita sob medida.' : metadata.title.split(' | ')[0];
     return pageFrame(`<h1>${escapeHtml(heading)}</h1><p>${escapeHtml(metadata.description)}</p>${pageSections[pathname]?.() || ''}`);
 }
 

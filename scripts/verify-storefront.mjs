@@ -1,6 +1,6 @@
 // Render-only regression checks. Synthetic catalog; no requests or purchases.
 import assert from 'node:assert/strict';
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'vite';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -115,29 +115,26 @@ try {
             assert.ok(statSync(file).size < 120 * 1024, `${file}: maior que 120 KB`);
         }
     }
-    // Carrossel do topo: o slide da marca primeiro, um só h1, slides escondidos fora do foco e imagens leves.
-    const { default: HeroBanner } = await server.ssrLoadModule('/src/components/HeroBanner.jsx');
-    const { HERO_SLIDES } = await server.ssrLoadModule('/src/data/heroSlides.js');
-    const hero = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(HeroBanner)));
-    assert.equal((hero.match(/aria-roledescription="slide"/g) || []).length, HERO_SLIDES.length + 1);
-    assert.equal((hero.match(/<h1/g) || []).length, 1, 'só o slide da marca tem h1');
-    assert.equal((hero.match(/inert=""/g) || []).length, HERO_SLIDES.length, 'só o slide visível recebe foco');
-    assert.equal((hero.match(/class="hero-dot"/g) || []).length, HERO_SLIDES.length + 1);
-    assert.ok(hero.includes('aria-label="Pausar a troca automática"'));
-    // Slides de cor: fotos dos frascos sem cenário gerado, grafismo em SVG e um tema de cor por slide.
-    assert.equal((hero.match(/class="hero-motif"/g) || []).length, HERO_SLIDES.length);
-    for (const slide of HERO_SLIDES) {
-        assert.ok(slide.alt.includes('Graphène') && !slide.alt.startsWith('Ilustração'), `${slide.id}: texto alternativo descreve os frascos`);
-        assert.ok(hero.includes(`data-theme="${slide.id}"`), `${slide.id}: slide sem tema de cor`);
-        assert.ok(['stripes', 'rings', 'sun'].includes(slide.motif), `${slide.id}: grafismo desconhecido`);
-        assert.ok(hero.includes(`href="${slide.to.replace('&', '&amp;')}"`), `${slide.id}: botão leva à categoria`);
-        for (const width of [620, 1240]) {
-            const file = `public/assets/hero/${slide.image}-${width}.webp`;
-            assert.ok(existsSync(file), `${file}: falta a imagem`);
-            assert.ok(statSync(file).size < 100 * 1024, `${file}: maior que 100 KB`);
-        }
+    // Topo da página inicial ("vitrine viva"): texto fixo com um só h1, alcance nacional, sem link direto
+    // de produto na animação, quatro ambientes, bolinhas e pausa, e peças leves.
+    const { default: HomeHero } = await server.ssrLoadModule('/src/components/HomeHero.jsx');
+    const { VITRINE_SCENES } = await server.ssrLoadModule('/src/data/vitrineScenes.js');
+    const hero = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(HomeHero)));
+    assert.equal((hero.match(/<h1/g) || []).length, 1, 'o topo tem um só h1');
+    assert.ok(hero.includes('feita sob medida.') && hero.includes('Entrega em todo o Brasil'), 'título e selo do topo');
+    assert.ok(!hero.includes('Cabo Frio'), 'o topo não pode passar a ideia de loja só local');
+    assert.ok(!hero.includes('href="/produto/'), 'a vitrine não leva direto a um produto');
+    assert.ok(hero.includes('href="/produtos"'), 'o topo leva à loja toda');
+    assert.equal((hero.match(/class="hh-bg /g) || []).length, VITRINE_SCENES.length, 'um ambiente por produto');
+    assert.equal((hero.match(/class="hh-dot"/g) || []).length, VITRINE_SCENES.length);
+    assert.ok(hero.includes('aria-label="Pausar a troca de produtos"'));
+    const pecas = new Set(VITRINE_SCENES.flatMap(scene => [scene.image, scene.burst, scene.cream, ...scene.particles.map(item => item.src)]).filter(Boolean));
+    for (const peca of pecas) {
+        const file = `public/assets/hero/vitrine/${peca}.webp`;
+        assert.ok(existsSync(file), `${file}: falta a peça`);
+        assert.ok(statSync(file).size < 110 * 1024, `${file}: maior que 110 KB`);
     }
-    assert.ok(statSync('public/assets/hero/grao.png').size < 20 * 1024, 'textura do fundo pesada demais');
+    assert.ok(!existsSync('src/components/HeroBanner.jsx'), 'o carrossel antigo saiu do site');
     console.log('Storefront render checks passed: home shows the first 8 products with "Ver todos", /produtos shows all 17 in a grid with the category in the address, unpriced products, priced variants, safe missing-price display, search, purchase buttons and product links. No real catalog data changed.');
 } finally {
     await server.close();

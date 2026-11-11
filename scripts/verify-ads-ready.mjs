@@ -51,7 +51,7 @@ try {
         clean(label, text);
         return text;
     };
-    assert.ok((await render('banner', '/src/components/HeroBanner.jsx')).includes(adsMode ? 'Falar no WhatsApp' : 'Solicitar orçamento'));
+    assert.ok((await render('banner', '/src/components/HomeHero.jsx')).includes(adsMode ? 'Falar no WhatsApp' : 'Enviar receita'));
     await render('barra de benefícios', '/src/components/BenefitsBar.jsx');
     const footer = await render('rodapé', '/src/components/Footer.jsx');
     assert.equal(footer.includes('Solicitar Orçamento'), !adsMode, 'o rodapé segue a chave das páginas de receita');
