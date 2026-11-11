@@ -131,6 +131,8 @@ try {
     assert.ok(hero.includes('aria-label="Pausar a troca de imagens"'));
     assert.equal(scenes.some(scene => scene.id === 'receita'), PRESCRIPTION_PAGES_ENABLED, 'a cena da receita segue a chave das páginas de receita');
     for (const scene of scenes) {
+        assert.ok(scene.title && scene.accent && scene.text && scene.main && scene.second, `${scene.id}: cena sem título, texto ou botões`);
+        assert.ok(hero.includes(scene.accent) && !scene.text.includes('Cabo Frio'), `${scene.id}: texto da cena`);
         assert.ok(scene.alt.startsWith('Ilustração'), `${scene.id}: foto gerada se apresenta como ilustração`);
         for (const width of [520, 900]) {
             const file = `public/assets/hero/pessoas/${scene.photo}-${width}.webp`;

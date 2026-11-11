@@ -1,6 +1,8 @@
-// Ambientes da "vitrine viva" do topo da página inicial. O texto do topo fica fixo; ao lado, cada
-// ambiente mostra uma cena do dia a dia com uma mensagem (como comprar e receber), a cor do ambiente
-// e elementos que flutuam em volta. Sem produto e sem link de produto (decisão do dono: o topo informa;
+// Ambientes da "vitrine viva" do topo da página inicial. Cada ambiente tem o seu título, texto e botões
+// (tudo no mesmo assunto da cena), a foto do dia a dia com uma etiqueta curta, a cor do ambiente e
+// elementos que flutuam em volta. Fatos usados nos textos: frete pelo CEP e pedido em "Minha conta"
+// (CheckoutPage), Pix ou cartão no Mercado Pago (CheckoutPage), receita em foto ou PDF analisada pela
+// equipe farmacêutica, que retorna com o orçamento (ReceitaPage). Sem produto e sem link de produto (decisão do dono: o topo informa;
 // os produtos ficam na vitrine logo abaixo).
 // As fotos foram geradas pela IA com cara de foto de celular (public/assets/hero/pessoas, script
 // fotos_hero.py na pasta banners-site): são ilustrações, sem nome nem depoimento, e o texto alternativo
@@ -15,7 +17,10 @@ const p = (src, x, y, size, prof, cel = false) => ({ src, x, y, size, prof, cel 
 export const VITRINE_SCENES = [
     {
         id: 'entrega', tema: 'treino', photo: 'entrega', icon: 'truck', tilt: -2,
-        caption: 'Chega na sua casa, em todo o Brasil',
+        title: 'Sua farmácia,', accent: 'sem sair de casa.',
+        text: 'Enviamos para todo o Brasil. Você calcula o frete pelo CEP antes de pagar e acompanha o pedido em Minha conta.',
+        main: 'produtos', second: 'receita',
+        caption: 'Entrega em todo o Brasil',
         alt: 'Ilustração: mulher recebendo uma encomenda na porta de casa',
         particles: [
             p('goma-2', 15, 24, 10, 'meio', true), p('goma-5', 91, 16, 10, 'meio', true), p('goma-3', 12, 76, 12, 'perto', true), p('goma-4', 92, 74, 11, 'perto', true),
@@ -24,7 +29,10 @@ export const VITRINE_SCENES = [
     },
     {
         id: 'rotina', tema: 'beleza', photo: 'rotina', icon: 'heart', tilt: 2,
-        caption: 'Sua rotina de saúde, do seu jeito',
+        title: 'Sua rotina de saúde,', accent: 'do seu jeito.',
+        text: 'Suplementos, vitaminas e dermocosméticos manipulados, com atendimento farmacêutico para tirar suas dúvidas.',
+        main: 'produtos', second: 'whatsapp',
+        caption: 'Atendimento farmacêutico',
         alt: 'Ilustração: mulher tomando uma cápsula com um copo de água na cozinha',
         particles: [
             p('capsula-2', 15, 26, 11, 'meio', true), p('capsula-5', 91, 18, 11, 'meio', true), p('capsula-7', 12, 74, 12, 'perto', true), p('capsula-4', 92, 72, 11, 'perto', true),
@@ -33,7 +41,10 @@ export const VITRINE_SCENES = [
     },
     {
         id: 'receita', tema: 'pele', photo: 'receita', icon: 'camera', tilt: -2, prescription: true,
-        caption: 'Tem receita? Envie pelo site',
+        title: 'Tem receita?', accent: 'Envie pelo site.',
+        text: 'Mande a foto ou o PDF da sua receita. A equipe farmacêutica analisa e retorna com o orçamento.',
+        main: 'receita', second: 'produtos',
+        caption: 'Foto ou PDF da receita',
         alt: 'Ilustração: mulher fotografando uma receita com o celular em casa',
         particles: [
             p('gota-1', 15, 28, 9, 'meio', true), p('gota-3', 90, 20, 10, 'meio', true), p('gota-2', 91, 72, 8, 'perto', true), p('gota-5', 14, 70, 8, 'perto', true),
@@ -42,7 +53,10 @@ export const VITRINE_SCENES = [
     },
     {
         id: 'celular', tema: 'vitaminas', photo: 'celular', icon: 'phone', tilt: 2, burst: 'po',
-        caption: 'Peça pelo celular, de onde estiver',
+        title: 'Peça pelo celular,', accent: 'de onde estiver.',
+        text: 'Escolha os produtos, pague com Pix ou cartão no ambiente seguro do Mercado Pago e receba em casa.',
+        main: 'produtos', second: 'receita',
+        caption: 'Pix ou cartão',
         alt: 'Ilustração: homem fazendo um pedido pelo celular no sofá de casa',
         particles: [
             p('capsula-5', 15, 24, 9, 'meio', true), p('goma-3', 91, 18, 10, 'meio', true), p('gota-3', 12, 74, 9, 'perto', true), p('capsula-7', 92, 72, 10, 'perto', true),

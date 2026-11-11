@@ -13,6 +13,7 @@ const ICONS = { truck: Truck, heart: HeartPulse, camera: Camera, phone: Smartpho
 const SCENES = VITRINE_SCENES.filter(scene => !scene.prescription || PRESCRIPTION_PAGES_ENABLED);
 const TOTAL = SCENES.length;
 const DEPTH = { longe: 5, meio: 12, perto: 26 };
+const DRAG_START = 8; // px de movimento antes de virar arraste; abaixo disso continua sendo clique
 // Forma do líquido atrás da foto: três desenhos com os mesmos comandos, para o navegador transformar um no outro.
 const BLOB = [
     'M700 160C890 160 1040 300 1040 490C1040 690 880 840 690 840C500 840 360 700 360 500C360 300 510 160 700 160Z',
@@ -20,21 +21,37 @@ const BLOB = [
     'M688 150C880 138 1012 282 1050 470C1082 662 902 852 700 850C508 848 336 722 350 520C362 318 500 162 688 150Z',
 ];
 
-// Topo da página inicial: o texto fica fixo e a "vitrine viva" ao lado troca a cena do dia a dia
-// (com a mensagem de como comprar e receber), o ambiente (cor) e os elementos que flutuam em volta.
-// Cada ambiente tem uma entrada própria (pó explode, cápsulas caem, gotas pingam) e depois
-// os elementos seguem flutuando. Para fora da tela, com a aba escondida ou no botão de pausa. Com
-// "reduzir animações" o movimento continua, mais lento e menor, sem profundidade pelo mouse (pedido do dono).
+// Botões de cada cena. Sem página de receita, "receita" vira WhatsApp.
+const ACTION = {
+    produtos: { to: '/produtos', label: 'Ver produtos', icon: ShoppingBag },
+    receita: PRESCRIPTION_PAGES_ENABLED ? { to: '/receita', label: 'Enviar receita', icon: FileUp } : { href: getWhatsAppUrl(), label: 'Falar no WhatsApp', icon: MessageCircle },
+    whatsapp: { href: getWhatsAppUrl(), label: 'Falar no WhatsApp', icon: MessageCircle },
+};
+const ActionLink = ({ kind, main }) => {
+    const { to, href, label, icon: Icon } = ACTION[kind];
+    const className = `home-hero-btn ${main ? 'home-hero-btn-main' : 'home-hero-btn-line'}`;
+    const content = <><Icon size={18} aria-hidden="true" /> {label}{main && <ArrowUpRight size={18} aria-hidden="true" />}</>;
+    return to ? <Link to={to} className={className}>{content}</Link> : <a href={href} target="_blank" rel="noopener noreferrer" className={className}>{content}</a>;
+};
+
+// Topo da página inicial ("vitrine viva"): cada cena troca junto o título, o texto, os botões, a foto do
+// dia a dia, o ambiente (cor) e os elementos que flutuam em volta. Troca sozinha a cada VITRINE_INTERVAL_MS,
+// pelas bolinhas, pelas setas do teclado ou arrastando para o lado (dedo ou mouse). Para fora da tela,
+// com a aba escondida ou no botão de pausa. Com "reduzir animações" o movimento continua, mais lento.
 const HomeHero = () => {
     const [index, setIndex] = useState(0);
     const [playing, setPlaying] = useState(true);
     const [onScreen, setOnScreen] = useState(true);
     const [tabVisible, setTabVisible] = useState(true);
     const [ready, setReady] = useState(false);
+    const [dragging, setDragging] = useState(false);
     const card = useRef(null);
     const blob = useRef(null);
-    const running = playing && onScreen && tabVisible;
+    const drag = useRef(null);
+    const skipClick = useRef(false);
+    const running = playing && onScreen && tabVisible && !dragging;
     const scene = SCENES[index];
+    const go = next => { setReady(true); setIndex((next + TOTAL) % TOTAL); };
 
     // Os outros ambientes só começam a carregar depois que o primeiro já apareceu.
     useEffect(() => {
@@ -57,7 +74,6 @@ const HomeHero = () => {
         observer.observe(card.current);
         return () => observer.disconnect();
     }, []);
-
     // A forma do líquido (animação do próprio SVG) para junto com o resto.
     useEffect(() => {
         const svg = blob.current;
@@ -65,16 +81,58 @@ const HomeHero = () => {
         if (running) svg.unpauseAnimations(); else svg.pauseAnimations();
     }, [running]);
 
-    // Profundidade ao mover o mouse: cada camada se desloca um pouco diferente.
-    const pointerMove = event => {
-        if (event.pointerType !== 'mouse' || !card.current) return;
-        const box = card.current.getBoundingClientRect();
-        card.current.style.setProperty('--mx', (((event.clientX - box.left) / box.width) * 2 - 1).toFixed(3));
-        card.current.style.setProperty('--my', (((event.clientY - box.top) / box.height) * 2 - 1).toFixed(3));
+    // Arrastar para o lado: o conteúdo acompanha o dedo/mouse e, ao soltar, passa para a cena seguinte ou anterior.
+    // Rolar a página na vertical continua normal; um toque curto continua sendo clique.
+    const setDragOffset = value => card.current?.style.setProperty('--drag', String(value));
+    const pointerDown = event => {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        if (event.target.closest?.('.hh-tag')) return;
+        drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, t: performance.now(), active: false };
     };
-    const pointerLeave = () => {
-        card.current?.style.setProperty('--mx', '0');
-        card.current?.style.setProperty('--my', '0');
+    const pointerMove = event => {
+        const state = drag.current;
+        if (event.pointerType === 'mouse' && card.current) {
+            const box = card.current.getBoundingClientRect();
+            card.current.style.setProperty('--mx', (((event.clientX - box.left) / box.width) * 2 - 1).toFixed(3));
+            card.current.style.setProperty('--my', (((event.clientY - box.top) / box.height) * 2 - 1).toFixed(3));
+        }
+        if (!state || state.id !== event.pointerId) return;
+        const dx = event.clientX - state.x;
+        const dy = event.clientY - state.y;
+        if (!state.active) {
+            if (Math.abs(dx) < DRAG_START && Math.abs(dy) < DRAG_START) return;
+            if (Math.abs(dy) > Math.abs(dx)) { drag.current = null; return; } // a pessoa está rolando a página
+            state.active = true;
+            try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch { /* ponteiro já solto */ }
+            setDragging(true);
+        }
+        setDragOffset(Math.max(-220, Math.min(220, dx)));
+    };
+    const pointerEnd = event => {
+        const state = drag.current;
+        drag.current = null;
+        if (!state?.active) return;
+        const dx = event.clientX - state.x;
+        const speed = Math.abs(dx) / Math.max(1, performance.now() - state.t);
+        if (event.type === 'pointerup' && (Math.abs(dx) > 60 || speed > 0.45)) go(index + (dx < 0 ? 1 : -1));
+        skipClick.current = true;
+        window.setTimeout(() => { skipClick.current = false; }, 0);
+        setDragging(false);
+        setDragOffset(0);
+    };
+    const pointerLeave = event => {
+        if (event.pointerType !== 'mouse' || !card.current) return;
+        card.current.style.setProperty('--mx', '0');
+        card.current.style.setProperty('--my', '0');
+    };
+    const clickCapture = event => {
+        if (!skipClick.current) return;
+        event.preventDefault();
+        event.stopPropagation();
+    };
+    const keyDown = event => {
+        if (event.key === 'ArrowLeft') go(index - 1);
+        if (event.key === 'ArrowRight') go(index + 1);
     };
 
     const particle = (item, order) => <span key={`${item.src}-${order}`} className={`hh-p hh-p-${item.prof}${item.cel ? '' : ' hh-p-extra'}`} aria-hidden="true"
@@ -83,20 +141,24 @@ const HomeHero = () => {
         <img src={`${PECAS}${item.src}.webp`} alt="" draggable="false" decoding="async" />
     </span>;
 
-    return <section className="home-hero" aria-labelledby="store-hero-title">
+    return <section className="home-hero" aria-labelledby="store-hero-title" aria-roledescription="carrossel">
         <div className="container">
-            <div ref={card} className="home-hero-card" data-scene={scene.tema} data-running={running} onPointerMove={pointerMove} onPointerLeave={pointerLeave}
-                style={{ '--hh-interval': `${VITRINE_INTERVAL_MS}ms` }}>
+            <div ref={card} className={`home-hero-card${dragging ? ' is-dragging' : ''}`} data-scene={scene.tema} data-running={running}
+                onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onPointerLeave={pointerLeave}
+                onClickCapture={clickCapture} onKeyDown={keyDown} onDragStart={event => event.preventDefault()} style={{ '--hh-interval': `${VITRINE_INTERVAL_MS}ms` }}>
                 {SCENES.map((item, position) => <div key={item.id} className={`hh-bg hh-bg-${item.tema}${position === index ? ' is-on' : ''}`} aria-hidden="true" />)}
                 <div className="home-hero-copy">
+                    <h1 id="store-hero-title" className="hh-sr-only">Graphène: farmácia de manipulação com entrega em todo o Brasil</h1>
                     <p className="home-hero-eyebrow"><Truck size={14} aria-hidden="true" /> <span>Farmácia de manipulação</span><span className="hh-sep" aria-hidden="true">·</span><span>Entrega em todo o Brasil</span></p>
-                    <h1 id="store-hero-title">Sua farmácia de manipulação,<br /><span>sem sair de casa.</span></h1>
-                    <p className="home-hero-text">Escolha pelo site ou envie sua receita. Manipulamos no nosso laboratório, com atendimento farmacêutico, e enviamos para todo o Brasil.</p>
-                    <div className="home-hero-actions">
-                        <Link to="/produtos" className="home-hero-btn home-hero-btn-main"><ShoppingBag size={18} aria-hidden="true" /> Ver produtos <ArrowUpRight size={18} aria-hidden="true" /></Link>
-                        {PRESCRIPTION_PAGES_ENABLED
-                            ? <Link to="/receita" className="home-hero-btn home-hero-btn-line"><FileUp size={18} aria-hidden="true" /> Enviar receita</Link>
-                            : <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" className="home-hero-btn home-hero-btn-line"><MessageCircle size={18} aria-hidden="true" /> Falar no WhatsApp</a>}
+                    <div className="hh-copy-stack" aria-live={running ? 'off' : 'polite'}>
+                        {SCENES.map((item, position) => <div key={item.id} className={`hh-copy${position === index ? ' is-on' : ''}`} aria-hidden={position !== index} inert={position !== index}>
+                            <h2 className="hh-title">{item.title}<br /><span>{item.accent}</span></h2>
+                            <p className="home-hero-text">{item.text}</p>
+                            <div className="home-hero-actions">
+                                <ActionLink kind={item.main} main />
+                                <ActionLink kind={item.second} />
+                            </div>
+                        </div>)}
                     </div>
                     <p className="home-hero-coupon"><TicketPercent size={16} aria-hidden="true" /> Veio pela indicação de uma parceira? O cupom dela vale no carrinho.</p>
                 </div>
@@ -128,8 +190,8 @@ const HomeHero = () => {
                     </div>)}
                     <div className="hh-tag">
                         <div className="hh-dots">
-                            {SCENES.map((item, position) => <button key={item.id} type="button" className="hh-dot" onClick={() => { setReady(true); setIndex(position); }}
-                                aria-label={`Mostrar: ${item.caption}`} aria-current={position === index} />)}
+                            {SCENES.map((item, position) => <button key={item.id} type="button" className="hh-dot" onClick={() => go(position)}
+                                aria-label={`Mostrar: ${item.title} ${item.accent}`} aria-current={position === index} />)}
                             <button type="button" className="hh-pause" onClick={() => setPlaying(current => !current)} aria-label={playing ? 'Pausar a troca de imagens' : 'Retomar a troca de imagens'}>
                                 {playing ? <Pause size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
                             </button>
