@@ -126,7 +126,9 @@ try {
     assert.ok(!hero.includes('Cabo Frio'), 'o topo não pode passar a ideia de loja só local');
     assert.ok(!hero.includes('href="/produto/') && !hero.includes('/assets/hero/vitrine/produto-'), 'o topo não mostra nem leva direto a um produto');
     assert.ok(hero.includes('href="/produtos"'), 'o topo leva à loja toda');
-    assert.equal((hero.match(/class="hh-bg /g) || []).length, scenes.length, 'um ambiente por cena');
+    assert.equal((hero.match(/class="hh-slide/g) || []).length, scenes.length, 'um card de galeria por cena');
+    assert.equal((hero.match(/inert=""/g) || []).length, scenes.length - 1, 'só o card visível recebe foco');
+    assert.ok(readFileSync('src/components/HomeHero.jsx', 'utf8').includes("addEventListener('wheel'"), 'touchpad passa os cards');
     assert.equal((hero.match(/class="hh-dot"/g) || []).length, scenes.length);
     assert.ok(hero.includes('aria-label="Pausar a troca de imagens"'));
     assert.equal(scenes.some(scene => scene.id === 'receita'), PRESCRIPTION_PAGES_ENABLED, 'a cena da receita segue a chave das páginas de receita');
