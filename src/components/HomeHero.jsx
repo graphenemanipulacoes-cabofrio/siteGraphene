@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, FileUp, MessageCircle, Pause, Play, ShoppingBag, TicketPercent, Truck } from 'lucide-react';
+import { ArrowUpRight, Camera, FileUp, HeartPulse, MessageCircle, Pause, Play, ShoppingBag, Smartphone, TicketPercent, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getWhatsAppUrl } from '../config';
 import { PRESCRIPTION_PAGES_ENABLED } from '../data/publicChannels';
@@ -7,18 +7,22 @@ import { VITRINE_INTERVAL_MS, VITRINE_SCENES } from '../data/vitrineScenes';
 import '../styles/homeHero.css';
 
 const PECAS = '/assets/hero/vitrine/';
-const TOTAL = VITRINE_SCENES.length;
+const FOTOS = '/assets/hero/pessoas/';
+const ICONS = { truck: Truck, heart: HeartPulse, camera: Camera, phone: Smartphone };
+// A cena da receita só aparece quando as páginas de receita estão no ar.
+const SCENES = VITRINE_SCENES.filter(scene => !scene.prescription || PRESCRIPTION_PAGES_ENABLED);
+const TOTAL = SCENES.length;
 const DEPTH = { longe: 5, meio: 12, perto: 26 };
-// Forma do líquido atrás do produto: três desenhos com os mesmos comandos, para o navegador transformar um no outro.
+// Forma do líquido atrás da foto: três desenhos com os mesmos comandos, para o navegador transformar um no outro.
 const BLOB = [
     'M700 160C890 160 1040 300 1040 490C1040 690 880 840 690 840C500 840 360 700 360 500C360 300 510 160 700 160Z',
     'M720 175C930 195 1065 335 1030 520C995 720 850 830 660 822C470 812 345 680 370 482C392 292 530 158 720 175Z',
     'M688 150C880 138 1012 282 1050 470C1082 662 902 852 700 850C508 848 336 722 350 520C362 318 500 162 688 150Z',
 ];
 
-// Topo da página inicial: o texto fica fixo e a "vitrine viva" ao lado troca o produto em destaque,
-// o ambiente (cor) e os elementos que flutuam em volta (pó, gomas, gotas e creme, cápsulas).
-// Cada ambiente tem uma entrada própria (pó explode, gomas caem, gotas pingam, cápsulas giram) e depois
+// Topo da página inicial: o texto fica fixo e a "vitrine viva" ao lado troca a cena do dia a dia
+// (com a mensagem de como comprar e receber), o ambiente (cor) e os elementos que flutuam em volta.
+// Cada ambiente tem uma entrada própria (pó explode, cápsulas caem, gotas pingam) e depois
 // os elementos seguem flutuando. Para fora da tela, com a aba escondida ou no botão de pausa. Com
 // "reduzir animações" o movimento continua, mais lento e menor, sem profundidade pelo mouse (pedido do dono).
 const HomeHero = () => {
@@ -30,7 +34,7 @@ const HomeHero = () => {
     const card = useRef(null);
     const blob = useRef(null);
     const running = playing && onScreen && tabVisible;
-    const scene = VITRINE_SCENES[index];
+    const scene = SCENES[index];
 
     // Os outros ambientes só começam a carregar depois que o primeiro já apareceu.
     useEffect(() => {
@@ -81,13 +85,13 @@ const HomeHero = () => {
 
     return <section className="home-hero" aria-labelledby="store-hero-title">
         <div className="container">
-            <div ref={card} className="home-hero-card" data-scene={scene.id} data-running={running} onPointerMove={pointerMove} onPointerLeave={pointerLeave}
+            <div ref={card} className="home-hero-card" data-scene={scene.tema} data-running={running} onPointerMove={pointerMove} onPointerLeave={pointerLeave}
                 style={{ '--hh-interval': `${VITRINE_INTERVAL_MS}ms` }}>
-                {VITRINE_SCENES.map((item, position) => <div key={item.id} className={`hh-bg hh-bg-${item.id}${position === index ? ' is-on' : ''}`} aria-hidden="true" />)}
+                {SCENES.map((item, position) => <div key={item.id} className={`hh-bg hh-bg-${item.tema}${position === index ? ' is-on' : ''}`} aria-hidden="true" />)}
                 <div className="home-hero-copy">
                     <p className="home-hero-eyebrow"><Truck size={14} aria-hidden="true" /> <span>Farmácia de manipulação</span><span className="hh-sep" aria-hidden="true">·</span><span>Entrega em todo o Brasil</span></p>
-                    <h1 id="store-hero-title">Sua fórmula,<br /><span>feita sob medida.</span></h1>
-                    <p className="home-hero-text">Suplementos, vitaminas e dermocosméticos com atendimento farmacêutico e entrega para todo o Brasil.</p>
+                    <h1 id="store-hero-title">Sua farmácia de manipulação,<br /><span>sem sair de casa.</span></h1>
+                    <p className="home-hero-text">Escolha pelo site ou envie sua receita. Manipulamos no nosso laboratório, com atendimento farmacêutico, e enviamos para todo o Brasil.</p>
                     <div className="home-hero-actions">
                         <Link to="/produtos" className="home-hero-btn home-hero-btn-main"><ShoppingBag size={18} aria-hidden="true" /> Ver produtos <ArrowUpRight size={18} aria-hidden="true" /></Link>
                         {PRESCRIPTION_PAGES_ENABLED
@@ -108,25 +112,25 @@ const HomeHero = () => {
                                 keyTimes="0;.33;.66;1" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1;.45 0 .55 1" />
                         </path>
                     </svg>
-                    {VITRINE_SCENES.map((item, position) => (ready || position === 0) && <div key={item.id} className={`hh-scene${position === index ? ' is-on' : ''}`} data-kind={item.id} aria-hidden={position !== index}>
+                    {SCENES.map((item, position) => (ready || position === 0) && <div key={item.id} className={`hh-scene${position === index ? ' is-on' : ''}`} data-kind={item.tema} aria-hidden={position !== index}>
                         {item.burst && <span className="hh-burst" aria-hidden="true"><img src={`${PECAS}${item.burst}.webp`} alt="" draggable="false" decoding="async" /></span>}
                         {item.burst && <span className="hh-grains" aria-hidden="true">{Array.from({ length: 12 }, (_, n) => <i key={n} style={{ '--n': n }} />)}</span>}
                         {item.particles.map((p, order) => (p.prof !== 'perto' ? particle(p, order) : null))}
-                        <div className="hh-product" style={{ '--ratio': item.ratio }}>
-                            <div className="hh-product-float">
-                                <img src={`${PECAS}${item.image}.webp`} alt={position === index ? item.alt : ''} draggable="false"
+                        <div className="hh-photo-card" style={{ '--tilt': `${item.tilt}deg` }}>
+                            <figure className="hh-photo-float">
+                                <img src={`${FOTOS}${item.photo}-900.webp`} srcSet={`${FOTOS}${item.photo}-520.webp 520w, ${FOTOS}${item.photo}-900.webp 900w`}
+                                    sizes="(max-width: 760px) 80vw, 460px" width="1536" height="1152" alt={position === index ? item.alt : ''} draggable="false"
                                     fetchPriority={position === 0 ? 'high' : 'low'} decoding="async" />
-                                <span className="hh-shine" style={{ WebkitMaskImage: `url(${PECAS}${item.image}.webp)`, maskImage: `url(${PECAS}${item.image}.webp)` }} />
-                            </div>
+                                <figcaption>{(() => { const Icon = ICONS[item.icon]; return <Icon size={16} aria-hidden="true" />; })()}<span>{item.caption}</span></figcaption>
+                            </figure>
                         </div>
-                        {item.cream && <span className="hh-cream" aria-hidden="true"><img src={`${PECAS}${item.cream}.webp`} alt="" draggable="false" decoding="async" /></span>}
                         {item.particles.map((p, order) => (p.prof === 'perto' ? particle(p, order) : null))}
                     </div>)}
                     <div className="hh-tag">
                         <div className="hh-dots">
-                            {VITRINE_SCENES.map((item, position) => <button key={item.id} type="button" className="hh-dot" onClick={() => { setReady(true); setIndex(position); }}
-                                aria-label={`Mostrar ${item.product}`} aria-current={position === index} />)}
-                            <button type="button" className="hh-pause" onClick={() => setPlaying(current => !current)} aria-label={playing ? 'Pausar a troca de produtos' : 'Retomar a troca de produtos'}>
+                            {SCENES.map((item, position) => <button key={item.id} type="button" className="hh-dot" onClick={() => { setReady(true); setIndex(position); }}
+                                aria-label={`Mostrar: ${item.caption}`} aria-current={position === index} />)}
+                            <button type="button" className="hh-pause" onClick={() => setPlaying(current => !current)} aria-label={playing ? 'Pausar a troca de imagens' : 'Retomar a troca de imagens'}>
                                 {playing ? <Pause size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
                             </button>
                         </div>

@@ -115,24 +115,31 @@ try {
             assert.ok(statSync(file).size < 120 * 1024, `${file}: maior que 120 KB`);
         }
     }
-    // Topo da página inicial ("vitrine viva"): texto fixo com um só h1, alcance nacional, sem link direto
-    // de produto na animação, quatro ambientes, bolinhas e pausa, e peças leves.
+    // Topo da página inicial ("vitrine viva" com cenas do dia a dia): texto fixo com um só h1, alcance nacional,
+    // sem produto nem link direto de produto, um ambiente por cena, fotos apresentadas como ilustração e peças leves.
     const { default: HomeHero } = await server.ssrLoadModule('/src/components/HomeHero.jsx');
     const { VITRINE_SCENES } = await server.ssrLoadModule('/src/data/vitrineScenes.js');
+    const scenes = VITRINE_SCENES.filter(scene => !scene.prescription || PRESCRIPTION_PAGES_ENABLED);
     const hero = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(HomeHero)));
     assert.equal((hero.match(/<h1/g) || []).length, 1, 'o topo tem um só h1');
-    assert.ok(hero.includes('feita sob medida.') && hero.includes('Entrega em todo o Brasil'), 'título e selo do topo');
+    assert.ok(hero.includes('sem sair de casa.') && hero.includes('Entrega em todo o Brasil'), 'título e selo do topo');
     assert.ok(!hero.includes('Cabo Frio'), 'o topo não pode passar a ideia de loja só local');
-    assert.ok(!hero.includes('href="/produto/'), 'a vitrine não leva direto a um produto');
+    assert.ok(!hero.includes('href="/produto/') && !hero.includes('/assets/hero/vitrine/produto-'), 'o topo não mostra nem leva direto a um produto');
     assert.ok(hero.includes('href="/produtos"'), 'o topo leva à loja toda');
-    assert.equal((hero.match(/class="hh-bg /g) || []).length, VITRINE_SCENES.length, 'um ambiente por produto');
-    assert.equal((hero.match(/class="hh-dot"/g) || []).length, VITRINE_SCENES.length);
-    assert.ok(hero.includes('aria-label="Pausar a troca de produtos"'));
-    const pecas = new Set(VITRINE_SCENES.flatMap(scene => [scene.image, scene.burst, scene.cream, ...scene.particles.map(item => item.src)]).filter(Boolean));
-    for (const peca of pecas) {
-        const file = `public/assets/hero/vitrine/${peca}.webp`;
-        assert.ok(existsSync(file), `${file}: falta a peça`);
-        assert.ok(statSync(file).size < 110 * 1024, `${file}: maior que 110 KB`);
+    assert.equal((hero.match(/class="hh-bg /g) || []).length, scenes.length, 'um ambiente por cena');
+    assert.equal((hero.match(/class="hh-dot"/g) || []).length, scenes.length);
+    assert.ok(hero.includes('aria-label="Pausar a troca de imagens"'));
+    assert.equal(scenes.some(scene => scene.id === 'receita'), PRESCRIPTION_PAGES_ENABLED, 'a cena da receita segue a chave das páginas de receita');
+    for (const scene of scenes) {
+        assert.ok(scene.alt.startsWith('Ilustração'), `${scene.id}: foto gerada se apresenta como ilustração`);
+        for (const width of [520, 900]) {
+            const file = `public/assets/hero/pessoas/${scene.photo}-${width}.webp`;
+            assert.ok(existsSync(file) && statSync(file).size < 80 * 1024, `${file}: falta ou maior que 80 KB`);
+        }
+        for (const piece of [scene.burst, ...scene.particles.map(item => item.src)].filter(Boolean)) {
+            const file = `public/assets/hero/vitrine/${piece}.webp`;
+            assert.ok(existsSync(file) && statSync(file).size < 110 * 1024, `${file}: falta ou maior que 110 KB`);
+        }
     }
     assert.ok(!existsSync('src/components/HeroBanner.jsx'), 'o carrossel antigo saiu do site');
     console.log('Storefront render checks passed: home shows the first 8 products with "Ver todos", /produtos shows all 17 in a grid with the category in the address, unpriced products, priced variants, safe missing-price display, search, purchase buttons and product links. No real catalog data changed.');
