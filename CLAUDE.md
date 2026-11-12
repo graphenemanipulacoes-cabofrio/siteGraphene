@@ -99,7 +99,7 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnico) ficam
 
 ## QR code dos rótulos
 - `/qrcode` (`QrCodePage`) é a página única do QR de todos os rótulos, no estilo "link na bio": WhatsApp do farmacêutico, "Pedir de novo" pelo código, produtos, receita, Instagram e endereço. Fica fora do Google (`privatePaths`; `vercel.json` manda para `private.html`). Também aceita `/qrcode?codigo=HFC01`, sem criar outras rotas.
-- Código do produto, impresso embaixo do QR: produto da loja = `G` + número do produto (G14 = produto 14), automático para todo produto novo. Fórmula fora da loja fica na tabela `codigos_qr` (migração `codigos_qr`; leitura pública só dos ativos, gravação só pelo servidor/SQL), por exemplo HFC01 = Hair Fiber Complex. Código com produto ativo mostra "Ver na loja" e WhatsApp; sem produto, só WhatsApp com o código na mensagem.
+- Código do produto, impresso embaixo do QR: produto da loja = `G` + número do produto (G14 = produto 14), automático para todo produto novo. Fórmula fora da loja fica na tabela `codigos_qr` (migração `codigos_qr`; leitura pública só dos ativos, gravação só pelo servidor/SQL), por exemplo HFC01 = Hair Fiber Complex (produto 77, cadastrado escondido e sem preço em 12/11/2026 pela migração `produto_hair_fiber_complex`; foto em `public/assets/products/hair-fiber-complex.png`, gerada por `foto_loja.py` na pasta do rótulo). Código com produto ativo mostra "Ver na loja" e WhatsApp; sem produto, só WhatsApp com o código na mensagem.
 - O QR impresso aponta para `https://graphenemanipulacoes.com.br/qrcode` (redireciona para o www). A arte dos rótulos fica fora do repositório, em `Documentos\Graphène\Redes sociais\sistema\rotulos`.
 
 ## Matérias-primas
