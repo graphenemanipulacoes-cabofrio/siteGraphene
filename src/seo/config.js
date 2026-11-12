@@ -61,7 +61,7 @@ export const pageMetadata = {
 export const privatePaths = [
     '/admin', '/login', '/balcaographene', '/colaboradores', '/farmaceutico', '/entrar', '/minha-conta', '/carrinho', '/checkout',
     '/pedido/retorno', '/redefinir-senha', '/parceiros/entrar',
-    '/parceiros/painel', '/parceiros/cadastro'
+    '/parceiros/painel', '/parceiros/cadastro', '/qrcode'
 ];
 
 export const productMetadata = {

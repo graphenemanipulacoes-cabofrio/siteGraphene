@@ -27,6 +27,7 @@ const AccountPage = lazy(() => import('./pages/AccountPage'));
 const ProductPage = lazy(() => import('./pages/ProductPage'));
 const ProductsPage = lazy(() => import('./pages/ProductsPage'));
 const CouponLandingPage = lazy(() => import('./pages/CouponLandingPage'));
+const QrCodePage = lazy(() => import('./pages/QrCodePage'));
 const PaymentReturnPage = lazy(() => import('./pages/PaymentReturnPage'));
 const PasswordResetPage = lazy(() => import('./pages/PasswordResetPage'));
 const AboutPage = lazy(() => import('./pages/InstitutionalPages').then(module => ({ default: module.AboutPage })));
@@ -60,6 +61,7 @@ function App() {
           <Route path="/produtos" element={<ProductsPage />} />
           <Route path="/produto/:id" element={<ProductPage />} />
           <Route path="/cupom/:code" element={<CouponLandingPage />} />
+          <Route path="/qrcode" element={<QrCodePage />} />
           <Route path="/carrinho" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/entrar" element={<CustomerAccessPage />} />
