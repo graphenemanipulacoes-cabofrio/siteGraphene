@@ -11,7 +11,7 @@ Este arquivo é a fonte de contexto do projeto. Não há notas externas (Obsidia
 - Deploy na Vercel (`vercel.json`: cabeçalhos de segurança e rotas). O `postbuild` gera páginas estáticas de SEO com conteúdo no próprio HTML (`scripts/generate-seo-pages.mjs`, `src/seo/staticHtml.js`). As funções da pasta `api/` servem `/produto/:id`, `/feed.xml` e `/sitemap-produtos.xml`.
 
 ## Áreas do site
-- **Loja pública:** `/`, `/produtos`, `/produto/:id`, `/laboratorio`, `/avaliacoes`, `/parceiros`, `/sobre`, `/compras`, `/trocas`, `/privacidade`, `/ativos`, `/receita` e `/prescritores`. As três últimas dependem de uma chave (ver "Anúncios no Google").
+- **Loja pública:** `/`, `/produtos`, `/produto/:id`, `/laboratorio`, `/avaliacoes`, `/parceiros`, `/sobre`, `/compras`, `/trocas`, `/privacidade`, `/ativos`, `/receita` e `/prescritores`. As três últimas dependem de uma chave (ver "Anúncios no Google"). `/qrcode` é a página do QR dos rótulos (ver "QR code dos rótulos").
 - **Compra:** `/carrinho`, `/entrar`, `/minha-conta`, `/checkout`, `/pedido/retorno`, `/redefinir-senha`. Carrinho em `src/context/StoreContext.jsx`.
   Carrinhos autenticados ficam em `customer_carts`/RPC `customer_cart_sync`; `src/utils/cartPersistence.js` mantém cache separado por conta e operações pendentes idempotentes. Não voltar a usar um único localStorage para todos os clientes. Checkout usa sempre `create_checkout_order_v2`, incluindo frete, e `src/lib/checkoutApi.js` cuida da sessão/erros sem repetir pagamentos.
   Comprar exige conta (decisão do dono em 10/11/2026, pela segurança do cliente e pelo pós-venda; o site não envia e-mail). Sem conta, `/checkout` leva direto a `/entrar`, que abre em "Criar conta" (`intent: 'checkout'`) e volta para a entrega; o carrinho de visitante passa para a conta. Dentro do Instagram e de apps parecidos (`isEmbeddedBrowser`), o e-mail vem antes do Google. O botão do Google fica abaixo do formulário, porque quem só tem conta Google precisa dele. Verificação: `node scripts/verify-account-at-checkout.mjs`.
@@ -96,6 +96,11 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnico) ficam
 - No painel (`PartnerLinks`): copiar o link geral, copiar o link de um produto e marcar os destaques. Textos e links em `src/utils/couponDisplay.js`.
 - O nome exibido é o primeiro nome cadastrado no recebedor do cupom. Não escrever que a parceira usa ou recomenda um produto: a página só diz que a indicação é dela.
 - Verificação: `node scripts/verify-partner-links.mjs` e `scripts/verify-partner-showcase-db.sql` (fixtures sintéticas com rollback).
+
+## QR code dos rótulos
+- `/qrcode` (`QrCodePage`) é a página única do QR de todos os rótulos, no estilo "link na bio": WhatsApp do farmacêutico, "Pedir de novo" pelo código, produtos, receita, Instagram e endereço. Fica fora do Google (`privatePaths`; `vercel.json` manda para `private.html`). Também aceita `/qrcode?codigo=HFC01`, sem criar outras rotas.
+- Código do produto, impresso embaixo do QR: produto da loja = `G` + número do produto (G14 = produto 14), automático para todo produto novo. Fórmula fora da loja fica na tabela `codigos_qr` (migração `codigos_qr`; leitura pública só dos ativos, gravação só pelo servidor/SQL), por exemplo HFC01 = Hair Fiber Complex. Código com produto ativo mostra "Ver na loja" e WhatsApp; sem produto, só WhatsApp com o código na mensagem.
+- O QR impresso aponta para `https://graphenemanipulacoes.com.br/qrcode` (redireciona para o www). A arte dos rótulos fica fora do repositório, em `Documentos\Graphène\Redes sociais\sistema\rotulos`.
 
 ## Matérias-primas
 - O catálogo de `/ativos` fica em `materias_primas`, não em uma lista fixa no código. Os 12 cadastros originais foram preservados pela migração `20261023163541_raw_materials_catalog.sql`.
