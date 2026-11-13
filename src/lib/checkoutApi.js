@@ -14,7 +14,7 @@ const messages = {
     invalid_order_total: 'Não foi possível confirmar o valor do pedido. Seu carrinho foi mantido. Revise os produtos e tente novamente.',
     checkout_already_completed: 'Este pedido já foi concluído. Confira o status em Meus pedidos antes de realizar outro pagamento.',
     checkout_key_conflict: 'Não foi possível recuperar esta tentativa de compra. Seu carrinho foi mantido. Recarregue a página e confira o pedido antes de continuar.',
-    invalid_coupon: 'Este cupom não está disponível. Confira o código ou continue sem ele.',
+    invalid_coupon: 'Este cupom não é válido. Confira se o código está correto ou se ele ainda está valendo. Você pode continuar sem ele.',
     coupon_minimum_not_reached: 'O valor mínimo para usar este cupom não foi atingido.',
     payment_provider_not_configured: 'O pagamento está temporariamente indisponível. Seu carrinho foi mantido. Tente novamente mais tarde.',
     payment_provider_credentials_invalid: 'O pagamento está temporariamente indisponível. Seu carrinho foi mantido. Tente novamente mais tarde.',

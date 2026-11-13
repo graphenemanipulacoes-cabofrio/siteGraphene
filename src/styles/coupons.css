@@ -28,6 +28,16 @@
 .coupon-confirmation span{display:block;margin-top:3px;color:#365b6d;font-size:.78rem;line-height:1.5}
 .coupon-remove{display:inline-flex;align-items:center;gap:4px;min-height:36px;margin:5px 0 -7px;padding:5px 0;background:transparent;border:0;color:#4c6a7b;font-size:.72rem!important;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .coupon-panel.is-applied{border-color:#7db4cc;background:#eaf5fa}
+/* Cupom salvo de uma compra anterior, sugerido sem aplicar sozinho. */
+.coupon-saved{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:8px 8px 8px 12px;border:1px dashed #7db4cc;border-radius:10px;background:#f1f8fc;color:#24485c;font-size:.8rem}
+.coupon-saved>svg{flex-shrink:0;color:#0c6b8a}
+.coupon-saved>span{flex:1;min-width:0;line-height:1.35}
+.coupon-saved strong{color:#0b4d66;letter-spacing:.04em}
+.coupon-saved-use{min-height:36px;padding:0 14px;border:0;border-radius:8px;background:#0c5c89;color:#fff;font-size:.78rem;font-weight:700;cursor:pointer}
+.coupon-saved-use:hover{background:#0a4d74}
+.coupon-saved-forget{display:grid;place-items:center;width:32px;height:36px;padding:0;border:0;background:transparent;color:#4c6a7b;cursor:pointer}
+.coupon-saved :is(button):focus-visible{outline:3px solid #9fd2ee;outline-offset:2px}
+.coupon-saved :is(button):disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:700px){.coupon-panel{padding:19px 18px}.coupon-panel-heading{gap:10px}.coupon-panel-heading h2{font-size:.97rem}.coupon-entry{gap:7px}.coupon-apply{min-width:76px;padding:0 12px}.coupon-suggestions{width:calc(100% + 83px)}.coupon-suggestions li{gap:8px;padding:10px;min-height:66px}.coupon-suggestion-offer{max-width:48%}}
 
 /* Cupom de desconto logo acima do botão Comprar: bem visível sem competir com o preço. */

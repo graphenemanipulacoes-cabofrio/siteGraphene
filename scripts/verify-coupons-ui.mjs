@@ -44,5 +44,10 @@ try {
     assert.ok(!short.includes('role="listbox"')); assert.ok(short.includes('aria-expanded="false"'));
     selection = { ...selection, code: 'SYNTHETIC15', draft: 'SYNTHETIC15', error: 'Cupom não disponível.' }; focused = false; server.moduleGraph.invalidateAll();
     const invalid = await render('/src/components/CouponPanel.jsx'); assert.ok(invalid.includes('role="alert"')); assert.ok(!invalid.includes('SYNTHETIC15 aplicado'));
-    console.log('Coupon UI render checks passed: prominent cart/checkout placement, uppercase hints, visible applied discount, accessible suggestions at 3 characters, no fake success, partner attribution and finance filters/export.');
+    // Cupom salvo de compra anterior: aparece como sugestão para usar, sem estar aplicado.
+    selection = { ...selection, code: '', draft: '', coupon: null, error: '', saved: 'SALVO10' }; server.moduleGraph.invalidateAll();
+    const savedPanel = await render('/src/components/CouponPanel.jsx');
+    assert.ok(savedPanel.includes('Você tem um cupom salvo') && savedPanel.includes('SALVO10') && savedPanel.includes('>Usar</button>'), 'sugestão do cupom salvo');
+    assert.ok(!savedPanel.includes('aplicado'), 'cupom salvo não aparece como aplicado');
+    console.log('Coupon UI render checks passed: prominent cart/checkout placement, uppercase hints, visible applied discount, accessible suggestions at 3 characters, no fake success, saved coupon offered (not applied), partner attribution and finance filters/export.');
 } finally { await server.close(); }

@@ -7,8 +7,19 @@ import '../styles/coupons.css';
 
 const discountLabel = coupon => coupon.discountType === 'percentage' ? `${coupon.discountValue}% de desconto` : `${money(coupon.discountValue)} de desconto`;
 
+// Cupom salvo de uma compra anterior: não entra sozinho; a pessoa escolhe usar. O site confere na hora
+// e, se o cupom não valer mais, mostra a mensagem e deixa de sugerir.
+export function SavedCoupon({ code, disabled = false, onUse, onForget }) {
+    return <div className="coupon-saved">
+        <TicketPercent size={16} aria-hidden="true" />
+        <span>Você tem um cupom salvo: <strong>{code}</strong></span>
+        <button type="button" className="coupon-saved-use" onClick={onUse} disabled={disabled}>Usar</button>
+        {onForget && <button type="button" className="coupon-saved-forget" onClick={onForget} disabled={disabled} aria-label={`Não sugerir mais o cupom ${code}`}><X size={14} aria-hidden="true" /></button>}
+    </div>;
+}
+
 export default function CouponPanel({ disabled = false }) {
-    const { userId, code, draft, edit, coupon, checking, error, apply, remove } = useCoupon();
+    const { userId, code, draft, edit, coupon, checking, error, apply, remove, saved, forget } = useCoupon();
     const [focused, setFocused] = useState(false);
     const [active, setActive] = useState(-1);
     const [search, setSearch] = useState(null);
@@ -50,6 +61,7 @@ export default function CouponPanel({ disabled = false }) {
     return <section className={`coupon-panel${coupon ? ' is-applied' : ''}`} aria-labelledby={`${id}-title`} ref={root}
         onBlur={event => { if (!root.current?.contains(event.relatedTarget)) setFocused(false); }}>
         <div className="coupon-panel-heading"><span className="coupon-panel-icon"><TicketPercent size={21} aria-hidden="true" /></span><div><h2 id={`${id}-title`}>Tem cupom de desconto?</h2><p>Encontre o cupom pelo nome do parceiro e use na compra.</p></div></div>
+            {saved && !checking && <SavedCoupon code={saved} disabled={disabled} onUse={() => select(saved)} onForget={forget} />}
             <label className="coupon-label" htmlFor={`${id}-input`}>{userId ? 'Nome do parceiro ou código do cupom' : 'Código do cupom'}</label>
             <div className="coupon-entry"><div className="coupon-autocomplete">
                 <input id={`${id}-input`} role="combobox" aria-autocomplete="list" aria-expanded={open} aria-controls={open ? `${id}-list` : undefined}

@@ -34,12 +34,14 @@ const HomePage = ({ landingCode = '' }) => {
     const { hash } = useLocation();
     const couponState = useCoupon() || {};
     const { coupon } = couponState;
-    const showcase = useShowcase(coupon?.code || '');
     const landing = Boolean(landingCode);
+    // A seleção da parceira só aparece na página dela (/cupom/CODIGO), que é onde a divulgação leva.
+    // Na tela inicial comum não há indicação, mesmo com cupom salvo ou aplicado (decisão do dono em 13/11/2026).
+    const showcase = useShowcase(landing && coupon?.code === landingCode ? coupon.code : '');
     // Cupom do link recusado: a loja aparece completa, com o aviso no topo.
     const landingFailed = landing && couponState.code === landingCode && Boolean(couponState.error) && !couponState.checking;
     const name = partnerFirstName(coupon?.partnerName);
-    const featured = coupon && showcase.length
+    const featured = landing && coupon && showcase.length
         ? { ids: showcase, eyebrow: `Com o cupom ${coupon.code}`, title: name ? `Escolhas de ${name}` : 'Produtos em destaque' }
         : null;
 

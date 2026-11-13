@@ -62,6 +62,9 @@ try {
     // A abertura não usa a resposta de um cupom anterior enquanto o do link é conferido.
     assert.ok(text(render(CouponLandingIntro, { code: 'OUTRO10' })).includes('Conferindo o cupom OUTRO10'));
 
+    // A seleção da parceira só aparece na página dela (/cupom/CODIGO), não na tela inicial comum.
+    assert.ok(readFileSync('src/pages/HomePage.jsx', 'utf8').includes('const featured = landing && coupon'), 'indicação só na página da parceira');
+    assert.ok(!intro.includes('Cabo Frio'), 'a página da parceira não passa a ideia de loja só local');
     // Cupom recusado: aviso, sem prometer desconto.
     couponState = { code: 'FICTICIO5', coupon: null, checking: false, error: 'Cupom não encontrado.' };
     const refused = text(render((await reload('/src/components/CouponBar.jsx')).CouponLandingIntro, { code: 'FICTICIO5' }));

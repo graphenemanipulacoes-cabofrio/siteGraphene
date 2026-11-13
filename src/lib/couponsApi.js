@@ -27,14 +27,14 @@ async function requestCoupon(body, userId, signal) {
         }
         if (error || payload?.error) {
             if (payload?.error === 'authentication_required') throw new Error(sessionMessage);
-            if (payload?.error === 'invalid_coupon') throw new Error('Cupom não encontrado. Confira o código e tente novamente.');
+            if (payload?.error === 'invalid_coupon') throw new Error('Este cupom não é válido. Confira se o código está correto ou se ele ainda está valendo.');
             if (payload?.error === 'coupon_minimum_not_reached') throw new Error(`Este cupom vale para compras a partir de ${money(payload.minimumOrderAmount)}. Adicione mais produtos ou remova o cupom para continuar.`);
             throw new Error('Não foi possível consultar o cupom. Tente novamente.');
         }
         return payload;
     } catch (error) {
         if (signal?.aborted) throw error;
-        throw new Error(error?.message === sessionMessage || /^(Cupom não|Este cupom|Não foi possível consultar)/.test(error?.message || '')
+        throw new Error(error?.message === sessionMessage || /^(Este cupom|Não foi possível consultar)/.test(error?.message || '')
             ? error.message : 'Não foi possível consultar o cupom. Verifique sua conexão e tente novamente.');
     }
 }

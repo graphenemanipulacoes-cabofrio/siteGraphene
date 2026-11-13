@@ -3,7 +3,7 @@ import { useCoupon } from '../context/CouponContext';
 import { couponSummary, partnerFirstName } from '../utils/couponDisplay';
 import '../styles/coupons.css';
 
-// Faixa no topo da vitrine: mostra que o cupom do link ou da última visita já está valendo.
+// Faixa no topo da vitrine: mostra que o cupom desta visita (link da parceira ou digitado) está valendo.
 export default function CouponBar() {
     const coupon = useCoupon()?.coupon;
     if (!coupon) return null;
@@ -30,7 +30,7 @@ export function CouponLandingIntro({ code }) {
     const percentage = coupon?.discountType === 'percentage';
     return <section className="coupon-landing" aria-labelledby="coupon-landing-title">
         <div className="container">
-            <span className="coupon-landing-eyebrow">Graphène · Farmácia de manipulação em Cabo Frio</span>
+            <span className="coupon-landing-eyebrow">Graphène · Farmácia de manipulação · Entrega em todo o Brasil</span>
             <h1 id="coupon-landing-title">{!coupon ? `Conferindo o cupom ${code}…` : <>{name ? `Indicação de ${name}.` : 'Você chegou com um cupom.'} <span>Seu desconto já está aplicado.</span></>}</h1>
             {coupon && <p className="coupon-landing-tag"><TicketPercent size={17} aria-hidden="true" /><span><strong>Cupom {coupon.code}:</strong> {couponSummary(coupon)}</span></p>}
             <p>Suplementos, vitaminas e cuidados com a pele, com atendimento farmacêutico e entrega para todo o Brasil.{coupon && (percentage ? ' Os preços abaixo já aparecem com o desconto.' : ' O desconto entra no total da compra.')}</p>
