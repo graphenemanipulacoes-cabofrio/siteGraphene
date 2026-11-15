@@ -1,0 +1,20 @@
+/* Foto de perfil da parceira: redonda, com anel em degradê (como a foto do Instagram). */
+.partner-avatar{--pa-size:112px;position:relative;display:inline-grid;place-items:center;flex:none;width:var(--pa-size);height:var(--pa-size);border-radius:50%}
+.partner-avatar.has-ring{padding:calc(var(--pa-size) * .045);background:conic-gradient(from 200deg,#ffb36b,#ff7aa8,#b98cff,#4fd6f0,#ffb36b)}
+.partner-avatar.has-ring>img,.partner-avatar.has-ring>.partner-avatar-initial{border:calc(var(--pa-size) * .035) solid #fff}
+.partner-avatar>img{display:block;width:100%;height:100%;border-radius:50%;object-fit:cover;background:#e9eef2}
+.partner-avatar-initial{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:linear-gradient(140deg,#0e3d6b,#1f7fae);color:#fff;font-family:var(--font-heading);font-size:calc(var(--pa-size) * .42);font-weight:700;line-height:1}
+
+/* Campo do cadastro e editor do painel. */
+.partner-avatar-field,.partner-avatar-editor{display:flex;align-items:center;gap:16px}
+.partner-avatar-field strong,.partner-avatar-editor strong{display:block;color:#fff;font-size:.84rem;font-weight:800}
+.partner-avatar-field strong em{font-style:normal;font-weight:500;color:#72869a}
+.partner-avatar-field small,.partner-avatar-editor small{display:block;margin-top:3px;color:#91a7bb;font-size:.74rem;line-height:1.5}
+.partner-avatar-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.partner-avatar-actions button{display:inline-flex!important;align-items:center;justify-content:center;gap:6px;min-height:40px!important;margin:0!important;padding:0 14px!important;border:1px solid rgba(103,221,243,.35)!important;border-radius:8px!important;background:rgba(39,203,230,.1)!important;color:#78e6f6!important;font-size:.76rem!important;font-weight:800!important;cursor:pointer}
+.partner-avatar-actions button:hover:not(:disabled){background:rgba(39,203,230,.2)!important;color:#fff!important}
+.partner-avatar-actions button.is-quiet{border-color:rgba(203,213,225,.18)!important;background:transparent!important;color:#a9bccb!important}
+.partner-avatar-actions button:disabled{opacity:.5;cursor:wait}
+.partner-avatar-actions button:focus-visible{outline:2px solid #69e2f5;outline-offset:2px}
+.partner-avatar-editor{padding:18px 22px;border:1px solid rgba(203,213,225,.12);border-radius:14px;background:rgba(11,25,39,.72)}
+@media(max-width:520px){.partner-avatar-field,.partner-avatar-editor{align-items:flex-start}.partner-avatar-editor{padding:16px}}

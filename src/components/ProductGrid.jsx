@@ -154,7 +154,7 @@ const ProductGrid = ({ searchTerm = '', featured = null, variant = 'home' }) => 
     return (
         <section id="produtos" className={`store-section products-section vt${page ? ' vt-page' : ''}`} aria-labelledby="store-products-title">
             <div className="container">
-                {featuredProducts.length > 0 && <div className="vt-featured" data-part="featured">
+                {featuredProducts.length > 0 && <div id="indicacoes" className="vt-featured" data-part="featured">
                     <header className="vt-header">
                         <div>
                             <span className="vt-eyebrow">{featured.eyebrow}</span>

@@ -4,6 +4,8 @@ import { toast } from 'sonner';
 import { supabase } from '../lib/supabaseClient';
 import { fetchShowcase, saveShowcase } from '../lib/showcaseApi';
 import { partnerLink, partnerProductLink } from '../utils/couponDisplay';
+import { avatarUrl } from '../lib/partnerAvatarApi';
+import { PartnerAvatarEditor } from './PartnerAvatar';
 import '../styles/partnerLinks.css';
 
 const LIMIT = 12;
@@ -19,7 +21,7 @@ async function copyText(text, done) {
 
 // Painel da parceira: link geral com o cupom aplicado, link de cada produto e a escolha
 // dos produtos que aparecem primeiro para quem chega pelo link dela.
-export default function PartnerLinks({ code, partnerId, adminView = false }) {
+export default function PartnerLinks({ code, partnerId, adminView = false, avatarPath = null, partnerName = '' }) {
     const id = useId();
     const [products, setProducts] = useState([]);
     const [status, setStatus] = useState('loading');
@@ -78,13 +80,15 @@ export default function PartnerLinks({ code, partnerId, adminView = false }) {
             </div>
         </div>
 
+        <PartnerAvatarEditor key={avatarPath || 'sem-foto'} initialUrl={avatarUrl(avatarPath)} name={partnerName} readOnly={adminView} />
+
         <div className="partner-links-card">
             <label htmlFor={`${id}-general`}>Link geral, para a bio e os stories</label>
             <div className="partner-links-row">
                 <input id={`${id}-general`} readOnly value={partnerLink(code)} onFocus={event => event.target.select()} />
                 <button type="button" onClick={() => copyText(partnerLink(code), 'Link copiado.')}><Copy size={15} aria-hidden="true" /> Copiar link</button>
             </div>
-            <small>Abre a loja com o desconto aplicado e mostra primeiro os produtos que você destacar abaixo.</small>
+            <small>Abre a sua página de indicação: sua foto, o desconto já aplicado e primeiro os produtos que você destacar abaixo. <a href={partnerLink(code)} target="_blank" rel="noopener noreferrer">Ver como fica</a></small>
         </div>
 
         <div className="partner-links-card">

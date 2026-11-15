@@ -42,7 +42,7 @@ const HomePage = ({ landingCode = '' }) => {
     const landingFailed = landing && couponState.code === landingCode && Boolean(couponState.error) && !couponState.checking;
     const name = partnerFirstName(coupon?.partnerName);
     const featured = landing && coupon && showcase.length
-        ? { ids: showcase, eyebrow: `Com o cupom ${coupon.code}`, title: name ? `Escolhas de ${name}` : 'Produtos em destaque' }
+        ? { ids: showcase, eyebrow: `Com o cupom ${coupon.code}`, title: name ? `Indicações de ${name}` : 'Indicações do seu cupom' }
         : null;
 
     // Links como "/#produtos" vindos de outras páginas levam direto à seção.
@@ -57,7 +57,7 @@ const HomePage = ({ landingCode = '' }) => {
             <Toaster position="top-right" richColors />
             <Header showSearch onSearchChange={setSearchTerm} searchTerm={searchTerm} />
             <main>
-                {landing ? <CouponLandingIntro code={landingCode} /> : <CouponBar />}
+                {landing ? <CouponLandingIntro code={landingCode} hasPicks={Boolean(featured)} /> : <CouponBar />}
                 {(!landing || landingFailed) && <HomeHero />}
                 {!landing && <BenefitsBar />}
                 <ProductGrid searchTerm={searchTerm} featured={featured} />

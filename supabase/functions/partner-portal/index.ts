@@ -1,9 +1,56 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { allowedOrigin, json } from '../_shared/http.ts';
-import { authAccount, isAdminEmail, uuidPattern } from '../_shared/counter-security.ts';
+import { authAccount, isAdminEmail, takeRateLimit, uuidPattern } from '../_shared/counter-security.ts';
 import { monthKey, partnerGoal, partnerSales, partnerStatus, todayInBrazil } from '../_shared/partner-results.ts';
 
-const profileFields = 'id,full_name,email,phone,status,referral_code,requested_coupon_code,commission_recipient_id,coupon_id,approved_at,rejection_reason,created_at';
+const profileFields = 'id,full_name,email,phone,status,referral_code,requested_coupon_code,commission_recipient_id,coupon_id,approved_at,rejection_reason,created_at,avatar_path';
+const AVATAR_TYPES: Record<string, string> = { webp: 'image/webp', jpg: 'image/jpeg' };
+
+// Foto de perfil da página do link (/cupom/CODIGO), no bucket público "parceiros", pasta da própria conta.
+// Só a própria conta com parceria cadastrada (em análise ou aprovada) troca a foto; o administrador só vê.
+// deno-lint-ignore no-explicit-any
+async function avatarAction(admin: any, account: { id: string }, body: any, origin: string) {
+  const { data: me, error: meError } = await admin.from('partner_profiles').select('id').eq('id', account.id).maybeSingle();
+  if (meError) return json({ error: 'unable_to_load_profile' }, 500, origin);
+  if (!me) return json({ error: 'not_partner' }, 403, origin);
+  const folder = account.id;
+  const bucket = admin.storage.from('parceiros');
+  // Apaga da pasta tudo o que não for a foto atual (envios abandonados e a foto anterior).
+  const clearFolder = async (keep: string | null) => {
+    const { data: files } = await bucket.list(folder, { limit: 100 });
+    const stale = (files || []).map((file: { name: string }) => `${folder}/${file.name}`).filter((path: string) => path !== keep);
+    if (stale.length) await bucket.remove(stale);
+  };
+  const saveProfile = (avatarPath: string | null) => admin.from('partner_profiles').update({ avatar_path: avatarPath, updated_at: new Date().toISOString() }).eq('id', folder);
+
+  if (body.action === 'avatar_upload') {
+    const extension = typeof body.extension === 'string' ? body.extension.toLowerCase() : '';
+    if (!AVATAR_TYPES[extension]) return json({ error: 'invalid_image_type' }, 400, origin);
+    if (await takeRateLimit(admin, 'foto-parceira', folder, 20, 3600) === false) return json({ error: 'too_many_requests' }, 429, origin);
+    const path = `${folder}/avatar-${Date.now()}.${extension}`;
+    const { data, error } = await bucket.createSignedUploadUrl(path);
+    if (error || !data?.token) return json({ error: 'unable_to_prepare_upload' }, 500, origin);
+    return json({ path: data.path, token: data.token, contentType: AVATAR_TYPES[extension] }, 200, origin);
+  }
+  if (body.action === 'avatar_save') {
+    const path = typeof body.path === 'string' ? body.path : '';
+    if (!new RegExp(`^${folder}/avatar-[0-9]{10,16}\\.(webp|jpg)$`).test(path)) return json({ error: 'invalid_avatar' }, 400, origin);
+    const name = path.slice(folder.length + 1);
+    const { data: found } = await bucket.list(folder, { search: name, limit: 10 });
+    if (!(found || []).some((file: { name: string }) => file.name === name)) return json({ error: 'invalid_avatar' }, 400, origin);
+    const { error } = await saveProfile(path);
+    if (error) return json({ error: 'unable_to_save_avatar' }, 500, origin);
+    await clearFolder(path);
+    return json({ avatarPath: path }, 200, origin);
+  }
+  if (body.action === 'avatar_remove') {
+    const { error } = await saveProfile(null);
+    if (error) return json({ error: 'unable_to_save_avatar' }, 500, origin);
+    await clearFolder(null);
+    return json({ avatarPath: null }, 200, origin);
+  }
+  return json({ error: 'invalid_action' }, 400, origin);
+}
 
 Deno.serve(async (req: Request) => {
   const origin = allowedOrigin(req.headers.get('origin'));
@@ -15,6 +62,7 @@ Deno.serve(async (req: Request) => {
     const account = await authAccount(admin, req);
     if (!account) return json({ error: 'unauthorized' }, 401, origin);
     const body = await req.json().catch(() => ({}));
+    if (typeof body?.action === 'string' && body.action.startsWith('avatar_')) return await avatarAction(admin, account, body, origin);
     const requestedPartner = typeof body?.partnerId === 'string' ? body.partnerId.trim() : '';
 
     const { data: ownProfile, error: profileError } = await admin.from('partner_profiles').select(profileFields).eq('id', account.id).maybeSingle();

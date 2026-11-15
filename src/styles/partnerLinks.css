@@ -23,3 +23,4 @@
 .partner-links-actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:4px}
 @media(max-width:900px){.partner-links-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.partner-links-card{padding:16px}.partner-links-row{flex-direction:column}.partner-links-row input,.partner-links-row select{flex:none;width:100%}.partner-links-grid{grid-template-columns:1fr;max-height:300px}.partner-links-actions button{width:100%}}
+.partner-links-card small a{color:#78e6f6;font-weight:700;text-decoration:underline;text-underline-offset:3px}

@@ -58,10 +58,26 @@ try {
     const { default: CouponBar, CouponLandingIntro } = await load('/src/components/CouponBar.jsx');
     assert.ok(text(render(CouponBar)).includes('Cupom FICTICIO5 aplicado. 5% de desconto nos produtos. Alguns produtos têm desconto próprio. Indicação de Maria.'));
     const intro = text(render(CouponLandingIntro, { code: 'FICTICIO5' }));
-    assert.ok(intro.includes('Indicação de Maria.') && intro.includes('Seu desconto já está aplicado.') && intro.includes('Os preços abaixo já aparecem com o desconto.'));
+    assert.ok(intro.includes('Seleção de Maria') && intro.includes('Os produtos que Maria indica') && intro.includes('Seu desconto já está aplicado.') && intro.includes('Os preços abaixo já aparecem com o desconto.'));
+    assert.ok(intro.includes('5%') && intro.includes('FICTICIO5') && intro.includes('Entrega em todo o Brasil'), 'cupom como ingresso e alcance nacional');
+    assert.ok(!/recomenda|usa este|eu uso/i.test(intro), 'a página só diz que a indicação é da parceira');
+    assert.ok(text(render(CouponLandingIntro, { code: 'FICTICIO5', hasPicks: true })).includes('Ver as indicações'), 'leva às indicações quando há seleção');
     // A abertura não usa a resposta de um cupom anterior enquanto o do link é conferido.
     assert.ok(text(render(CouponLandingIntro, { code: 'OUTRO10' })).includes('Conferindo o cupom OUTRO10'));
 
+    // Foto da parceira: redonda com anel; sem foto, a inicial do nome. No painel, só ela troca; o admin só vê.
+    const avatar = await load('/src/components/PartnerAvatar.jsx');
+    const withPhoto = render(avatar.PartnerAvatar, { url: 'https://exemplo.invalid/a.webp', name: 'MARIA DA SILVA' });
+    assert.ok(withPhoto.includes('alt="Foto de Maria"') && withPhoto.includes('has-ring'));
+    assert.ok(text(render(avatar.PartnerAvatar, { url: '', name: 'MARIA DA SILVA' })).includes('M'), 'sem foto, mostra a inicial');
+    const picker = text(render(avatar.PartnerAvatarPicker, { file: null, onChange() {}, name: 'Maria' }));
+    assert.ok(picker.includes('Foto de perfil') && picker.includes('opcional') && picker.includes('Escolher foto'), 'foto opcional no cadastro');
+    assert.ok(text(render(avatar.PartnerAvatarEditor, { initialUrl: '', name: 'Maria' })).includes('Adicionar foto'));
+    const readOnly = render(avatar.PartnerAvatarEditor, { initialUrl: '', name: 'Maria', readOnly: true });
+    assert.ok(!readOnly.includes('<button') && !readOnly.includes('type="file"'), 'o administrador não troca a foto');
+    assert.ok(readFileSync('src/pages/PartnerRegistration.jsx', 'utf8').includes('<PartnerAvatarPicker'), 'campo de foto no cadastro');
+    const portalFunction = readFileSync('supabase/functions/partner-portal/index.ts', 'utf8');
+    assert.ok(portalFunction.includes("createSignedUploadUrl") && portalFunction.includes("from('parceiros')") && portalFunction.includes('avatar_path'), 'envio da foto pelo servidor');
     // A seleção da parceira só aparece na página dela (/cupom/CODIGO), não na tela inicial comum.
     assert.ok(readFileSync('src/pages/HomePage.jsx', 'utf8').includes('const featured = landing && coupon'), 'indicação só na página da parceira');
     assert.ok(!intro.includes('Cabo Frio'), 'a página da parceira não passa a ideia de loja só local');
@@ -100,7 +116,7 @@ try {
     assert.ok(app.includes('path="/cupom/:code"') && !app.includes('PrivacyNotice'));
     const footer = text(render((await load('/src/components/Footer.jsx')).default));
     assert.ok(footer.includes('Este site usa só o armazenamento necessário para manter seu carrinho e sua sessão.'));
-    assert.ok(readFileSync('src/pages/PartnerPortal.jsx', 'utf8').includes('<PartnerLinks code={data.coupon.code} partnerId={profile.id} adminView={adminView} />'));
+    assert.ok(readFileSync('src/pages/PartnerPortal.jsx', 'utf8').includes('<PartnerLinks code={data.coupon.code} partnerId={profile.id} adminView={adminView} avatarPath={profile.avatar_path} partnerName={profile.full_name} />'));
 
     console.log('Partner link checks passed: coupon texts and links, discounted prices and featured products in the storefront, landing intro, light images, /cupom route and privacy line in the footer. Synthetic data only.');
 } finally {

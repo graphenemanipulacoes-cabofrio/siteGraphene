@@ -416,7 +416,7 @@ const PartnerPortal = () => {
           </button>
         </section>
 
-        {data.coupon?.code && <PartnerLinks code={data.coupon.code} partnerId={profile.id} adminView={adminView} />}
+        {data.coupon?.code && <PartnerLinks code={data.coupon.code} partnerId={profile.id} adminView={adminView} avatarPath={profile.avatar_path} partnerName={profile.full_name} />}
 
         {/* SEÇÃO 3: Métricas de Comissões em Dinheiro (Repasses via Pix) */}
         <div className="section-title-wrap">

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { PartnerAvatarPicker } from '../components/PartnerAvatar';
+import { uploadAvatar } from '../lib/partnerAvatarApi';
 import { Link, useNavigate } from 'react-router-dom';
 import { BadgeCheck, ChevronRight, ShieldCheck, TicketPercent, WalletCards } from 'lucide-react';
 import Header from '../components/Header';
@@ -32,6 +34,7 @@ const PartnerRegistration = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
+  const [avatarFile, setAvatarFile] = useState(null);
   const suggestedCoupon = generateCouponSuggestion(form.fullName, form.channel);
   const update = event => setForm(current => ({ ...current, [event.target.name]: event.target.value }));
   const applySuggestedCoupon = () => {
@@ -48,6 +51,10 @@ const PartnerRegistration = () => {
         try { payload = await error.context.json(); } catch { /* Resposta sem JSON. */ }
       }
       if (error || payload?.error) { toast.error(registrationErrors[payload?.error] || 'Revise os dados e tente novamente.'); return; }
+      // A foto é opcional: se não subir, o cadastro continua valendo e ela pode ser adicionada no painel.
+      if (avatarFile) {
+        try { await uploadAvatar(avatarFile); } catch { toast.warning('Cadastro enviado, mas a foto não foi salva. Adicione pelo painel depois.'); }
+      }
       toast.success('Solicitação enviada. Acompanhe a análise no seu painel.');
       refreshAccountRoles();
       navigate('/parceiros/painel');
@@ -74,6 +81,7 @@ const PartnerRegistration = () => {
       <section className="partner-registration-card">
         <div className="partner-card-heading"><span>{customer ? 'ETAPA 2 DE 2' : 'ETAPA 1 DE 2'}</span><h2>{customer ? 'Solicitar parceria' : 'Entre na sua conta'}</h2><p>{customer ? `A solicitação fica ligada à conta ${customer.email}. Após a análise, ela será liberada para o painel.` : 'A parceria usa a mesma conta do site. Entre ou crie a sua, com e-mail ou Google, e volte para esta página.'}</p></div>
         {!customer ? <Link className="partner-account-link" to="/entrar" state={{ returnTo: '/parceiros/cadastro' }} aria-disabled={!authReady}>Entrar ou criar conta <ChevronRight size={18}/></Link> : <form onSubmit={submit} className="partner-form">
+          <PartnerAvatarPicker file={avatarFile} onChange={setAvatarFile} name={form.fullName} />
           <label>Nome completo<input name="fullName" value={form.fullName} onChange={update} placeholder="Seu nome ou razão social" autoComplete="name" required /></label>
           <div className="partner-form-row"><label>CPF ou CNPJ<input name="document" value={form.document} onChange={update} inputMode="numeric" placeholder="Somente números" required /></label><label>WhatsApp<input name="phone" value={form.phone} onChange={update} inputMode="tel" placeholder="(22) 99999-9999" autoComplete="tel" required /></label></div>
           <label>Chave Pix para futuros repasses<input name="pixKey" value={form.pixKey} onChange={update} placeholder="CPF, e-mail, celular ou chave aleatória" required /></label>
