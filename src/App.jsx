@@ -34,6 +34,8 @@ const AboutPage = lazy(() => import('./pages/InstitutionalPages').then(module =>
 const PrivacyPage = lazy(() => import('./pages/InstitutionalPages').then(module => ({ default: module.PrivacyPage })));
 const PurchaseInfoPage = lazy(() => import('./pages/InstitutionalPages').then(module => ({ default: module.PurchaseInfoPage })));
 const ReturnsPage = lazy(() => import('./pages/InstitutionalPages').then(module => ({ default: module.ReturnsPage })));
+// Amostra da área de uma parceira, para mostrar a ela antes do cadastro real (fora do Google).
+const PartnerPreviewPage = lazy(() => import('./pages/PartnerPreviewPage'));
 
 function App() {
   return (
@@ -61,6 +63,7 @@ function App() {
           <Route path="/produtos" element={<ProductsPage />} />
           <Route path="/produto/:id" element={<ProductPage />} />
           <Route path="/cupom/:code" element={<CouponLandingPage />} />
+          <Route path="/dracarolinefrota" element={<PartnerPreviewPage slug="dracarolinefrota" />} />
           <Route path="/qrcode" element={<QrCodePage />} />
           <Route path="/carrinho" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />

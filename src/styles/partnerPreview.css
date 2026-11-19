@@ -1,0 +1,23 @@
+/* Amostra da área de uma parceira (ex.: /dracarolinefrota). Reaproveita os blocos cl-* de coupons.css. */
+.dp-banner{padding:12px max(16px,calc((100vw - 1180px)/2));background:#3a2a08;border-bottom:1px solid rgba(255,206,92,.35);color:#ffe9b0;font-size:.84rem;line-height:1.55}
+.dp-banner strong{color:#fff}
+.dp-banner a{color:#fff;text-decoration:underline;text-underline-offset:2px}
+.dp-landing{padding-top:34px}
+/* Fundo do card: a arte cobre o card sem distorcer. Se a imagem faltar, fica o gradiente original. */
+.cl-card.dp-card{background-image:linear-gradient(rgba(255,255,255,.18),rgba(255,255,255,.18)),var(--dp-bg,none),radial-gradient(circle at 50% 0%,#fff6ef 0%,#ffe2d2 34%,#f9cfdc 62%,#e6d6ff 100%);background-size:cover;background-position:center;background-repeat:no-repeat}
+.dp-ticket .cl-ticket-value strong{font-size:1.2rem;letter-spacing:-.01em}
+.dp-handle{display:inline-block;margin-top:2px;color:#7a2f5c;font-size:.84rem;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.dp-indications{padding:14px 0 70px;color:#d5e9f1}
+.dp-eyebrow{display:block;margin-bottom:10px;color:#9db2bf;font-size:.68rem;letter-spacing:.13em;text-transform:uppercase}
+.dp-indications h2{margin:0 0 22px;color:#fff;font-family:var(--font-heading);font-size:clamp(1.6rem,4vw,2.2rem);font-weight:500;letter-spacing:-.02em}
+.dp-grid{display:grid;grid-template-columns:minmax(0,340px);gap:18px}
+.dp-product{overflow:hidden;border-radius:18px;background:#fff;color:#14232f;box-shadow:0 18px 40px rgba(0,0,0,.25)}
+.dp-product-photo{display:grid;place-items:center;aspect-ratio:4/3;background:linear-gradient(160deg,#f7f1ff,#fde7ef)}
+.dp-product-photo img{width:100%;height:100%;object-fit:contain;padding:14px}
+.dp-product-body{display:grid;gap:8px;padding:20px 20px 22px}
+.dp-product-tag{width:max-content;padding:4px 10px;border-radius:99px;background:#f3e6ee;color:#7a2f5c;font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.dp-product-body h3{margin:0;color:#14232f;font-family:var(--font-heading);font-size:1.2rem;font-weight:600}
+.dp-product-body p{margin:0;color:#4a5d6b;font-size:.88rem}
+.dp-product-body small{color:#7a8a96;font-size:.76rem}
+.dp-product-cta{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;margin-top:6px;border-radius:10px;background:#2b1630;color:#fff6fb!important;font-size:.84rem;font-weight:800}
+.dp-product-cta.is-off{background:#e9e2e7;color:#5b4a57!important;cursor:default}
