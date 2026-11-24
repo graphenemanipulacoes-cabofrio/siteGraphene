@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Package, PackageCheck, MessageCircle, FileText, LogOut, X, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink, WalletCards, Eye, UserRound, ShoppingBag, Monitor, FlaskConical, LayoutGrid, Truck, Scale } from 'lucide-react';
+import { Package, PackageCheck, MessageCircle, FileText, LogOut, X, Trash2, RotateCcw, Archive, ArrowLeft, Users, Shield, ExternalLink, WalletCards, Eye, UserRound, ShoppingBag, Monitor, FlaskConical, LayoutGrid, Truck, Scale, Download } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,6 +14,8 @@ import AdminPartnerResults from '../components/AdminPartnerResults';
 import AdminCustomers from '../components/AdminCustomers';
 import AdminCounterAccess from '../components/AdminCounterAccess';
 import AdminShipping from '../components/AdminShipping';
+import AdminAppInstall from '../components/AdminAppInstall';
+import { attachAdminApp, hideInstallCard, installCardHidden, useAdminInstall } from '../lib/adminApp';
 import PasswordField from '../components/PasswordField';
 import PrescriptionFiles from '../components/PrescriptionFiles';
 import { hasAttachments } from '../utils/prescriptionFiles';
@@ -43,6 +45,10 @@ const Admin = () => {
     const [newAdminPass, setNewAdminPass] = useState('');
     const [adminEmail, setAdminEmail] = useState(() => String(getSession()?.user || '').toLowerCase());
     const navigate = useNavigate();
+    // App do painel no celular: manifesto e service worker só enquanto o /admin está aberto.
+    const install = useAdminInstall();
+    const [installOpen, setInstallOpen] = useState(() => !installCardHidden());
+    useEffect(() => attachAdminApp(), []);
 
     const invokeAdmin = useCallback(async (body) => {
         const session = getSession() || await ensureAdminSession();
@@ -307,7 +313,10 @@ const Admin = () => {
                     <span className="admin-brand-mark">G</span>
                     <div className="admin-brand-copy"><strong>GRAPHÈNE</strong><span>PAINEL OPERACIONAL</span></div>
                 </div>
-                <Button variant="ghost" onClick={handleLogout} style={{ padding: '7px', color: '#fda4af' }} title="Sair"><LogOut size={19} /></Button>
+                <div className="admin-mobile-actions">
+                    {install.offer && <button type="button" className="admin-install-btn" onClick={() => setInstallOpen(true)} aria-label="Instalar o app do painel"><Download size={16} aria-hidden="true" /> App</button>}
+                    <Button variant="ghost" onClick={handleLogout} style={{ padding: '7px', color: '#fda4af' }} title="Sair"><LogOut size={19} /></Button>
+                </div>
             </div>
 
             <nav className="bottom-nav">
@@ -454,6 +463,11 @@ const Admin = () => {
             <main className="admin-main">
                 <div className="admin-content">
                 <Toaster position="top-right" richColors />
+                {install.offer && installOpen && adminEmail && <AdminAppInstall
+                    install={install}
+                    onClose={() => { hideInstallCard(); setInstallOpen(false); }}
+                    onInstalled={() => setInstallOpen(false)}
+                />}
                 <header className="admin-page-header">
                     <div className="admin-page-heading">
                         {view === 'trash' && (

@@ -32,6 +32,14 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnico) ficam
 - Quem tem parceria vê no cabeçalho o mesmo botão dourado, "Painel do parceiro", que leva a `/parceiros/painel` (`partnerStatus` em `StoreContext`, via RPC `current_partner_status`; `refreshAccountRoles` atualiza depois do cadastro). No painel, "Voltar ao site" mantém a conta conectada; só "Sair" encerra a sessão.
 - O login só vale no endereço em que aconteceu. Enquanto a Site URL do painel for o endereço da Vercel, o Google volta para lá; por isso `vercel.json` redireciona `site-graphene.vercel.app` para o domínio oficial, levando a sessão, e `OAuthReturn` segue para o destino guardado.
 
+## App do painel no celular
+- O `/admin` instala como app "Graphène Admin" (pedido do dono em 24/11/2026). Manifesto `public/admin.webmanifest` (início `/admin`, escopo `/`, tela cheia); ícones em `public/assets/app/`, gerados do favicon por `bash scripts/admin-app-icons.sh`.
+- `attachAdminApp` (`src/lib/adminApp.js`) põe o manifesto e as marcas do iPhone no `<head>` só enquanto o `/admin` está aberto e registra `public/admin-sw.js` com escopo `/admin`. A loja não tem manifesto nem service worker; não colocar manifesto em `index.html`.
+- O service worker só existe porque o Chrome do Android exige um para liberar o botão "Instalar". Ele responde às navegações pela rede e, sem internet, mostra uma página "Sem conexão". Não guarda cache: não acrescentar cache do painel sem pedido, porque deixaria versões antigas presas no celular.
+- Cartão `AdminAppInstall` no topo do painel, só no celular e fora do app instalado: no Android, botão "Instalar app" quando o Chrome libera (`beforeinstallprompt`); senão, e no iPhone, os passos do navegador. Botão "App" no cabeçalho móvel reabre o cartão; "Agora não" esconde por 7 dias.
+- No iPhone, o app instalado tem login separado do Safari; o cartão orienta entrar com e-mail e senha, porque o Google pode abrir fora do app. No Android, links do site abertos no celular podem abrir dentro do app instalado (escopo `/`).
+- Verificação: `node scripts/verify-admin-app.mjs`.
+
 ## Segurança
 - **Admin sem segunda etapa** (decisão do dono em 03/11/2026): o código do celular com QR foi retirado; a administração depende só do login da conta e do e-mail em `admins`.
 - **Envio de receita:** `/receita` passa pela função pública `receita-intake` (`prepare` gera links assinados em `receitas-privadas/intake/`; `submit` grava em `solicitacoes`). Limites no servidor: 6 por hora por endereço e 60 por dia no total; sem o banco de limites, recusa o envio. Não reabrir política pública de envio nem insert em `solicitacoes`.
