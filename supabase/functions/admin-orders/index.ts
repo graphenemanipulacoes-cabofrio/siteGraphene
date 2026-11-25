@@ -184,7 +184,7 @@ Deno.serve(async (req: Request) => {
     if (body.action === 'list') {
       const { data, error } = await admin.from('orders').select(`
         id,customer_email,customer_document,shipping_address,subtotal,shipping_amount,total,status,
-        payment_status,payment_reference,payment_method,payment_details,paid_at,carrier,tracking_code,
+        payment_status,payment_reference,payment_provider,payment_method,payment_details,paid_at,carrier,tracking_code,
         invoice_number,invoice_url,admin_notes,shipped_at,delivered_at,created_at,updated_at,
         order_items(id,product_id,product_name,unit_price,quantity)
       `).order('created_at', { ascending: false }).limit(250);
@@ -568,6 +568,61 @@ Deno.serve(async (req: Request) => {
       // Os navegadores conectados como esse admin perdem o acesso na hora.
       await admin.from('admin_sessions').delete().eq('admin_username', target.email || target.username);
       return json({ ok: true }, 200, origin);
+    }
+
+    // Estorno total pelo Mercado Pago. A chave de repetição é fixa por pedido: um clique repetido ou
+    // uma nova tentativa nunca devolve o dinheiro duas vezes. O aviso do Mercado Pago (payment-webhook)
+    // grava depois o mesmo estado e o evento do pagamento.
+    if (body.action === 'refund_order') {
+      const orderId = clean(body.orderId, 36);
+      const reason = clean(body.reason, 300);
+      if (!uuidPattern.test(orderId)) return json({ error: 'invalid_update' }, 400, origin);
+      const { data: order } = await admin.from('orders').select('id,total,payment_status,payment_provider,payment_details').eq('id', orderId).maybeSingle();
+      if (!order) return json({ error: 'order_not_found' }, 404, origin);
+      if (order.payment_status === 'refunded') return json({ error: 'already_refunded' }, 409, origin);
+      if (order.payment_status !== 'paid') return json({ error: 'payment_not_confirmed' }, 409, origin);
+      const paymentId = String(order.payment_details?.payment_id || '');
+      if (order.payment_provider !== 'mercado_pago' || !/^\d{1,20}$/.test(paymentId)) return json({ error: 'payment_not_refundable' }, 409, origin);
+      const accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
+      if (!accessToken) return json({ error: 'provider_not_configured' }, 503, origin);
+
+      const paymentUrl = `https://api.mercadopago.com/v1/payments/${paymentId}`;
+      const authorization = { Authorization: `Bearer ${accessToken}` };
+      const refundResponse = await fetch(`${paymentUrl}/refunds`, {
+        method: 'POST',
+        headers: { ...authorization, 'Content-Type': 'application/json', 'X-Idempotency-Key': `graphene-refund-${order.id}` },
+        body: '{}',
+      });
+      const refund = await refundResponse.json().catch(() => ({}));
+      if (!refundResponse.ok) {
+        // Já estornado em outro lugar (por exemplo, no site do Mercado Pago): confere o pagamento antes de marcar o pedido.
+        const check = await fetch(paymentUrl, { headers: authorization }).catch(() => null);
+        const payment = check?.ok ? await check.json().catch(() => ({})) : {};
+        if (payment.status !== 'refunded') {
+          const detail = `${refund.message || ''} ${JSON.stringify(refund.cause || '')}`.toLowerCase();
+          const error = refundResponse.status === 404 ? 'payment_not_found'
+            : /too.old|old_to_be_refunded/.test(detail) ? 'refund_too_old'
+            : /insufficient|balance|saldo/.test(detail) ? 'refund_insufficient_balance'
+            : 'refund_failed';
+          console.error('refund_failed', refundResponse.status, error);
+          return json({ error }, 502, origin);
+        }
+      } else if (refund.status && refund.status !== 'approved') {
+        // Estorno aceito, mas ainda em processamento: o aviso do Mercado Pago atualiza o pedido quando terminar.
+        await logAdminAction(admin, session.admin_username, 'refund_order', order.id, { amount: Number(refund.amount) || Number(order.total), status: String(refund.status), reason: reason || undefined });
+        return json({ pending: true }, 202, origin);
+      }
+
+      const amount = Number.isFinite(Number(refund.amount)) && Number(refund.amount) > 0 ? Number(refund.amount) : Number(order.total);
+      const { data: updated, error: updateError } = await admin.from('orders')
+        .update({ payment_status: 'refunded', status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', order.id).select('id,status,payment_status,updated_at').single();
+      await logAdminAction(admin, session.admin_username, 'refund_order', order.id, { amount, reason: reason || undefined, refundId: refund.id ? String(refund.id) : undefined });
+      // O dinheiro já voltou; se o pedido não gravou agora, o aviso do Mercado Pago grava depois.
+      if (updateError) return json({ error: 'refunded_not_saved' }, 500, origin);
+      // Comissão ainda não paga deixa de valer quando o pagamento deixa de estar pago.
+      await admin.rpc('create_order_commissions', { p_order_id: order.id });
+      return json({ order: updated, amount }, 200, origin);
     }
 
     if (body.action === 'update') {

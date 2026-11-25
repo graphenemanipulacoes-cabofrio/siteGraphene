@@ -40,6 +40,13 @@ Dados fixos da empresa (CNPJ, endereço, horários, responsável técnico) ficam
 - No iPhone, o app instalado tem login separado do Safari; o cartão orienta entrar com e-mail e senha, porque o Google pode abrir fora do app. No Android, links do site abertos no celular podem abrir dentro do app instalado (escopo `/`).
 - Verificação: `node scripts/verify-admin-app.mjs`.
 
+## Estorno pelo painel
+- Admin › Pedidos › pedido pago › **Estornar pagamento** (pedido do dono em 25/11/2026). Pede confirmação com valor, caixa de confirmação e motivo opcional. Ação `refund_order` da `admin-orders`: só pedido com `payment_status = paid`, `payment_provider = mercado_pago` e `payment_details.payment_id` (gravado pelo `payment-webhook`). Regras da tela em `src/utils/refund.js`.
+- Chama `POST /v1/payments/{id}/refunds` sem valor (estorno total) com `X-Idempotency-Key: graphene-refund-{pedido}`: repetir nunca devolve duas vezes. Se o Mercado Pago recusar, consulta o pagamento; se já estiver estornado (por exemplo, pelo site do Mercado Pago), marca o pedido do mesmo jeito.
+- Com o estorno aprovado: pedido `refunded`/`cancelled`, `create_order_commissions` cancela a comissão ainda não paga e a ação entra no registro (`refund_order`, com valor e motivo). Estorno em processamento responde 202 e o `payment-webhook` atualiza depois. O evento do pagamento vem só do aviso do Mercado Pago, para não duplicar.
+- Estorno parcial continua só pelo site do Mercado Pago. Marcar o pedido como "Cancelado" não devolve dinheiro; a tela avisa isso.
+- Verificação: `node --experimental-vm-modules scripts/verify-refund.mjs` (Mercado Pago e banco simulados). Ainda não houve teste com pagamento real.
+
 ## Segurança
 - **Admin sem segunda etapa** (decisão do dono em 03/11/2026): o código do celular com QR foi retirado; a administração depende só do login da conta e do e-mail em `admins`.
 - **Envio de receita:** `/receita` passa pela função pública `receita-intake` (`prepare` gera links assinados em `receitas-privadas/intake/`; `submit` grava em `solicitacoes`). Limites no servidor: 6 por hora por endereço e 60 por dia no total; sem o banco de limites, recusa o envio. Não reabrir política pública de envio nem insert em `solicitacoes`.
