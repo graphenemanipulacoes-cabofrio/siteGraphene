@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, ChevronDown, ChevronUp, ClipboardList, CreditCard, ExternalLink, FileText, LoaderCircle, MapPin, PackageCheck, RefreshCw, Search, Truck, UserRound } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronUp, ClipboardList, CreditCard, ExternalLink, FileText, LoaderCircle, MapPin, PackageCheck, RefreshCw, RotateCcw, Search, TriangleAlert, Truck, UserRound } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { getSession } from '../utils/security';
 import { safeLink } from '../utils/counter';
+import { canRefund, refundErrorMessage } from '../utils/refund';
 import { toast } from 'sonner';
 
 const money = value => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -22,6 +23,8 @@ const AdminOrders = ({ onUnauthorized }) => {
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState('all');
     const [drafts, setDrafts] = useState({});
+    // Estorno: só um pedido por vez fica com a confirmação aberta.
+    const [refund, setRefund] = useState({ orderId: '', reason: '', confirmed: false, busy: false });
 
     const invoke = useCallback(async body => {
         const session = getSession();
@@ -34,8 +37,13 @@ const AdminOrders = ({ onUnauthorized }) => {
             headers: { 'x-admin-token': session.token }
         });
         if (result.error || result.data?.error === 'unauthorized') {
-            if (result.data?.error === 'unauthorized') onUnauthorized();
-            return { error: result.data?.error || result.error };
+            // Resposta de erro (4xx/5xx): o código vem no corpo, que o supabase-js guarda em error.context.
+            let code = result.data?.error;
+            if (!code && result.error?.context?.json) {
+                try { code = (await result.error.context.json())?.error; } catch { /* Resposta sem JSON. */ }
+            }
+            if (code === 'unauthorized') onUnauthorized();
+            return { error: code || result.error };
         }
         return result;
     }, [onUnauthorized]);
@@ -78,6 +86,29 @@ const AdminOrders = ({ onUnauthorized }) => {
         }
         setOrders(current => current.map(item => item.id === order.id ? { ...item, ...data.order } : item));
         toast.success('Pedido e dados logísticos atualizados.');
+    };
+
+    const openRefund = order => setRefund({ orderId: order.id, reason: '', confirmed: false, busy: false });
+    const closeRefund = () => setRefund({ orderId: '', reason: '', confirmed: false, busy: false });
+
+    const refundOrder = async order => {
+        if (!refund.confirmed || refund.busy) return;
+        setRefund(current => ({ ...current, busy: true }));
+        const { data, error } = await invoke({ action: 'refund_order', orderId: order.id, reason: refund.reason });
+        if (error) {
+            setRefund(current => ({ ...current, busy: false }));
+            if (error === 'already_refunded') loadOrders();
+            toast.error(refundErrorMessage(typeof error === 'string' ? error : ''));
+            return;
+        }
+        closeRefund();
+        if (data?.pending) {
+            toast.success('O Mercado Pago aceitou o estorno e está processando. O pedido atualiza sozinho quando terminar.');
+            return;
+        }
+        setOrders(current => current.map(item => item.id === order.id ? { ...item, ...data.order } : item));
+        setDrafts(current => ({ ...current, [order.id]: { ...current[order.id], status: data.order?.status || 'cancelled' } }));
+        toast.success(`Estorno de ${money(data.amount ?? order.total)} feito. O valor volta ao cliente pelo mesmo meio de pagamento.`);
     };
 
     const visibleOrders = useMemo(() => {
@@ -140,8 +171,20 @@ const AdminOrders = ({ onUnauthorized }) => {
                             </section>
                             <section><h3><CreditCard/> Pagamento</h3>
                                 <dl><div><dt>Status</dt><dd>{paymentMap[order.payment_status]}</dd></div><div><dt>Pago em</dt><dd>{dateTime(order.paid_at)}</dd></div><div><dt>Meio</dt><dd>{order.payment_method || '—'}</dd></div><div><dt>Referência</dt><dd>{order.payment_reference || '—'}</dd></div></dl>
+                                {canRefund(order) && refund.orderId !== order.id && <button type="button" className="refund-open" onClick={() => openRefund(order)}><RotateCcw size={15}/> Estornar pagamento</button>}
                             </section>
                         </div>
+
+                        {refund.orderId === order.id && canRefund(order) && <section className="refund-panel" aria-labelledby={`refund-${order.id}`}>
+                            <h3 id={`refund-${order.id}`}><TriangleAlert/> Estornar {money(order.total)}</h3>
+                            <p>O Mercado Pago devolve o valor total ao cliente, no mesmo meio de pagamento. O pedido fica cancelado, e a comissão de parceira que ainda não foi paga é cancelada. <strong>O estorno não pode ser desfeito.</strong></p>
+                            <label>Motivo (opcional, fica no registro de ações)<input value={refund.reason} maxLength={300} onChange={event => setRefund(current => ({ ...current, reason: event.target.value }))} placeholder="Desistência, produto em falta..." /></label>
+                            <label className="refund-check"><input type="checkbox" checked={refund.confirmed} onChange={event => setRefund(current => ({ ...current, confirmed: event.target.checked }))} /> Confirmo o estorno de {money(order.total)} para {address.name || order.customer_email}.</label>
+                            <div className="refund-actions">
+                                <button type="button" className="refund-back" onClick={closeRefund} disabled={refund.busy}>Voltar</button>
+                                <button type="button" className="refund-confirm" onClick={() => refundOrder(order)} disabled={!refund.confirmed || refund.busy}>{refund.busy ? <LoaderCircle className="spin"/> : <RotateCcw size={16}/>} Confirmar estorno</button>
+                            </div>
+                        </section>}
 
                         <section className="order-products"><h3><PackageCheck/> Produtos para separação</h3>
                             {(order.order_items || []).map(item => <div key={item.id}><span><b>{item.quantity}×</b> {item.product_name}</span><span>{money(item.unit_price)} un.</span><strong>{money(Number(item.unit_price) * item.quantity)}</strong></div>)}
@@ -150,7 +193,8 @@ const AdminOrders = ({ onUnauthorized }) => {
 
                         <section className="logistics-form"><h3><Truck/> Logística e documentação</h3>
                             <div className="logistics-grid">
-                                <label>Status do pedido<select value={draft.status || order.status} onChange={event => setDraft(order.id, 'status', event.target.value)}>{statusOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+                                <label>Status do pedido<select value={draft.status || order.status} onChange={event => setDraft(order.id, 'status', event.target.value)}>{statusOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+                                    {(draft.status || order.status) === 'cancelled' && order.payment_status === 'paid' && <small className="refund-hint">Cancelar não devolve o dinheiro.{canRefund(order) ? ' Para devolver, use Estornar pagamento.' : ' Faça o estorno pelo Mercado Pago.'}</small>}</label>
                                 <label>Transportadora<input value={draft.carrier || ''} onChange={event => setDraft(order.id, 'carrier', event.target.value)} placeholder="Correios, Jadlog..." /></label>
                                 <label>Código de rastreio<input value={draft.trackingCode || ''} onChange={event => setDraft(order.id, 'trackingCode', event.target.value)} placeholder="Código do envio" /></label>
                                 <label>Número da nota fiscal<input value={draft.invoiceNumber || ''} onChange={event => setDraft(order.id, 'invoiceNumber', event.target.value)} placeholder="NF-e 000123" /></label>
@@ -173,6 +217,11 @@ const styles = `
 .admin-orders{display:grid;gap:18px}.order-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.order-metrics article{position:relative;display:flex;align-items:center;gap:13px;min-height:94px;padding:18px;border:1px solid rgba(203,213,225,.12);border-radius:15px;background:linear-gradient(145deg,rgba(22,35,52,.92),rgba(13,24,38,.92));box-shadow:0 10px 24px rgba(0,0,0,.14);overflow:hidden}.order-metrics article:after{content:'';position:absolute;right:-22px;bottom:-38px;width:92px;height:92px;border-radius:50%;background:rgba(34,199,232,.08)}.order-metrics svg{position:relative;z-index:1;box-sizing:content-box;padding:10px;border-radius:11px;color:#67dcf3;background:rgba(34,199,232,.11)}.order-metrics article:nth-child(2) svg{color:#65e7b5;background:rgba(36,211,154,.11)}.order-metrics article:nth-child(3) svg{color:#fcd36c;background:rgba(251,191,36,.1)}.order-metrics article:nth-child(4) svg{color:#a9b5ff;background:rgba(129,140,248,.11)}.order-metrics strong{display:block;font-family:var(--font-heading);font-size:1.65rem;line-height:1.1;color:#fff}.order-metrics span{display:block;margin-top:5px;font-size:.72rem;font-weight:700;color:#95a6ba}.order-toolbar{display:grid;grid-template-columns:minmax(240px,1fr) 205px auto;gap:10px;padding:10px;border:1px solid rgba(203,213,225,.1);border-radius:14px;background:rgba(13,25,40,.78)}.order-toolbar label{display:flex;align-items:center;gap:9px;padding:0 13px}.order-toolbar label,.order-toolbar select{border:1px solid rgba(203,213,225,.12);background:#0a1524;color:#f8fafc;border-radius:9px}.order-toolbar label:focus-within{border-color:rgba(103,220,243,.68);box-shadow:0 0 0 3px rgba(34,199,232,.09)}.order-toolbar input{width:100%;padding:11px 0;background:transparent;border:0;color:#fff;outline:0}.order-toolbar select{padding:0 11px}.order-toolbar button,.logistics-actions button,.logistics-actions a{display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}.order-toolbar button{padding:0 14px;border:0;border-radius:9px;background:#22c7e8;color:#031319;font-weight:800}.orders-feedback{min-height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;color:#9cadbf;border:1px dashed rgba(203,213,225,.17);border-radius:15px;background:rgba(13,25,40,.45);font-size:.86rem}.orders-feedback svg{width:29px;height:29px;color:#67dcf3}.admin-order-list{display:grid;gap:11px}.admin-order-card{border:1px solid rgba(203,213,225,.11);border-radius:14px;background:linear-gradient(145deg,rgba(18,31,47,.9),rgba(10,20,33,.9));box-shadow:0 8px 22px rgba(0,0,0,.12);overflow:hidden;transition:border-color .2s,transform .2s}.admin-order-card:hover{border-color:rgba(103,220,243,.3)}.admin-order-card.expanded{border-color:rgba(34,199,232,.4)}.order-card-summary{width:100%;display:grid;grid-template-columns:132px 148px minmax(200px,1fr) 128px 24px;align-items:center;gap:16px;padding:18px 19px;text-align:left;background:transparent;color:#fff;border:0;cursor:pointer}.order-card-summary>div{display:grid;gap:4px}.order-card-summary small{font-size:.7rem;color:#8d9db0}.order-payment{text-align:right}.order-status{justify-self:start;padding:6px 10px;border-radius:999px;font-size:.66rem;font-weight:800;letter-spacing:.02em;text-align:center;background:rgba(148,163,184,.15);color:#cbd5e1}.status-paid{background:rgba(34,197,94,.15);color:#6ee7a2}.status-processing{background:rgba(56,189,248,.15);color:#7dd3fc}.status-shipped{background:rgba(99,102,241,.18);color:#b5befe}.status-delivered{background:rgba(16,185,129,.18);color:#6ee7b7}.status-cancelled{background:rgba(248,113,113,.13);color:#fca5a5}.payment-paid{color:#65e7b5!important}.payment-failed{color:#fda4af!important}.order-detail{padding:0 18px 20px;border-top:1px solid rgba(203,213,225,.1)}.order-info-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;padding:18px 0}.order-info-grid section,.order-products,.logistics-form{padding:17px;border:1px solid rgba(203,213,225,.1);border-radius:12px;background:rgba(5,14,26,.38)}.order-detail h3{display:flex;align-items:center;gap:7px;font-size:.8rem;letter-spacing:.01em;margin-bottom:13px;color:#e6edf7}.order-detail h3 svg{width:17px;color:#67dcf3}.order-info-grid p{font-size:.8rem;color:#c4d0de;line-height:1.65}.order-info-grid dl{display:grid;gap:8px}.order-info-grid dl div{display:grid;grid-template-columns:74px 1fr;gap:7px}.order-info-grid dt{font-size:.68rem;color:#718298}.order-info-grid dd{font-size:.77rem;color:#e2e8f0;overflow-wrap:anywhere}.order-products{margin-bottom:12px}.order-products>div{display:grid;grid-template-columns:1fr 120px 120px;gap:12px;padding:10px 0;border-bottom:1px solid rgba(203,213,225,.07);font-size:.78rem}.order-products>div span:nth-child(2),.order-products>div strong{text-align:right}.order-products-total{font-size:.9rem!important;border:0!important;padding-top:14px!important}.logistics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.logistics-grid label{display:grid;gap:6px;font-size:.68rem;font-weight:700;color:#91a3b8}.logistics-grid input,.logistics-grid select,.logistics-grid textarea{padding:10px;border:1px solid rgba(203,213,225,.13);border-radius:8px;background:#0a1524;color:#f8fafc;outline:0;resize:vertical}.logistics-grid input:focus,.logistics-grid select:focus,.logistics-grid textarea:focus{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(34,199,232,.1)}.span-2{grid-column:span 2}.logistics-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}.logistics-actions button,.logistics-actions a{border-radius:8px;padding:11px 15px;font-weight:800;font-size:.75rem}.logistics-actions button{border:0;background:#22c7e8;color:#031319}.logistics-actions a{border:1px solid rgba(203,213,225,.16);color:#cbd5e1}.spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:1050px){.order-metrics{grid-template-columns:repeat(2,1fr)}.order-card-summary{grid-template-columns:125px 130px 1fr 100px 20px}.order-info-grid{grid-template-columns:1fr 1fr}.order-info-grid section:last-child{grid-column:span 2}}
 @media(max-width:680px){.order-metrics{gap:10px}.order-metrics article{min-height:84px;padding:13px;gap:9px}.order-metrics article svg{width:18px;height:18px;padding:8px}.order-metrics strong{font-size:1.35rem}.order-toolbar{grid-template-columns:1fr;padding:8px}.order-toolbar select,.order-toolbar button{min-height:43px}.order-card-summary{grid-template-columns:1fr auto;gap:8px 12px;padding:15px}.order-card-summary .order-status{grid-column:1}.order-card-summary>div:nth-of-type(2){grid-column:1/-1}.order-payment{grid-column:2;grid-row:1;text-align:right}.order-card-summary>svg{grid-column:2;grid-row:2}.order-info-grid{grid-template-columns:1fr}.order-info-grid section:last-child{grid-column:auto}.order-products>div{grid-template-columns:1fr auto}.order-products>div span:nth-child(2){display:none}.logistics-grid{grid-template-columns:1fr}.span-2{grid-column:auto}.logistics-actions{flex-direction:column}.logistics-actions>*{width:100%}}
+.refund-open{display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:9px 12px;border:1px solid rgba(251,113,133,.35);border-radius:8px;background:rgba(251,113,133,.07);color:#fda4af;font-size:.74rem;font-weight:800;cursor:pointer}.refund-open:hover{background:rgba(251,113,133,.14)}
+.refund-panel{display:grid;gap:12px;margin-bottom:12px;padding:17px;border:1px solid rgba(251,113,133,.38);border-radius:12px;background:rgba(127,29,29,.16)}.refund-panel h3{color:#fecdd3!important;margin-bottom:0!important}.refund-panel h3 svg{color:#fb7185!important}.refund-panel p{font-size:.8rem;line-height:1.6;color:#e2e8f0}.refund-panel label{display:grid;gap:6px;font-size:.68rem;font-weight:700;color:#cbd5e1}.refund-panel input:not([type=checkbox]){padding:10px;border:1px solid rgba(203,213,225,.16);border-radius:8px;background:#0a1524;color:#f8fafc;outline:0}
+.refund-panel .refund-check{display:flex;align-items:flex-start;gap:9px;font-size:.78rem;color:#f8fafc}.refund-check input{width:18px;height:18px;margin-top:1px;accent-color:#fb7185;flex:0 0 auto}
+.refund-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}.refund-actions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 15px;border-radius:8px;font-weight:800;font-size:.75rem;cursor:pointer}.refund-back{border:1px solid rgba(203,213,225,.16);background:transparent;color:#cbd5e1}.refund-confirm{border:0;background:#fb7185;color:#2a0a10}.refund-confirm:disabled,.refund-back:disabled{opacity:.5;cursor:not-allowed}
+.refund-hint{font-weight:600;color:#fcd36c;line-height:1.4}
 `;
 
 export default AdminOrders;
