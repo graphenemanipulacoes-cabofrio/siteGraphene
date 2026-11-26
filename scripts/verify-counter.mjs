@@ -374,7 +374,9 @@ const frete = readFileSync('supabase/migrations/202610230002_frete.sql', 'utf8')
 assert.match(frete, /grant select on public\.loja_config to anon, authenticated;/);
 assert.match(frete, /raise exception 'invalid_shipping_zip'/);
 assert.match(frete, /v_total := v_subtotal - v_discount \+ v_shipping;/);
-assert.match(readFileSync('supabase/functions/create-checkout/index.ts', 'utf8'), /id: 'frete', title: 'Entrega'/);
+// O item da entrega enviado ao Mercado Pago fica em _shared/mercado-pago.ts (providerItems), usado pela create-checkout e pela process-payment.
+assert.match(readFileSync('supabase/functions/_shared/mercado-pago.ts', 'utf8'), /id: 'frete', title: 'Entrega'/);
+assert.match(readFileSync('supabase/functions/create-checkout/index.ts', 'utf8'), /providerItems\(\{/);
 const equipe = readFileSync('supabase/migrations/202610220001_equipe_farmaceutico.sql', 'utf8');
 assert.match(equipe, /check \(role in \('balcao', 'farmaceutico'\)\)/);
 assert.match(equipe, /revoke all on function public\.counter_manage_account\(text,uuid,text,text,text,boolean,text,text\) from public, anon, authenticated/);

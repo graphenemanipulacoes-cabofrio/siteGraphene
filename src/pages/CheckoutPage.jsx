@@ -1,21 +1,29 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, Navigate, useLocation } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CreditCard, LockKeyhole, LoaderCircle, MapPin, UserRound, Check, Truck } from 'lucide-react';
+import { Toaster, toast } from 'sonner';
 import StoreLayout from '../components/StoreLayout';
 import PurchaseSteps from '../components/PurchaseSteps';
 import CouponPanel from '../components/CouponPanel';
 import { useCoupon } from '../context/CouponContext';
 import { useStore } from '../context/StoreContext';
 import { supabase } from '../lib/supabaseClient';
-import { prepareCheckout } from '../lib/checkoutApi';
+import { cancelPix, orderPaymentStatus, prepareCheckout } from '../lib/checkoutApi';
+import { leaveOpenPix, paidWithoutConfirmation, prepareWithRestart } from '../utils/checkoutFlow';
+import { pendingPaymentFrom } from '../utils/paymentViews';
 import { money, validCpf } from '../utils/commerce';
 import { isAdminPreview } from '../utils/adminPreview';
 import { variantText } from '../utils/productOptions';
 import { FreeShippingProgress } from '../components/ShippingEstimator';
 import { STORE_ADDRESS, cleanZip, deliveryText, formatZip, lookupAddress, useShippingConfig, useShippingQuote } from '../utils/shipping';
 import '../styles/purchase.css';
+import '../styles/payment.css';
+
+// Pagamento no próprio site: carregado só na revisão, e o SDK do Mercado Pago só quando o cliente escolhe cartão.
+const OrderPayment = lazy(() => import('../components/payment/OrderPayment'));
 
 const cartSignature = items => JSON.stringify(items.map(item => [item.key, item.quantity, item.price]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))));
+const orderIdPattern = /^[0-9a-f-]{36}$/i;
 
 export default function CheckoutPage() {
     const { customer } = useStore();
@@ -34,6 +42,9 @@ function CustomerCheckout() {
     const [error, setError] = useState('');
     const [errorReference, setErrorReference] = useState(null);
     const [review, setReview] = useState(null);
+    const [pixOpen, setPixOpen] = useState(false);
+    const [pendingPayment, setPendingPayment] = useState(null);
+    const navigate = useNavigate();
     const attempt = useRef(null);
     const busy = useRef(false);
     const errorRef = useRef(null);
@@ -60,13 +71,47 @@ function CustomerCheckout() {
         });
         return () => { active = false; };
     }, [zipDigits, setZip]);
+    // Último pedido pago nesta aba (graphene_payment_order). Pago sem a confirmação na tela (o Pix pago no app do
+    // banco e a página recarregada, comum no navegador do Instagram): leva à confirmação, que dá baixa no carrinho.
+    // Pagamento ainda em andamento (Pix aberto, cartão em análise ou em processamento): avisa antes de pagar de novo.
+    const customerId = customer?.id;
+    useEffect(() => {
+        if (!customerId || preview) return undefined;
+        let stored = null;
+        let attemptKey = null;
+        try {
+            stored = sessionStorage.getItem('graphene_payment_order');
+            attemptKey = JSON.parse(sessionStorage.getItem(`graphene_checkout_attempt:${customerId}`) || 'null')?.key || null;
+        } catch { /* Storage is optional. */ }
+        if (!orderIdPattern.test(stored || '')) return undefined;
+        let active = true;
+        const confirm = () => navigate(`/pedido/retorno?pedido=${stored}`, { replace: true });
+        (async () => {
+            // Exceção à regra do aviso (toast) em toda chamada: consulta opcional, que só acrescenta o aviso ou leva à
+            // confirmação. Sem resposta, a tela segue igual e o servidor continua protegendo o pagamento.
+            try {
+                const { data: order, error: orderError } = await supabase.from('orders').select('id,checkout_key,status,payment_status').eq('id', stored).maybeSingle();
+                if (!active || orderError || !order) return;
+                if (paidWithoutConfirmation(order, attemptKey)) { confirm(); return; }
+                if (!['pending', 'failed'].includes(order.payment_status) || order.status !== 'awaiting_payment') return;
+                const status = await orderPaymentStatus(stored, { expectedUserId: customerId });
+                if (!active) return;
+                if (status.order.paymentStatus === 'paid') {
+                    if (paidWithoutConfirmation({ ...order, payment_status: 'paid' }, attemptKey)) confirm();
+                    return;
+                }
+                const pending = pendingPaymentFrom(status);
+                if (pending) setPendingPayment({ orderId: stored, ...pending });
+            } catch { /* Ver acima: sem aviso de propósito. */ }
+        })();
+        return () => { active = false; };
+    }, [customerId, preview, navigate]);
     const showError = message => {
         setError(message);
         requestAnimationFrame(() => errorRef.current?.focus());
     };
 
-    const submit = async event => {
-        event.preventDefault();
+    const prepare = async () => {
         if (preview && !customer) return;
         if (busy.current) return;
         if (couponChecking) { showError('Aguarde a validação do seu cupom.'); return; }
@@ -100,13 +145,23 @@ function CustomerCheckout() {
             }
             if (attempt.current?.fingerprint !== fingerprint || !/^[0-9a-f-]{36}$/i.test(attempt.current?.key || '')) attempt.current = { fingerprint, key: crypto.randomUUID() };
             try { sessionStorage.setItem(attemptStorageKey, JSON.stringify(attempt.current)); } catch { /* Retained in memory until navigation. */ }
-            const data = await prepareCheckout({ ...body, checkoutKey: attempt.current.key }, { expectedUserId: customer.id });
+            // checkout_restart_required: the stored order can no longer be paid. Drop its key and start one fresh attempt, once.
+            const data = await prepareWithRestart(key => prepareCheckout({ ...body, checkoutKey: key }, { expectedUserId: customer.id }), {
+                key: attempt.current.key,
+                renewKey: () => {
+                    try { sessionStorage.removeItem(attemptStorageKey); } catch { /* Replaced in memory below. */ }
+                    attempt.current = { fingerprint, key: crypto.randomUUID() };
+                    try { sessionStorage.setItem(attemptStorageKey, JSON.stringify(attempt.current)); } catch { /* Retained in memory until navigation. */ }
+                    return attempt.current.key;
+                },
+            });
             // Read the actual order through the customer's RLS-protected access.
             const { data: order, error: orderError } = await supabase.from('orders')
                 .select('id,subtotal,discount_amount,discount_code,shipping_amount,shipping_address,total,order_items(product_id,product_name,unit_price,quantity,variant)')
                 .eq('id', data.orderId).single();
             if (orderError || !order) throw new Error('Não foi possível carregar o resumo final. Tente novamente para conferir o pedido.');
-            setReview({ ...order, paymentUrl: data.paymentUrl });
+            setPixOpen(false);
+            setReview({ ...order, payment: data });
             requestAnimationFrame(() => headingRef.current?.focus());
         } catch (failure) {
             setErrorReference(failure.requestId || null);
@@ -116,11 +171,38 @@ function CustomerCheckout() {
             setLoading(false);
         }
     };
+    const submit = event => {
+        event.preventDefault();
+        prepare();
+    };
 
     const proceed = () => {
         // Keep the cart until the payment is confirmed; returning or cancelling must not lose it.
         try { sessionStorage.setItem('graphene_payment_order', review.id); } catch { /* The provider also returns the order reference. */ }
-        window.location.assign(review.paymentUrl);
+        window.location.assign(review.payment.paymentUrl);
+    };
+    const brick = review?.payment?.paymentMode === 'brick';
+    const goToConfirmation = () => navigate(`/pedido/retorno?pedido=${review.id}`, { replace: true });
+    // Sair da revisão com um Pix aberto: o Pix deixa de valer antes de mudar a entrega ou o carrinho.
+    const leaveReview = async after => {
+        const { outcome, message } = await leaveOpenPix({ pixOpen, confirm: question => window.confirm(question), cancel: () => cancelPix(review.id, { expectedUserId: customer.id }) });
+        if (outcome === 'paid') { goToConfirmation(); return; }
+        if (outcome === 'error') { toast.error(message); return; }
+        if (outcome !== 'leave') return;
+        setPixOpen(false);
+        after();
+    };
+    // O pagamento no site deixou de valer para esta revisão (a chave voltou para o Checkout Pro):
+    // refaz a revisão com os mesmos dados, e a create-checkout decide de novo como pagar.
+    const restartReview = () => {
+        setPixOpen(false);
+        setReview(null);
+        prepare();
+    };
+    const backToCart = event => {
+        if (!review || !pixOpen) return;
+        event.preventDefault();
+        leaveReview(() => navigate('/carrinho'));
     };
     const summaryItems = review?.order_items?.map(item => ({ ...item, id: item.product_id, name: item.product_name, price: Number(item.unit_price) })) || cart;
     const shippingEstimate = quote?.ok ? Number(quote.amount) || 0 : 0;
@@ -129,26 +211,38 @@ function CustomerCheckout() {
     const deliveryPrice = source => !source?.ok ? 'Informe o CEP' : source.local ? 'A combinar' : Number(source.amount) === 0 ? 'Grátis' : money(source.amount);
     const invalidPrice = cart.some(item => !(Number(item.price) > 0));
 
-    return <StoreLayout><section className="purchase-page"><div className="purchase-container">
-        <Link to="/carrinho" className="purchase-back"><ArrowLeft size={16} /> Voltar ao carrinho</Link>
+    return <StoreLayout><section className="purchase-page"><Toaster position="top-center" richColors /><div className="purchase-container">
+        <Link to="/carrinho" className="purchase-back" onClick={backToCart}><ArrowLeft size={16} /> Voltar ao carrinho</Link>
         <PurchaseSteps current={review ? 3 : 2} />
-        <div className="purchase-heading"><div><span className="purchase-eyebrow">Finalizar compra</span><h1 ref={headingRef} tabIndex={-1}>{review ? 'Confira seu pedido' : 'Entrega'}</h1><p>{review ? 'Confira produtos, entrega e valor total. O pagamento acontece na próxima tela.' : 'Comece pelo CEP: o endereço é preenchido sozinho.'}</p></div></div>
+        <div className="purchase-heading"><div><span className="purchase-eyebrow">Finalizar compra</span><h1 ref={headingRef} tabIndex={-1}>{review ? 'Confira seu pedido' : 'Entrega'}</h1><p>{review ? brick ? 'Confira o pedido e pague aqui mesmo, com Pix ou cartão.' : 'Confira produtos, entrega e valor total. O pagamento acontece na próxima tela.' : 'Comece pelo CEP: o endereço é preenchido sozinho.'}</p></div></div>
+        {!review && pendingPayment && <p className="pay-resume" role="status"><span>{pendingPayment.text}</span><Link to={`/pedido/retorno?pedido=${pendingPayment.orderId}`}>{pendingPayment.kind === 'pix' ? 'Abrir o Pix' : 'Ver o pagamento em andamento'}</Link></p>}
         {!authReady || !cartReady ? <div className="purchase-empty" role="status">Carregando sua conta e seu carrinho…</div> : !cart.length && !preview ? <div className="purchase-empty"><h2>Seu carrinho está vazio</h2><Link to="/produtos" className="purchase-primary">Escolher produtos</Link></div> : !customer && !preview ? <Navigate to="/entrar" replace state={{ returnTo: '/checkout', intent: 'checkout' }} /> :
         <div className="purchase-layout">
             <div className="purchase-cart-main">
                 {!review && <CouponPanel disabled={loading} />}
                 {review ? <div className="purchase-card purchase-form">
-                    <div className="purchase-section-title"><MapPin size={20}/><h2>Entregar para</h2><button className="purchase-text-link" onClick={() => setReview(null)}>Alterar</button></div>
+                    <div className="purchase-section-title"><MapPin size={20}/><h2>Entregar para</h2><button className="purchase-text-link" onClick={() => leaveReview(() => setReview(null))}>Alterar</button></div>
                     <address className="purchase-address"><strong>{form.name}</strong><span>{form.address}, {form.number}{form.complement ? ` · ${form.complement}` : ''}</span><span>{form.neighborhood} · {form.city}/{form.state}</span><span>CEP {formatZip(form.zip)} · {form.phone}</span></address>
                     {delivery && <div className="purchase-delivery"><Truck size={18} aria-hidden="true"/><div><strong>{delivery.title}</strong><span>{delivery.detail}</span>{review.shipping_address?.delivery?.local && <span>Se preferir retirar: {STORE_ADDRESS}.</span>}</div><b>{deliveryPrice(review.shipping_address?.delivery)}</b></div>}
                     <div className="purchase-section-title purchase-divider"><CreditCard size={20}/><h2>Pagamento</h2></div>
-                    <p>Ao clicar em pagar, você vai para o ambiente seguro do Mercado Pago e escolhe <strong>Pix</strong> ou <strong>cartão de crédito</strong>. As condições de parcelamento aparecem lá, antes de confirmar.</p>
-                    <ol className="purchase-next">
-                        <li>Você paga no Mercado Pago e volta para o site.</li>
-                        <li>Com o pagamento confirmado, preparamos seu pedido no laboratório.</li>
-                        <li>Você acompanha tudo em <Link to="/minha-conta">Minha conta</Link>{review.shipping_address?.delivery?.local ? ' e combinamos a entrega pelo WhatsApp' : ''}.</li>
-                    </ol>
-                    <p className="purchase-note"><Check size={18}/> Pedido registrado. O pagamento ainda não foi feito.</p>
+                    {brick ? <>
+                        <Suspense fallback={<div className="pay-loading" role="status"><LoaderCircle className="spin" size={18}/> Carregando o pagamento…</div>}>
+                            <OrderPayment orderId={review.id} amount={Number(review.total)} checkout={{ publicKey: review.payment.publicKey, maxInstallments: review.payment.maxInstallments, amount: review.payment.amount }}
+                                customerId={customer.id} payerEmail={customer.email} payerDocument={form.cpf} mode="checkout" onPaid={goToConfirmation} onPixChange={setPixOpen} onRestart={restartReview} />
+                        </Suspense>
+                        <ol className="purchase-next">
+                            <li>Com o pagamento confirmado, preparamos seu pedido no laboratório.</li>
+                            <li>Você acompanha tudo em <Link to="/minha-conta">Minha conta</Link>{review.shipping_address?.delivery?.local ? ' e combinamos a entrega pelo WhatsApp' : ''}.</li>
+                        </ol>
+                    </> : <>
+                        <p>Ao clicar em pagar, você vai para o ambiente seguro do Mercado Pago e escolhe <strong>Pix</strong> ou <strong>cartão de crédito</strong>. As condições de parcelamento aparecem lá, antes de confirmar.</p>
+                        <ol className="purchase-next">
+                            <li>Você paga no Mercado Pago e volta para o site.</li>
+                            <li>Com o pagamento confirmado, preparamos seu pedido no laboratório.</li>
+                            <li>Você acompanha tudo em <Link to="/minha-conta">Minha conta</Link>{review.shipping_address?.delivery?.local ? ' e combinamos a entrega pelo WhatsApp' : ''}.</li>
+                        </ol>
+                        <p className="purchase-note"><Check size={18}/> Pedido registrado. O pagamento ainda não foi feito.</p>
+                    </>}
                 </div> : <form id="purchase-delivery" className="purchase-card purchase-form" onSubmit={submit}>
                     <fieldset disabled={loading}><legend className="sr-only">Dados de entrega</legend>
                     <div className="purchase-section-title"><MapPin size={20}/><h2>Endereço de entrega</h2></div>
@@ -178,8 +272,8 @@ function CustomerCheckout() {
                 <div className="purchase-amount"><span>Entrega</span><strong>{deliveryPrice(review ? review.shipping_address?.delivery : quote)}</strong></div>
                 {(review ? Number(review.discount_amount) > 0 : coupon) && <div className="purchase-amount purchase-discount"><span>Cupom {review ? review.discount_code : coupon.code}</span><strong>− {money(review ? review.discount_amount : coupon.discountAmount)}</strong></div>}
                 <div className="purchase-amount purchase-total"><span>{review ? 'Total' : 'Total estimado'}</span><strong>{money(amount)}</strong></div>
-                {invalidPrice ? <p className="purchase-error">Revise os produtos sem preço no carrinho.</p> : review ? <button className="purchase-primary" onClick={proceed}><LockKeyhole size={17}/> Pagar {money(amount)} no Mercado Pago</button> : <button form="purchase-delivery" type="submit" className="purchase-primary" disabled={loading || couponChecking || !customer || !cart.length}>{loading ? <LoaderCircle className="spin" size={18}/> : <ArrowRight size={18}/>} {loading ? 'Preparando revisão…' : 'Revisar pedido'}</button>}
-                <p className="purchase-hint"><LockKeyhole size={14}/> {review ? 'Pagamento seguro pelo Mercado Pago.' : 'Você confere tudo na próxima etapa, antes de pagar.'}</p>
+                {invalidPrice ? <p className="purchase-error">Revise os produtos sem preço no carrinho.</p> : review ? brick ? null : <button className="purchase-primary" onClick={proceed}><LockKeyhole size={17}/> Pagar {money(amount)} no Mercado Pago</button> : <button form="purchase-delivery" type="submit" className="purchase-primary" disabled={loading || couponChecking || !customer || !cart.length}>{loading ? <LoaderCircle className="spin" size={18}/> : <ArrowRight size={18}/>} {loading ? 'Preparando revisão…' : 'Revisar pedido'}</button>}
+                <p className="purchase-hint"><LockKeyhole size={14}/> {review ? brick ? 'Pagamento processado pelo Mercado Pago, sem sair do site.' : 'Pagamento seguro pelo Mercado Pago.' : 'Você confere tudo na próxima etapa, antes de pagar.'}</p>
             </aside>
         </div>}
     </div></section></StoreLayout>;

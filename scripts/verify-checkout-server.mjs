@@ -1,5 +1,8 @@
 // Runs the real Edge Function in a VM with Auth, database and provider mocks.
 // No Supabase/MP network access, credentials, database writes or charges occur.
+// The real _shared modules (http, counter-security, mercado-pago) are linked, as in production.
+// Modes (MERCADO_PAGO_CHECKOUT_MODE): empty/redirect = Checkout Pro as before; brick = payment on the
+// site for everyone; brick_staff = on the site only for staff accounts. Brick mode never calls Mercado Pago here.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
@@ -11,11 +14,13 @@ const customerId = 'abcdef12-1234-4234-8234-123456789abc';
 const checkoutKey = '87654321-4321-4321-8321-cba987654321';
 const origin = 'https://www.graphenemanipulacoes.com.br';
 const paymentUrl = 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=mock';
-const env = new Map(Object.entries({
+const publicKey = 'APP_USR-00000000-mock-public-key';
+const baseEnv = {
     SUPABASE_URL: 'https://mock-project.supabase.co', SUPABASE_ANON_KEY: 'mock-anon',
     SUPABASE_SERVICE_ROLE_KEY: 'mock-service', MERCADO_PAGO_ACCESS_TOKEN: 'mock-provider',
     SITE_URL: `${origin}/`,
-}));
+};
+const env = new Map(Object.entries(baseEnv));
 const calls = [];
 const logs = [];
 let state;
@@ -50,6 +55,8 @@ const createClient = (_url, _key, options) => ({
     from: table => new Query(table),
     rpc: async (name, args) => {
         calls.push({ kind: 'rpc', name, args });
+        if (name === 'current_staff_role') return { data: state.staffRole, error: null };
+        if (name === 'order_payment_state') return state.paymentStateError ? { data: null, error: { message: 'secret database detail' } } : { data: state.paymentState, error: null };
         return { data: state.order, error: state.rpcError };
     },
 });
@@ -69,23 +76,34 @@ const context = createContext({
     Deno: { env: { get: key => env.get(key) }, serve: callback => { handler = callback; } },
 });
 const imported = new SyntheticModule(['createClient'], function () { this.setExport('createClient', createClient); }, { context });
-const source = new SourceTextModule(stripTypeScriptTypes(readFileSync('supabase/functions/create-checkout/index.ts', 'utf8'), { mode: 'strip' }), { context });
+const readModule = path => new SourceTextModule(stripTypeScriptTypes(readFileSync(path, 'utf8'), { mode: 'strip' }), { context });
+const sharedModules = {
+    '../_shared/http.ts': readModule('supabase/functions/_shared/http.ts'),
+    '../_shared/counter-security.ts': readModule('supabase/functions/_shared/counter-security.ts'),
+    '../_shared/mercado-pago.ts': readModule('supabase/functions/_shared/mercado-pago.ts'),
+};
+const source = readModule('supabase/functions/create-checkout/index.ts');
 await source.link(specifier => {
+    if (sharedModules[specifier]) return sharedModules[specifier];
     assert.match(specifier, /^npm:@supabase\/supabase-js@/, 'Only the official Supabase import is mocked');
     return imported;
 });
 await source.evaluate();
 assert.equal(typeof handler, 'function');
 
-const reset = () => {
+const reset = (extraEnv = {}) => {
     calls.length = 0;
     logs.length = 0;
+    env.clear();
+    for (const [key, value] of Object.entries({ ...baseEnv, ...extraEnv })) if (value !== undefined) env.set(key, value);
     state = {
         user: { id: customerId, email: 'synthetic@example.invalid' }, authError: null, rpcError: null,
         order: { order_id: orderId, subtotal: 100, discount: 0, shipping: 19.9, total: 119.9, items: [{ product_id: 1, title: 'Synthetic product', quantity: 2, unit_price: 50 }] },
-        existingOrder: { id: orderId, customer_id: customerId, payment_status: 'pending', payment_url: null, payment_reference: null, total: 119.9 },
+        existingOrder: { id: orderId, customer_id: customerId, status: 'awaiting_payment', payment_status: 'pending', payment_url: null, payment_reference: null, total: 119.9 },
         providerStatus: 201, providerPayload: { id: 'mock-preference', init_point: paymentUrl },
         providerMode: 'json', persistError: false, documentError: false,
+        staffRole: null, paymentStateError: false,
+        paymentState: { order: { id: orderId, status: 'awaiting_payment', payment_status: 'pending', total: 119.9 }, payable: true, reason: null, attempt: null, refresh_due: false },
     };
 };
 const body = () => ({
@@ -136,6 +154,7 @@ reset();
 let result = await invoke();
 assert.equal(result.response.status, 200, JSON.stringify(result.payload));
 assert.equal(result.payload.orderId, orderId); assert.equal(result.payload.paymentUrl, paymentUrl);
+assert.equal(result.payload.paymentMode, 'redirect');
 assert.equal(rpcCalls().length, 1); assert.equal(rpcCalls()[0].name, 'create_checkout_order_v2');
 assert.equal(rpcCalls()[0].args.p_customer_id, customerId);
 assert.equal(rpcCalls()[0].args.p_checkout_key, checkoutKey);
@@ -218,4 +237,85 @@ for (const items of [[], [null], [{ productId: -1, quantity: 2 }], [{ productId:
     assert.equal(rpcCalls().length, 0); assert.equal(providerCalls().length, 0);
 }
 
-console.log('Checkout server: origins/preflight, Auth, v2 pricing + freight, canonical URLs, provider failure/timeout and persistence checks passed (isolated mocks).');
+// ---- Modes ----
+const documentSaves = () => calls.filter(call => call.kind === 'query' && call.operation === 'update' && call.value?.customer_document);
+// Unknown or empty mode stays on Checkout Pro (redirect), exactly as above.
+for (const mode of [undefined, '', 'redirect', 'BRICKS', 'site']) {
+    reset({ MERCADO_PAGO_CHECKOUT_MODE: mode, MERCADO_PAGO_PUBLIC_KEY: publicKey });
+    result = await invoke();
+    assert.equal(result.response.status, 200, `mode ${mode}`);
+    assert.equal(result.payload.paymentMode, 'redirect'); assert.equal(result.payload.paymentUrl, paymentUrl);
+    assert.equal(providerCalls().length, 1);
+    assert.equal(rpcCalls().some(call => call.name === 'current_staff_role' || call.name === 'order_payment_state'), false, 'Redirect mode makes no extra database calls');
+}
+// Brick: no call to Mercado Pago; the browser receives only the order, the amount to display, the Public Key and installments.
+for (const mode of ['brick', ' Brick ']) {
+    reset({ MERCADO_PAGO_CHECKOUT_MODE: mode, MERCADO_PAGO_PUBLIC_KEY: publicKey });
+    result = await invoke();
+    assert.equal(result.response.status, 200, JSON.stringify(result.payload));
+    assert.deepEqual(Object.keys(result.payload).sort(), ['amount', 'maxInstallments', 'orderId', 'paymentMode', 'publicKey', 'requestId']);
+    assert.equal(result.payload.paymentMode, 'brick'); assert.equal(result.payload.orderId, orderId);
+    assert.equal(result.payload.amount, 119.9); assert.equal(result.payload.publicKey, publicKey); assert.equal(result.payload.maxInstallments, 12);
+    assert.equal(providerCalls().length, 0, 'Brick mode never calls Mercado Pago in create-checkout');
+    assert.equal(rpcCalls().find(call => call.name === 'order_payment_state').args.p_customer_id, customerId);
+    assert.equal(documentSaves().length, 1, 'The CPF is saved for the Pix payer');
+    assert.ok(!JSON.stringify(result.payload).includes('mock-provider'), 'The access token never reaches the browser');
+}
+// A stored Checkout Pro link is not reused in brick mode.
+reset({ MERCADO_PAGO_CHECKOUT_MODE: 'brick', MERCADO_PAGO_PUBLIC_KEY: publicKey }); state.existingOrder.payment_url = paymentUrl; state.existingOrder.payment_reference = 'mock-existing';
+result = await invoke(); assert.equal(result.payload.paymentMode, 'brick'); assert.equal(result.payload.paymentUrl, undefined);
+// Installments setting: 1..12, otherwise 12.
+for (const [value, expected] of [['6', 6], ['1', 1], ['12', 12], ['15', 12], ['0', 12], ['abc', 12], ['2.5', 12]]) {
+    reset({ MERCADO_PAGO_CHECKOUT_MODE: 'brick', MERCADO_PAGO_PUBLIC_KEY: publicKey, MERCADO_PAGO_MAX_INSTALLMENTS: value });
+    result = await invoke(); assert.equal(result.payload.maxInstallments, expected, `installments ${value}`);
+}
+// Brick without a valid Public Key: 503, nothing created at Mercado Pago, CPF not saved.
+for (const key of [undefined, '', 'chave-invalida', 'APP_USR-curta']) {
+    reset({ MERCADO_PAGO_CHECKOUT_MODE: 'brick', MERCADO_PAGO_PUBLIC_KEY: key });
+    result = await invoke(); assert.equal(result.response.status, 503); assert.equal(result.payload.error, 'payment_provider_not_configured');
+    assert.equal(providerCalls().length, 0); assert.equal(documentSaves().length, 0);
+}
+// brick_staff: staff accounts (admin, pharmacist, counter) pay on the site; customers keep Checkout Pro.
+for (const [role, expected] of [['admin', 'brick'], ['farmaceutico', 'brick'], ['balcao', 'brick'], [null, 'redirect'], ['cliente', 'redirect']]) {
+    reset({ MERCADO_PAGO_CHECKOUT_MODE: 'brick_staff', MERCADO_PAGO_PUBLIC_KEY: publicKey }); state.staffRole = role;
+    result = await invoke();
+    assert.equal(result.response.status, 200, JSON.stringify(result.payload));
+    assert.equal(result.payload.paymentMode, expected, `role ${role}`);
+    assert.equal(providerCalls().length, expected === 'brick' ? 0 : 1);
+    assert.ok(rpcCalls().some(call => call.name === 'current_staff_role'));
+}
+// Reused order that can no longer be paid (cancelled, older than 7 days or with a product off the site):
+// the browser must drop its checkout key and create a new order.
+for (const [change, expected] of [
+    [() => { state.existingOrder.status = 'cancelled'; }, 'checkout_restart_required'],
+    [() => { state.existingOrder.status = 'processing'; }, 'checkout_restart_required'],
+    [() => { state.paymentState.reason = 'order_not_payable'; state.paymentState.payable = false; }, 'checkout_restart_required'],
+    [() => { state.paymentState.reason = 'order_expired'; state.paymentState.payable = false; }, 'checkout_restart_required'],
+    [() => { state.paymentState.reason = 'already_paid'; state.paymentState.payable = false; }, 'checkout_already_completed'],
+]) {
+    reset({ MERCADO_PAGO_CHECKOUT_MODE: 'brick', MERCADO_PAGO_PUBLIC_KEY: publicKey }); change();
+    result = await invoke();
+    assert.equal(result.response.status, 409); assert.equal(result.payload.error, expected);
+    assert.equal(providerCalls().length, 0); assert.equal(documentSaves().length, 0);
+    assert.ok(!result.payload.publicKey);
+}
+// A payment in review or in progress still returns the Brick data: the page resumes it before showing the form.
+for (const reason of ['payment_in_review', 'payment_in_progress']) {
+    reset({ MERCADO_PAGO_CHECKOUT_MODE: 'brick', MERCADO_PAGO_PUBLIC_KEY: publicKey }); state.paymentState.reason = reason; state.paymentState.payable = false;
+    result = await invoke(); assert.equal(result.response.status, 200); assert.equal(result.payload.paymentMode, 'brick');
+}
+// Redirect mode keeps reusing old orders exactly as before (no status check there).
+reset({ MERCADO_PAGO_CHECKOUT_MODE: 'redirect' }); state.existingOrder.status = 'cancelled';
+result = await invoke(); assert.equal(result.response.status, 200); assert.equal(result.payload.paymentMode, 'redirect');
+// Database failure while reading the payment state: generic 500, no detail leaked.
+reset({ MERCADO_PAGO_CHECKOUT_MODE: 'brick', MERCADO_PAGO_PUBLIC_KEY: publicKey }); state.paymentStateError = true;
+result = await invoke(); assert.equal(result.response.status, 500); assert.equal(result.payload.error, 'internal_error');
+assert.ok(!JSON.stringify(result.payload).includes('secret')); assert.ok(!JSON.stringify(logs).includes('secret'));
+// Invalid order contract in brick mode never returns a payable amount.
+reset({ MERCADO_PAGO_CHECKOUT_MODE: 'brick', MERCADO_PAGO_PUBLIC_KEY: publicKey }); state.order.total = 0;
+result = await invoke(); assert.equal(result.payload.error, 'invalid_order_total');
+reset({ MERCADO_PAGO_CHECKOUT_MODE: 'brick', MERCADO_PAGO_PUBLIC_KEY: publicKey }); state.documentError = true;
+result = await invoke(); assert.equal(result.response.status, 500);
+assert.ok(!JSON.stringify(logs).includes(body().payerDocument)); assert.ok(!JSON.stringify(logs).includes(state.user.email)); assert.ok(!JSON.stringify(logs).includes(publicKey));
+
+console.log('Checkout server: origins/preflight, Auth, v2 pricing + freight, canonical URLs, provider failure/timeout and persistence checks passed; modes redirect/brick/brick_staff, Public Key and installments settings, and restart of unpayable reused orders passed (isolated mocks).');
