@@ -164,7 +164,17 @@ assert.equal((await portal({}, { authorization: 'Bearer token-admin' })).data.st
 
 // Conferências nos arquivos.
 const csp = JSON.parse(readFileSync('vercel.json', 'utf8')).headers[0].headers.find(header => header.key === 'Content-Security-Policy')?.value || '';
-assert.match(csp, /script-src 'self';/, 'script-src sem unsafe-inline');
+// CSP global (SPA): só acréscimos para o Payment Brick do Mercado Pago, sem script inline nem eval.
+const directive = name => (csp.split(';').map(part => part.trim()).find(part => part.startsWith(`${name} `)) || '').slice(name.length + 1).split(/\s+/).filter(Boolean);
+assert.match(csp, /script-src 'self' https:\/\/sdk\.mercadopago\.com https:\/\/http2\.mlstatic\.com;/, 'script-src: só o site e o SDK do Mercado Pago');
+assert.doesNotMatch(directive('script-src').join(' '), /unsafe-inline|unsafe-eval|\*|data:|blob:/, 'script-src sem unsafe-inline, unsafe-eval ou curingas');
+for (const host of ['https://api.mercadopago.com', 'https://api-static.mercadopago.com', 'https://secure-fields.mercadopago.com', 'https://http2.mlstatic.com', 'https://api.mercadolibre.com']) {
+  assert.ok(directive('connect-src').includes(host), `connect-src com ${host}`);
+}
+for (const host of ['https://www.google.com', 'https://secure-fields.mercadopago.com', 'https://api-static.mercadopago.com']) assert.ok(directive('frame-src').includes(host), `frame-src com ${host}`);
+assert.ok(directive('img-src').includes('data:') && directive('img-src').includes('https://http2.mlstatic.com'), 'img-src com data: (QR do Pix) e as bandeiras');
+assert.ok(!csp.split(/[\s;]+/).some(source => /^https:\/\/\*\./.test(source)), 'sem domínios curinga');
+assert.deepEqual(directive('form-action'), ["'self'"], 'form-action sem mudança (sem 3DS na fase 1)');
 assert.match(csp, /frame-ancestors 'none'/);
 assert.match(csp, /object-src 'none'/);
 const receita = readFileSync('src/pages/ReceitaPage.jsx', 'utf8');

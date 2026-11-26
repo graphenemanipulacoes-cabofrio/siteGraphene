@@ -1,0 +1,71 @@
+/* Pagamento no próprio site (Pix com tela própria e cartão pelo Payment Brick).
+   Mesmas cores do fluxo de compra: --purchase-green vira o azul do site dentro de .page-root. */
+.pay-box{display:grid;gap:14px;margin-top:4px}
+.pay-box .spin{animation:pay-spin 1s linear infinite}
+@keyframes pay-spin{to{transform:rotate(360deg)}}
+.pay-title{font-size:.95rem!important;margin:0!important;color:var(--purchase-ink)}
+.pay-loading{display:flex;align-items:center;gap:10px;min-height:64px;padding:16px;border:1px dashed var(--purchase-line);border-radius:10px;color:var(--purchase-muted);font-size:.86rem}
+.pay-loading svg{color:var(--purchase-green);flex-shrink:0}
+.pay-methods{display:grid;gap:10px}
+.pay-method{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;align-items:center;width:100%;padding:16px;border:1px solid #b9c7c9;border-radius:10px;background:#fff;color:var(--purchase-ink);text-align:left;cursor:pointer;transition:border-color .15s,background .15s}
+.pay-method:hover{border-color:var(--purchase-green);background:#f2f7fb}
+.pay-method svg{color:var(--purchase-green)}
+.pay-method span{display:grid;gap:3px}
+.pay-method strong{font-size:.92rem}
+.pay-method small{font-size:.76rem;color:var(--purchase-muted);line-height:1.45}
+.pay-hint,.pay-notice{margin:0!important;padding:11px 13px;border-radius:8px;background:#f2f7fb;border:1px solid #d6e6f0;font-size:.8rem!important;line-height:1.5!important;color:var(--purchase-ink)!important}
+.pay-notice a{color:var(--purchase-green);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.pay-warning{margin:0!important;font-size:.76rem!important;color:var(--purchase-muted)!important}
+.pay-switch{display:flex;justify-content:center}
+.pay-card{display:grid;gap:10px;min-height:120px}
+.pay-card-loading{display:flex;align-items:center;gap:10px;color:var(--purchase-muted);font-size:.84rem}
+.pay-card-loading svg{color:var(--purchase-green);animation:pay-spin 1s linear infinite}
+.pay-card-error{display:grid;gap:12px;padding:16px;border-radius:10px;background:#fff1f2;border:1px solid #e8bdc3}
+.pay-card-error p{margin:0;color:#8e2535!important;font-size:.84rem!important}
+.pay-card-error strong{color:#8e2535!important}
+/* Resultado (análise, recusa, confirmação) */
+.pay-result{display:grid;justify-items:start;gap:8px;padding:18px;border-radius:10px;border:1px solid #d6e6f0;background:#f2f7fb}
+.pay-result>svg{color:var(--purchase-green)}
+.pay-result h3{margin:0;font-size:1rem;color:var(--purchase-ink);outline:none}
+.pay-result p{margin:0;font-size:.85rem!important}
+.pay-result small{font-size:.72rem;color:var(--purchase-muted);overflow-wrap:anywhere}
+.pay-result.is-rejected,.pay-result.is-error,.pay-result.is-retryable,.pay-result.is-blocked{background:#fff1f2;border-color:#e8bdc3}
+.pay-result.is-rejected>svg,.pay-result.is-error>svg,.pay-result.is-retryable>svg,.pay-result.is-blocked>svg{color:#8e2535}
+.pay-result.is-rejected p,.pay-result.is-error p,.pay-result.is-retryable p,.pay-result.is-blocked p{color:#8e2535!important}
+.pay-result-actions{display:grid;gap:10px;width:100%;margin-top:6px}
+.pay-result-actions .purchase-primary,.pay-result-actions .purchase-secondary{width:100%}
+/* Pix */
+.pay-pix{display:grid;gap:14px}
+.pay-pix-head{display:grid;gap:4px}
+.pay-pix-head h3{margin:0;font-size:1.05rem;color:var(--purchase-ink)}
+.pay-pix-head p{margin:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.pay-pix-head strong{font-size:1.4rem;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.pay-pix-head span{font-size:.78rem;color:var(--purchase-muted)}
+.pay-pix-timer{margin:0!important;font-size:.84rem!important;color:var(--purchase-ink)!important}
+.pay-pix-timer b{font-variant-numeric:tabular-nums}
+.pay-pix-qr{margin:0;display:grid;justify-items:center;gap:8px;padding:14px;border:1px solid var(--purchase-line);border-radius:10px;background:#fff}
+.pay-pix-qr img{width:220px;height:220px;max-width:100%;object-fit:contain;image-rendering:pixelated}
+.pay-pix-qr figcaption{font-size:.76rem;color:var(--purchase-muted);text-align:center}
+.pay-pix-code{display:grid;gap:8px}
+.pay-pix-code label{font-size:.8rem;font-weight:700;color:var(--purchase-ink)}
+.pay-pix-code textarea{width:100%;padding:10px 12px;border:1px solid #b8c8cb;border-radius:8px;background:#f7faf9;color:var(--purchase-ink);font:500 .78rem/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:none;overflow-wrap:anywhere;word-break:break-all}
+.pay-pix-steps{margin:0;padding-left:20px;display:grid;gap:4px;font-size:.82rem;color:var(--purchase-muted);line-height:1.5}
+.pay-pix-toggle{display:inline-flex!important;align-items:center;gap:6px;justify-self:start;padding:0}
+.pay-pix-wait{display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;align-items:start;padding:12px;border-radius:10px;background:#f2f7fb;border:1px solid #d6e6f0;font-size:.8rem;color:var(--purchase-ink);line-height:1.5}
+.pay-pix-wait svg{color:var(--purchase-green);margin-top:1px;animation:pay-spin 1s linear infinite}
+.pay-pix-actions{display:grid;gap:10px;justify-items:center}
+.pay-pix-expired{display:grid;gap:10px;justify-items:center;padding:16px;border-radius:10px;background:#fff1f2;border:1px solid #e8bdc3}
+.pay-pix-expired p{margin:0;color:#8e2535!important;font-size:.86rem!important;text-align:center}
+/* Faixa "pagamento em andamento" no checkout */
+.pay-resume{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px;padding:12px 14px;border-radius:10px;background:#f2f7fb;border:1px solid #d6e6f0;font-size:.84rem;color:var(--purchase-ink)}
+.pay-resume a{color:var(--purchase-green);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:700px){.pay-method{padding:14px}.pay-pix-qr img{width:200px;height:200px}}
+@media(prefers-reduced-motion:reduce){.pay-box .spin,.pay-card-loading svg,.pay-pix-wait svg{animation:none}.pay-method{transition:none}}
+/* Página de retorno com o pagamento do pedido */
+.purchase-return.is-paying{max-width:620px;text-align:left;display:grid;gap:12px}
+.purchase-return.is-paying .purchase-total{margin:6px 0 0}
+.purchase-return.is-paying .purchase-continue{margin-top:6px}
+.purchase-return.is-paying .pay-loading svg{animation:pay-spin 1s linear infinite}
+@media(max-width:700px){.purchase-return.is-paying{padding:24px 18px}}
+/* Títulos e avisos que recebem o foco ao abrir o Pix ou o cartão (tabIndex -1): sem contorno, como o título do resultado. */
+.pay-box [tabindex="-1"]:focus{outline:none}

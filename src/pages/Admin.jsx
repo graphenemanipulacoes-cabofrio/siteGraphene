@@ -31,6 +31,7 @@ const auditLabels = {
     add_partner_product_credit: 'Concedeu crédito de produtos', record_partner_product_usage: 'Registrou uso de crédito', delete_partner_credit_entry: 'Apagou lançamento de crédito',
     update_request_status: 'Moveu solicitação', delete_request: 'Excluiu solicitação', update: 'Atualizou pedido',
     product_active: 'Tirou ou colocou produto no site', refund_order: 'Estornou pagamento',
+    refund_failed: 'Estorno recusado pelo Mercado Pago', refund_extra_payment: 'Estornou pagamento extra', reconcile_order: 'Conferiu pedido no Mercado Pago',
     save_cost_settings: 'Confirmou custos das parcerias', save_product_cost: 'Alterou custo de produto',
     save_partner_terms: 'Alterou regras de parceria', save_partner_delivery: 'Registrou postagens de parceira',
 };

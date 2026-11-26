@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BadgeCheck, BanknoteArrowDown, CircleDollarSign, CreditCard, Download, Gift, Landmark, LoaderCircle, Plus, ReceiptText, RefreshCw, ShieldCheck, TicketPercent, WalletCards } from 'lucide-react';
+import { BadgeCheck, BanknoteArrowDown, CircleDollarSign, CreditCard, Download, Gift, Landmark, LoaderCircle, Plus, ReceiptText, RefreshCw, RotateCcw, ShieldCheck, TicketPercent, TriangleAlert, WalletCards } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { getSession } from '../utils/security';
 import { toast } from 'sonner';
 import { couponOrdersCsv, filterCouponOrders, summarizeCouponOrders } from '../utils/couponReporting';
+import { refundErrorMessage } from '../utils/refund';
 import '../styles/financeCoupons.css';
 import CouponDiscountEditor from './CouponDiscountEditor';
 
@@ -11,9 +12,33 @@ const money = value => Number(value || 0).toLocaleString('pt-BR', { style: 'curr
 const date = value => value ? new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) : '—';
 const paymentLabel = { paid: 'Confirmado', pending: 'Pendente', failed: 'Falhou', refunded: 'Estornado' };
 const roleLabel = { influencer: 'Influenciador(a)', marketing: 'Marketing', development: 'Desenvolvimento', other: 'Outro' };
+// Pagamentos que pedem atenção (paymentAlerts da finance_dashboard, últimos 90 dias).
+const alertLabel = {
+    duplicate_approved: 'Pagamento em dobro no mesmo pedido',
+    duplicate_order: 'Possível compra em dobro: outro pedido do mesmo cliente pago em até 60 minutos',
+    amount_mismatch: 'Valor diferente do total do pedido',
+    refunded_after_fulfillment: 'Estorno de pedido já em preparação, enviado ou entregue',
+    mediation: 'Reclamação aberta no Mercado Pago',
+    partial_refund: 'Estorno parcial',
+    reversal_other: 'Estorno ou contestação de outro pagamento do pedido',
+};
+const alertAttemptLabel = { approved: 'aprovado', refunded: 'estornado', charged_back: 'contestado', in_mediation: 'em reclamação', cancelled: 'cancelado', rejected: 'recusado' };
+const normalizeAlert = alert => ({
+    id: alert.id || `${alert.order_id || alert.orderId}-${alert.provider_payment_id || alert.paymentId}-${alert.decision}`,
+    decision: alert.decision,
+    orderId: alert.order_id || alert.orderId || '',
+    paymentId: String(alert.provider_payment_id || alert.paymentId || ''),
+    amount: alert.gross_amount ?? alert.amount ?? null,
+    attemptStatus: alert.attempt_status || alert.attemptStatus || '',
+    // duplicate_order: o outro pedido pago do mesmo cliente.
+    relatedOrderId: String(alert.related_order_id || alert.relatedOrderId || ''),
+    createdAt: alert.created_at || alert.createdAt || null,
+});
+// Linhas de alerta (status 'alert') não são um pagamento: ficam fora da atividade recente.
+const activityEvents = events => (Array.isArray(events) ? events : []).filter(event => event?.status !== 'alert');
 
 const AdminFinance = ({ onUnauthorized }) => {
-    const [data, setData] = useState({ orders: [], recipients: [], coupons: [], commissions: [], paymentEvents: [], mercadoPagoConfigured: false });
+    const [data, setData] = useState({ orders: [], recipients: [], coupons: [], commissions: [], paymentEvents: [], paymentAlerts: [], mercadoPagoConfigured: false });
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState('');
     const [openCoupon, setOpenCoupon] = useState('');
@@ -21,13 +46,24 @@ const AdminFinance = ({ onUnauthorized }) => {
     const [filters, setFilters] = useState({ search: '', status: '', from: '', to: '', attributedOnly: false });
     const [recipientForm, setRecipientForm] = useState({ name: '', email: '', role: 'influencer', commissionType: 'percentage', commissionValue: '', attributionScope: 'coupon', holdDays: '14' });
     const [couponForm, setCouponForm] = useState({ recipientId: '', code: '', discountType: 'percentage', discountValue: '', minimumOrderAmount: '', maxRedemptions: '' });
+    // Estorno de um pagamento extra: só um alerta por vez fica com a confirmação aberta.
+    const [extraRefund, setExtraRefund] = useState({ id: '', confirmed: false, busy: false });
 
     const invoke = useCallback(async body => {
         const token = getSession()?.token;
         if (!token) { onUnauthorized(); return { error: 'unauthorized' }; }
-        const result = await supabase.functions.invoke('admin-orders', { body, headers: { 'x-admin-token': token } });
-        if (result.data?.error === 'unauthorized') onUnauthorized();
-        return { data: result.data, error: result.data?.error || result.error };
+        try {
+            const result = await supabase.functions.invoke('admin-orders', { body, headers: { 'x-admin-token': token } });
+            // Resposta de erro (4xx/5xx): o código vem no corpo, que o supabase-js guarda em error.context.
+            let code = result.data?.error;
+            if (!code && result.error?.context?.json) {
+                try { code = (await result.error.context.json())?.error; } catch { /* Resposta sem JSON. */ }
+            }
+            if (code === 'unauthorized') onUnauthorized();
+            return { data: result.data, error: code || result.error };
+        } catch (error) {
+            return { data: null, error };
+        }
     }, [onUnauthorized]);
 
     const load = useCallback(async () => {
@@ -54,6 +90,7 @@ const AdminFinance = ({ onUnauthorized }) => {
         const paidOut = data.commissions.filter(item => item.status === 'paid').reduce((sum, item) => sum + Number(item.amount || 0), 0);
         return { gross, fees, net, pending, available, paidOut, paidCount: paid.length, refunded: refunded.reduce((sum, order) => sum + Number(order.total || 0), 0), pendingPayments: data.orders.filter(order => order.payment_status === 'pending').length };
     }, [data]);
+    const alerts = useMemo(() => (Array.isArray(data.paymentAlerts) ? data.paymentAlerts : []).map(normalizeAlert), [data.paymentAlerts]);
     const filteredOrders = useMemo(() => filterCouponOrders(data.orders, filters), [data.orders, filters]);
     const filteredMetrics = useMemo(() => summarizeCouponOrders(filteredOrders), [filteredOrders]);
     const filter = event => setFilters(current => ({ ...current, [event.target.name]: event.target.type === 'checkbox' ? event.target.checked : event.target.value }));
@@ -120,6 +157,21 @@ const AdminFinance = ({ onUnauthorized }) => {
         setData(current => ({ ...current, recipients: current.recipients.map(item => item.id === recipient.id ? result.data.recipient : item) }));
     };
 
+    const refundExtra = async alert => {
+        if (!extraRefund.confirmed || extraRefund.busy) return;
+        setExtraRefund(current => ({ ...current, busy: true }));
+        const result = await invoke({ action: 'refund_extra_payment', orderId: alert.orderId, paymentId: alert.paymentId });
+        if (result.error) {
+            setExtraRefund(current => ({ ...current, busy: false }));
+            toast.error(refundErrorMessage(typeof result.error === 'string' ? result.error : ''));
+            return;
+        }
+        setExtraRefund({ id: '', confirmed: false, busy: false });
+        if (result.data?.pending) toast.success('O Mercado Pago aceitou o estorno e está processando. O alerta atualiza sozinho quando terminar.');
+        else toast.success(`Estorno de ${money(result.data?.amount ?? alert.amount)} feito. O pedido não muda.`);
+        load();
+    };
+
     if (loading) return <div className="finance-loading"><LoaderCircle className="spin"/> Carregando central financeira...</div>;
 
     return <section className="finance-center">
@@ -146,9 +198,19 @@ const AdminFinance = ({ onUnauthorized }) => {
         {tab === 'coupons' && <p className="finance-result-count">Os usos de cupom incluem pedidos em revisão, ainda sem pagamento. Para conferir vendas pagas por parceiro, abra a aba Vendas e cupons.</p>}
 
         {tab === 'overview' && <div className="finance-grid">
+            {alerts.length > 0 && <section className="finance-card finance-card-wide finance-alerts"><div className="finance-card-title"><div><h2>Pagamentos que pedem atenção</h2><p>Últimos 90 dias. Confira cada um no site do Mercado Pago antes de agir.</p></div><TriangleAlert/></div>
+                <div className="finance-alert-list">{alerts.map(alert => <article key={alert.id}>
+                    <div><strong>{alertLabel[alert.decision] || 'Pagamento que pede conferência'}</strong><small>Pedido #{alert.orderId.slice(-8).toUpperCase() || '—'} · pagamento {alert.paymentId ? `nº ${alert.paymentId}` : 'sem número'}{alert.attemptStatus ? ` · ${alertAttemptLabel[alert.attemptStatus] || 'situação não informada'}` : ''}{alert.relatedOrderId ? ` · outro pedido #${alert.relatedOrderId.slice(-8).toUpperCase()}` : ''} · {date(alert.createdAt)}</small></div>
+                    <b>{alert.amount != null ? money(alert.amount) : '—'}</b>
+                    {alert.decision === 'duplicate_approved' && alert.attemptStatus === 'approved' && /^\d{1,20}$/.test(alert.paymentId) && (extraRefund.id === alert.id ? <div className="finance-alert-confirm">
+                        <label><input type="checkbox" checked={extraRefund.confirmed} onChange={event => setExtraRefund(current => ({ ...current, confirmed: event.target.checked }))} /> Confirmo o estorno de {alert.amount != null ? money(alert.amount) : 'este pagamento'}. O estorno não pode ser desfeito.</label>
+                        <div><button className="subtle" onClick={() => setExtraRefund({ id: '', confirmed: false, busy: false })} disabled={extraRefund.busy}>Voltar</button><button className="danger" onClick={() => refundExtra(alert)} disabled={!extraRefund.confirmed || extraRefund.busy}>{extraRefund.busy ? <LoaderCircle className="spin"/> : <RotateCcw/>} Confirmar estorno</button></div>
+                    </div> : <button className="danger" onClick={() => setExtraRefund({ id: alert.id, confirmed: false, busy: false })}><RotateCcw/> Estornar este pagamento</button>)}
+                </article>)}</div>
+            </section>}
             <section className="finance-card finance-card-wide"><div className="finance-card-title"><div><h2>Resumo operacional</h2><p>Valores consolidados exclusivamente das vendas deste site.</p></div><BadgeCheck/></div><div className="finance-summary-grid"><div><span>Pagamentos pendentes</span><strong>{metrics.pendingPayments}</strong></div><div><span>Estornos registrados</span><strong>{money(metrics.refunded)}</strong></div><div><span>Comissões já pagas</span><strong>{money(metrics.paidOut)}</strong></div><div><span>Cupons ativos</span><strong>{data.coupons.filter(coupon => coupon.is_active).length}</strong></div></div></section>
             <section className="finance-card"><div className="finance-card-title"><div><h2>Controles automáticos</h2><p>Proteções aplicadas ao fluxo financeiro.</p></div><ShieldCheck/></div><ul className="finance-checklist"><li><BadgeCheck/> Pagamento só vira venda após confirmação do Mercado Pago.</li><li><BadgeCheck/> Comissão fica retida até o prazo definido.</li><li><BadgeCheck/> Estorno cancela comissões ainda não pagas.</li><li><BadgeCheck/> Preço e desconto são validados no servidor.</li></ul></section>
-            <section className="finance-card"><div className="finance-card-title"><div><h2>Atividade recente</h2><p>Últimas atualizações recebidas.</p></div><ReceiptText/></div>{data.paymentEvents.length ? <div className="finance-events">{data.paymentEvents.slice(0, 5).map(event => <div key={event.id}><span className={`event-dot event-${event.status}`}/><div><strong>{event.payment_method || 'Pagamento Mercado Pago'}</strong><small>{date(event.created_at)} · {event.status}</small></div><b>{event.gross_amount ? money(event.gross_amount) : '—'}</b></div>)}</div> : <div className="finance-empty">Nenhum evento de pagamento recebido ainda.</div>}</section>
+            <section className="finance-card"><div className="finance-card-title"><div><h2>Atividade recente</h2><p>Últimas atualizações recebidas.</p></div><ReceiptText/></div>{activityEvents(data.paymentEvents).length ? <div className="finance-events">{activityEvents(data.paymentEvents).slice(0, 5).map(event => <div key={event.id}><span className={`event-dot event-${event.status}`}/><div><strong>{event.payment_method || 'Pagamento Mercado Pago'}</strong><small>{date(event.created_at)} · {event.status}</small></div><b>{event.gross_amount ? money(event.gross_amount) : '—'}</b></div>)}</div> : <div className="finance-empty">Nenhum evento de pagamento recebido ainda.</div>}</section>
         </div>}
 
         {tab === 'transactions' && <section className="finance-card">
@@ -179,7 +241,8 @@ const AdminFinance = ({ onUnauthorized }) => {
 
 const styles = `
 .finance-center{display:grid;gap:16px}.finance-loading{min-height:280px;display:flex;align-items:center;justify-content:center;gap:10px;color:#9cadbf}.finance-provider{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 17px;border:1px solid rgba(203,213,225,.12);border-radius:13px;background:rgba(12,25,40,.62)}.finance-provider>div:first-child{display:flex;align-items:center;gap:10px}.provider-dot{width:10px;height:10px;border-radius:50%;background:#fbbf24;box-shadow:0 0 0 4px rgba(251,191,36,.12)}.provider-dot.connected{background:#24d39a;box-shadow:0 0 0 4px rgba(36,211,154,.12)}.finance-provider strong{display:block;font-size:.87rem}.finance-provider small,.finance-provider-note{font-size:.73rem;color:#91a3b8}.finance-provider-note{display:flex;align-items:center;gap:6px}.finance-provider-note svg{color:#67dcf3}.finance-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.finance-metrics article{display:flex;gap:11px;align-items:flex-start;padding:17px;border:1px solid rgba(203,213,225,.11);border-radius:14px;background:linear-gradient(145deg,rgba(20,35,53,.9),rgba(11,22,36,.9))}.finance-metrics svg{box-sizing:content-box;padding:8px;border-radius:9px;background:rgba(34,199,232,.1);color:#67dcf3}.finance-metrics article:nth-child(2) svg{color:#65e7b5;background:rgba(36,211,154,.1)}.finance-metrics article:nth-child(3) svg{color:#fcd36c;background:rgba(251,191,36,.1)}.finance-metrics article:nth-child(4) svg{color:#c1b8ff;background:rgba(129,140,248,.12)}.finance-metrics span,.finance-metrics small{display:block;font-size:.68rem;color:#91a3b8}.finance-metrics strong{display:block;font-family:var(--font-heading);font-size:1.25rem;line-height:1.3;color:#fff}.finance-tabs{display:flex;gap:7px;align-items:center;overflow-x:auto;padding:4px 0}.finance-tabs button{flex:0 0 auto;padding:9px 12px;border:1px solid rgba(203,213,225,.11);border-radius:8px;background:rgba(12,25,40,.62);color:#9cadbf;font-size:.73rem;font-weight:800;cursor:pointer}.finance-tabs button.active{color:#80e8f9;background:rgba(34,199,232,.12);border-color:rgba(34,199,232,.28)}.finance-tabs .refresh{display:flex;align-items:center;gap:6px;margin-left:auto;color:#d9e4ef}.finance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.finance-card{min-width:0;padding:18px;border:1px solid rgba(203,213,225,.11);border-radius:14px;background:rgba(12,24,39,.8)}.finance-card-wide{grid-column:span 2}.finance-card-title{display:flex;justify-content:space-between;gap:10px;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid rgba(203,213,225,.08)}.finance-card-title h2{font-size:.97rem}.finance-card-title p{margin-top:3px;font-size:.72rem;color:#8fa0b6}.finance-card-title>svg{width:19px;color:#67dcf3}.finance-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.finance-summary-grid div{padding:12px;border-radius:10px;background:rgba(255,255,255,.035)}.finance-summary-grid span{display:block;font-size:.68rem;color:#8fa0b6}.finance-summary-grid strong{display:block;margin-top:4px;font-size:1.03rem}.finance-checklist{display:grid;gap:11px;list-style:none}.finance-checklist li{display:flex;gap:8px;color:#b7c5d4;font-size:.75rem;line-height:1.4}.finance-checklist svg{width:16px;flex:0 0 auto;color:#65e7b5}.finance-events{display:grid;gap:9px}.finance-events>div{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center}.finance-events strong,.finance-events small{display:block;font-size:.72rem}.finance-events small{color:#8fa0b6}.finance-events b{font-size:.72rem}.event-dot{width:8px;height:8px;border-radius:50%;background:#fbbf24}.event-approved{background:#24d39a}.event-refunded,.event-rejected{background:#fb7185}.finance-empty{min-height:130px;display:flex;align-items:center;justify-content:center;text-align:center;color:#8fa0b6;font-size:.8rem}.finance-table-wrap{overflow:auto}.finance-table{width:100%;border-collapse:collapse;font-size:.76rem;min-width:740px}.finance-table th{padding:0 10px 10px;text-align:left;color:#8fa0b6;font-size:.65rem;letter-spacing:.04em}.finance-table td{padding:12px 10px;border-top:1px solid rgba(203,213,225,.07);color:#ced8e3;vertical-align:middle}.finance-table strong,.finance-table small{display:block}.finance-table small{margin-top:3px;color:#7f91a7;font-size:.67rem}.finance-status{display:inline-flex;padding:4px 7px;border-radius:99px;font-size:.62rem;font-weight:800;background:rgba(148,163,184,.12);color:#cbd5e1}.finance-status.paid,.finance-status.available{background:rgba(36,211,154,.13);color:#65e7b5}.finance-status.pending{background:rgba(251,191,36,.12);color:#fcd36c}.finance-status.failed,.finance-status.refunded,.finance-status.cancelled{background:rgba(251,113,133,.12);color:#fda4af}.finance-form{display:grid;gap:11px}.finance-form label{display:grid;gap:5px;color:#9cadbf;font-size:.68rem;font-weight:700}.finance-form input,.finance-form select{width:100%;min-height:40px;padding:9px;border:1px solid rgba(203,213,225,.14);border-radius:8px;background:#091525;color:#f8fafc}.finance-form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.finance-form button,.recipient-actions button,.coupon-list button{display:flex;justify-content:center;align-items:center;gap:6px;min-height:40px;padding:9px 12px;border:0;border-radius:8px;background:#22c7e8;color:#031319;font-size:.74rem;font-weight:800;cursor:pointer}.recipient-list,.coupon-list{display:grid;gap:8px}.recipient-list article,.coupon-list article{display:grid;grid-template-columns:minmax(160px,1fr) auto auto;align-items:center;gap:13px;padding:12px;border:1px solid rgba(203,213,225,.08);border-radius:10px;background:rgba(255,255,255,.025)}.recipient-list strong,.coupon-list strong{display:block;font-size:.82rem}.recipient-list small,.coupon-list small{display:block;margin-top:3px;font-size:.68rem;color:#8fa0b6}.recipient-values{display:flex;gap:14px}.recipient-values span{display:grid;gap:2px;text-align:right;color:#e6edf6;font-size:.8rem}.recipient-values small{font-size:.62rem;color:#8fa0b6}.recipient-actions{display:flex;gap:7px}.recipient-actions button,.coupon-list button{min-height:34px;padding:7px 9px}.recipient-actions .subtle,.coupon-list .subtle{border:1px solid rgba(203,213,225,.14);background:transparent;color:#b7c5d4}.coupon-row-actions{display:flex;gap:7px}.coupon-editor{grid-column:1/-1;display:grid;gap:12px;padding-top:12px;border-top:1px solid rgba(203,213,225,.1)}.coupon-editor-general{display:flex;align-items:flex-end;gap:9px}.coupon-editor label{display:grid;gap:5px;color:#9cadbf;font-size:.68rem;font-weight:700}.coupon-editor input{min-height:38px;padding:8px 9px;border:1px solid rgba(203,213,225,.14);border-radius:8px;background:#091525;color:#f8fafc}.coupon-editor-general input{width:150px}.coupon-editor-head{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}.coupon-editor-head small{display:block;margin-top:3px;font-size:.68rem;color:#8fa0b6}.coupon-editor-search{display:flex!important;grid-auto-flow:column;align-items:center;gap:6px!important;padding:0 9px;border:1px solid rgba(203,213,225,.14);border-radius:8px;background:#091525}.coupon-editor-search input{border:0;min-height:36px;padding:0;background:transparent;width:180px}.coupon-editor-list{display:grid;gap:4px;max-height:420px;overflow:auto;padding-right:4px}.coupon-editor-list>div{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.025)}.coupon-editor-list>div.is-special{background:rgba(34,199,232,.09);box-shadow:inset 3px 0 0 #22c7e8}.coupon-editor-list label{display:flex;align-items:center;gap:6px;color:#cbd5e1;font-size:.8rem}.coupon-editor-list input{width:86px;text-align:right}.coupon-editor-empty{display:flex;align-items:center;gap:8px;color:#8fa0b6;font-size:.78rem}.coupon-editor-save{justify-self:start}.coupon-list article{grid-template-columns:minmax(160px,1fr) auto auto}
-@media(max-width:1050px){.finance-metrics{grid-template-columns:repeat(2,1fr)}.finance-summary-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:680px){.finance-provider{align-items:flex-start;flex-direction:column}.finance-metrics,.finance-grid{grid-template-columns:1fr}.finance-card-wide{grid-column:auto}.finance-tabs .refresh{margin-left:0}.recipient-list article,.coupon-list article{grid-template-columns:1fr;align-items:start}.recipient-values{justify-content:flex-start}.recipient-values span{text-align:left}.recipient-actions{width:100%}.recipient-actions button{flex:1}.finance-form-row{grid-template-columns:1fr}.finance-summary-grid{grid-template-columns:1fr 1fr}}
+.finance-alerts{border-color:rgba(251,191,36,.28)}.finance-alerts .finance-card-title>svg{color:#fcd36c}.finance-alert-list{display:grid;gap:8px}.finance-alert-list article{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:12px;border:1px solid rgba(203,213,225,.08);border-radius:10px;background:rgba(255,255,255,.025)}.finance-alert-list strong,.finance-alert-list small{display:block}.finance-alert-list strong{font-size:.8rem}.finance-alert-list small{margin-top:3px;font-size:.68rem;color:#8fa0b6;overflow-wrap:anywhere}.finance-alert-list b{font-size:.8rem}.finance-alert-list button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:34px;padding:7px 10px;border-radius:8px;font-size:.72rem;font-weight:800;cursor:pointer}.finance-alert-list button svg{width:15px;height:15px}.finance-alert-list .danger{border:1px solid rgba(251,113,133,.35);background:rgba(251,113,133,.08);color:#fda4af}.finance-alert-list .subtle{border:1px solid rgba(203,213,225,.14);background:transparent;color:#b7c5d4}.finance-alert-list button:disabled{opacity:.5;cursor:not-allowed}.finance-alert-confirm{grid-column:1/-1;display:grid;gap:9px;padding-top:10px;border-top:1px solid rgba(203,213,225,.08)}.finance-alert-confirm label{display:flex;gap:8px;align-items:flex-start;font-size:.74rem;color:#e2e8f0}.finance-alert-confirm input{width:17px;height:17px;accent-color:#fb7185;flex:0 0 auto}.finance-alert-confirm>div{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+@media(max-width:1050px){.finance-metrics{grid-template-columns:repeat(2,1fr)}.finance-summary-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:680px){.finance-provider{align-items:flex-start;flex-direction:column}.finance-metrics,.finance-grid{grid-template-columns:1fr}.finance-card-wide{grid-column:auto}.finance-tabs .refresh{margin-left:0}.recipient-list article,.coupon-list article,.finance-alert-list article{grid-template-columns:1fr;align-items:start}.recipient-values{justify-content:flex-start}.recipient-values span{text-align:left}.recipient-actions{width:100%}.recipient-actions button{flex:1}.finance-form-row{grid-template-columns:1fr}.finance-summary-grid{grid-template-columns:1fr 1fr}}
 `;
 
 export default AdminFinance;

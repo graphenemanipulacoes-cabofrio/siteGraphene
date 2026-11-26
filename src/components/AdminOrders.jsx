@@ -13,6 +13,17 @@ const statusMap = {
     shipped: 'Enviado', delivered: 'Entregue', cancelled: 'Cancelado'
 };
 const paymentMap = { pending: 'Pendente', paid: 'Confirmado', failed: 'Falhou', refunded: 'Estornado' };
+// Tentativas de pagamento do pedido (payment_attempts, lidas pela admin-orders).
+const attemptMethod = { card: 'Cartão', pix: 'Pix', other: 'Mercado Pago' };
+const attemptStatus = {
+    creating: 'Criando', pending: 'Aguardando pagamento', in_process: 'Em análise', authorized: 'Autorizado', approved: 'Aprovado',
+    rejected: 'Recusado', cancelled: 'Cancelado', in_mediation: 'Em reclamação', refunded: 'Estornado', charged_back: 'Contestado', error: 'Erro ao criar',
+};
+const reconcileMessages = {
+    provider_not_configured: 'A conexão com o Mercado Pago não está configurada.',
+    payment_provider_unavailable: 'O Mercado Pago não respondeu. Tente de novo em instantes.',
+    order_not_found: 'Pedido não encontrado.',
+};
 const statusOptions = Object.entries(statusMap);
 
 const AdminOrders = ({ onUnauthorized }) => {
@@ -25,6 +36,7 @@ const AdminOrders = ({ onUnauthorized }) => {
     const [drafts, setDrafts] = useState({});
     // Estorno: só um pedido por vez fica com a confirmação aberta.
     const [refund, setRefund] = useState({ orderId: '', reason: '', confirmed: false, busy: false });
+    const [reconciling, setReconciling] = useState('');
 
     const invoke = useCallback(async body => {
         const session = getSession();
@@ -107,8 +119,26 @@ const AdminOrders = ({ onUnauthorized }) => {
             return;
         }
         setOrders(current => current.map(item => item.id === order.id ? { ...item, ...data.order } : item));
-        setDrafts(current => ({ ...current, [order.id]: { ...current[order.id], status: data.order?.status || 'cancelled' } }));
+        setDrafts(current => ({ ...current, [order.id]: { ...current[order.id], status: data.order?.status || order.status } }));
         toast.success(`Estorno de ${money(data.amount ?? order.total)} feito. O valor volta ao cliente pelo mesmo meio de pagamento.`);
+    };
+
+    // Busca no Mercado Pago os pagamentos do pedido e aplica cada um (reserva para um aviso perdido).
+    const reconcileOrder = async order => {
+        if (reconciling) return;
+        setReconciling(order.id);
+        try {
+            const { data, error } = await invoke({ action: 'reconcile_order', orderId: order.id });
+            if (error) { toast.error(reconcileMessages[error] || 'Não foi possível conferir no Mercado Pago agora. Tente de novo em instantes.'); return; }
+            if (data?.order) setOrders(current => current.map(item => item.id === order.id ? { ...item, ...data.order } : item));
+            const applied = Array.isArray(data?.applied) ? data.applied.length : 0;
+            toast.success(applied ? `Conferido: ${applied} pagamento(s) do Mercado Pago aplicados ao pedido.` : 'Conferido: o Mercado Pago não tem pagamento para este pedido.');
+            if (applied) loadOrders();
+        } catch {
+            toast.error('Não foi possível conferir no Mercado Pago agora. Tente de novo em instantes.');
+        } finally {
+            setReconciling('');
+        }
     };
 
     const visibleOrders = useMemo(() => {
@@ -170,20 +200,30 @@ const AdminOrders = ({ onUnauthorized }) => {
                                 <p>CEP: {address.zip || '—'}</p>
                             </section>
                             <section><h3><CreditCard/> Pagamento</h3>
-                                <dl><div><dt>Status</dt><dd>{paymentMap[order.payment_status]}</dd></div><div><dt>Pago em</dt><dd>{dateTime(order.paid_at)}</dd></div><div><dt>Meio</dt><dd>{order.payment_method || '—'}</dd></div><div><dt>Referência</dt><dd>{order.payment_reference || '—'}</dd></div></dl>
+                                <dl><div><dt>Status</dt><dd>{paymentMap[order.payment_status]}</dd></div><div><dt>Pago em</dt><dd>{dateTime(order.paid_at)}</dd></div><div><dt>Meio</dt><dd>{order.payment_method || '—'}</dd></div><div><dt>Referência</dt><dd>{order.paid_payment_id || order.payment_reference || '—'}</dd></div></dl>
                                 {canRefund(order) && refund.orderId !== order.id && <button type="button" className="refund-open" onClick={() => openRefund(order)}><RotateCcw size={15}/> Estornar pagamento</button>}
+                                {['pending', 'failed'].includes(order.payment_status) && <button type="button" className="reconcile-open" onClick={() => reconcileOrder(order)} disabled={Boolean(reconciling)}>{reconciling === order.id ? <LoaderCircle className="spin" size={15}/> : <Search size={15}/>} Conferir no Mercado Pago</button>}
                             </section>
                         </div>
 
                         {refund.orderId === order.id && canRefund(order) && <section className="refund-panel" aria-labelledby={`refund-${order.id}`}>
                             <h3 id={`refund-${order.id}`}><TriangleAlert/> Estornar {money(order.total)}</h3>
-                            <p>O Mercado Pago devolve o valor total ao cliente, no mesmo meio de pagamento. O pedido fica cancelado, e a comissão de parceira que ainda não foi paga é cancelada. <strong>O estorno não pode ser desfeito.</strong></p>
+                            <p>O Mercado Pago devolve o valor total ao cliente, no mesmo meio de pagamento. Pedido ainda não preparado fica cancelado; em preparação, enviado ou entregue, mantém o andamento. A comissão de parceira que ainda não foi paga é cancelada. <strong>O estorno não pode ser desfeito.</strong></p>
                             <label>Motivo (opcional, fica no registro de ações)<input value={refund.reason} maxLength={300} onChange={event => setRefund(current => ({ ...current, reason: event.target.value }))} placeholder="Desistência, produto em falta..." /></label>
                             <label className="refund-check"><input type="checkbox" checked={refund.confirmed} onChange={event => setRefund(current => ({ ...current, confirmed: event.target.checked }))} /> Confirmo o estorno de {money(order.total)} para {address.name || order.customer_email}.</label>
                             <div className="refund-actions">
                                 <button type="button" className="refund-back" onClick={closeRefund} disabled={refund.busy}>Voltar</button>
                                 <button type="button" className="refund-confirm" onClick={() => refundOrder(order)} disabled={!refund.confirmed || refund.busy}>{refund.busy ? <LoaderCircle className="spin"/> : <RotateCcw size={16}/>} Confirmar estorno</button>
                             </div>
+                        </section>}
+
+                        {Array.isArray(order.payment_attempts) && order.payment_attempts.length > 0 && <section className="order-attempts"><h3><CreditCard/> Tentativas de pagamento</h3>
+                            {[...order.payment_attempts].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).map(attempt => <div key={attempt.id || attempt.provider_payment_id || attempt.created_at}>
+                                <span>{attemptMethod[attempt.method] || 'Mercado Pago'}</span>
+                                <span className={`attempt-${attempt.status}`}>{attemptStatus[attempt.status] || 'Situação não informada'}{attempt.provider_payment_id && attempt.provider_payment_id === order.paid_payment_id ? ' · pagou o pedido' : ''}</span>
+                                <span>{attempt.provider_payment_id ? `Nº ${attempt.provider_payment_id}` : 'Sem número no Mercado Pago'}</span>
+                                <small>{dateTime(attempt.created_at)}</small>
+                            </div>)}
                         </section>}
 
                         <section className="order-products"><h3><PackageCheck/> Produtos para separação</h3>
@@ -222,6 +262,9 @@ const styles = `
 .refund-panel .refund-check{display:flex;align-items:flex-start;gap:9px;font-size:.78rem;color:#f8fafc}.refund-check input{width:18px;height:18px;margin-top:1px;accent-color:#fb7185;flex:0 0 auto}
 .refund-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}.refund-actions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 15px;border-radius:8px;font-weight:800;font-size:.75rem;cursor:pointer}.refund-back{border:1px solid rgba(203,213,225,.16);background:transparent;color:#cbd5e1}.refund-confirm{border:0;background:#fb7185;color:#2a0a10}.refund-confirm:disabled,.refund-back:disabled{opacity:.5;cursor:not-allowed}
 .refund-hint{font-weight:600;color:#fcd36c;line-height:1.4}
+.reconcile-open{display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:9px 12px;border:1px solid rgba(103,220,243,.35);border-radius:8px;background:rgba(34,199,232,.08);color:#80e8f9;font-size:.74rem;font-weight:800;cursor:pointer}.reconcile-open:hover{background:rgba(34,199,232,.15)}.reconcile-open:disabled{opacity:.55;cursor:wait}
+.order-attempts{margin-bottom:12px;padding:17px;border:1px solid rgba(203,213,225,.1);border-radius:12px;background:rgba(5,14,26,.38)}.order-attempts>div{display:grid;grid-template-columns:110px 1fr 170px 140px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(203,213,225,.07);font-size:.76rem;color:#c4d0de}.order-attempts>div:last-child{border-bottom:0}.order-attempts small{color:#8d9db0;text-align:right}.attempt-approved{color:#65e7b5}.attempt-rejected,.attempt-cancelled,.attempt-error,.attempt-charged_back{color:#fda4af}.attempt-in_process,.attempt-in_mediation{color:#fcd36c}
+@media(max-width:680px){.order-attempts>div{grid-template-columns:1fr auto}.order-attempts small{text-align:left}}
 `;
 
 export default AdminOrders;

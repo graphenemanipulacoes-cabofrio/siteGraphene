@@ -1,25 +1,15 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { allowedOrigin, json } from '../_shared/http.ts';
+import { uuidPattern } from '../_shared/counter-security.ts';
+import { brickEnabledFor, brickSettings, checkoutModeSetting, itemsTotalCents, mpFetch, providerItems } from '../_shared/mercado-pago.ts';
 
-const json = (body: unknown, status = 200, origin?: string) => new Response(status === 204 ? null : JSON.stringify(body), {
-  status,
-  headers: {
-    'Content-Type': 'application/json', 'Cache-Control': 'no-store',
-    'Access-Control-Allow-Origin': origin || 'null',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-admin-token, x-region, x-retry-count, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, traceparent, tracestate, baggage',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Vary': 'Origin',
-  },
-});
+// Modo do pagamento (segredo MERCADO_PAGO_CHECKOUT_MODE):
+// - vazio/redirect: Checkout Pro, igual a antes (preferência e link do Mercado Pago);
+// - brick: pagamento no próprio site (process-payment) para todos;
+// - brick_staff: no site só para contas da equipe; os demais seguem no Checkout Pro.
+// No modo do site esta função não chama o Mercado Pago: devolve o pedido, o valor (só para exibir),
+// a Public Key e o máximo de parcelas.
 
-const allowedOrigin = (requestOrigin: string | null) => {
-  // Exact public origins of this same storefront, including its stable Vercel
-  // address. Never allow every *.vercel.app deployment or unknown subdomains.
-  const trusted = new Set(['https://www.graphenemanipulacoes.com.br', 'https://graphenemanipulacoes.com.br', 'https://site-graphene.vercel.app']);
-  try { trusted.add(new URL(Deno.env.get('SITE_URL') || '').origin); } catch { /* Fail closed for invalid configuration. */ }
-  const local = /^http:\/\/(localhost|127\.0\.0\.1):\d{2,5}$/.test(requestOrigin || '');
-  return requestOrigin && (trusted.has(requestOrigin) || local) ? requestOrigin : null;
-};
-
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const clean = (value: unknown, max: number) => typeof value === 'string' ? value.trim().slice(0, max) : '';
 const paymentUrl = (value: unknown) => {
   try {
@@ -58,7 +48,7 @@ Deno.serve(async (req: Request) => {
     // Quantidade (apresentação) e sabor escolhidos; o preço vem sempre do cadastro, no banco.
     const variantId = (value: unknown) => /^[a-z0-9-]{1,40}$/.test(String(value ?? '')) ? String(value) : null;
     const items = Array.isArray(body.items) ? body.items.map((item: Record<string, unknown> | null) => ({ product_id: Number(item?.productId), quantity: Number(item?.quantity), size: variantId(item?.size), flavor: variantId(item?.flavor) })) : [];
-    if (!uuidPattern.test(checkoutKey) || !items.length || items.length > 50 || items.some(item => !Number.isSafeInteger(item.product_id) || item.product_id < 1 || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 20)) return fail('invalid_cart', 400);
+    if (!uuidPattern.test(checkoutKey) || !items.length || items.length > 50 || items.some((item: { product_id: number; quantity: number }) => !Number.isSafeInteger(item.product_id) || item.product_id < 1 || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 20)) return fail('invalid_cart', 400);
 
     const shipping = {
       name: clean(body.shipping?.name, 120), phone: clean(body.shipping?.phone, 24), zip: clean(body.shipping?.zip, 12),
@@ -85,47 +75,62 @@ Deno.serve(async (req: Request) => {
     }
     stage = 'load_order';
     const { data: stored, error: storedError } = await admin.from('orders')
-      .select('id,payment_status,payment_url,payment_reference,customer_document')
+      .select('id,status,payment_status,payment_url,payment_reference,customer_document')
       .eq('id', order.order_id).eq('customer_id', user.id).single();
     if (storedError || !stored) throw new Error('order_read_failed');
     if (!['pending', 'failed'].includes(stored.payment_status)) return fail('checkout_already_completed', 409);
+
+    stage = 'payment_mode';
+    const brick = await brickEnabledFor(authClient, checkoutModeSetting());
+    if (brick) {
+      const settings = brickSettings();
+      if (!settings) return fail('payment_provider_not_configured', 503);
+      // Pedido reaproveitado pela mesma checkoutKey que não pode mais ser pago (cancelado, com mais de 7 dias
+      // ou com produto fora do site): o navegador descarta a chave e cria outro pedido.
+      stage = 'payment_state';
+      const { data: paymentState, error: stateError } = await admin.rpc('order_payment_state', { p_order_id: order.order_id, p_customer_id: user.id });
+      if (stateError || !paymentState || typeof paymentState !== 'object') throw new Error('order_state_failed');
+      if (paymentState.reason === 'already_paid') return fail('checkout_already_completed', 409);
+      if (stored.status !== 'awaiting_payment' || ['order_not_payable', 'order_expired'].includes(paymentState.reason)) return fail('checkout_restart_required', 409);
+      const amount = Number(order.total);
+      if (!Array.isArray(order.items) || !order.items.length || !Number.isFinite(amount) || amount <= 0) return fail('invalid_order_total', 422);
+      stage = 'save_document';
+      const { error: documentError } = await admin.from('orders').update({ customer_document: customerDocument })
+        .eq('id', order.order_id).eq('customer_id', user.id);
+      if (documentError) throw new Error('order_document_failed');
+      return json({ orderId: order.order_id, paymentMode: 'brick', amount, publicKey: settings.publicKey, maxInstallments: settings.maxInstallments, requestId }, 200, origin);
+    }
+
+    // Checkout Pro (redirecionamento), igual a antes.
     const existingUrl = paymentUrl(stored.payment_url);
-    if (existingUrl && stored.payment_reference) return json({ orderId: order.order_id, paymentUrl: existingUrl, requestId }, 200, origin);
+    if (existingUrl && stored.payment_reference) return json({ orderId: order.order_id, paymentMode: 'redirect', paymentUrl: existingUrl, requestId }, 200, origin);
     if (!Array.isArray(order.items) || !order.items.length || !Number.isFinite(Number(order.total)) || Number(order.total) <= 0) return fail('invalid_order_total', 422);
     stage = 'save_document';
     const { error: documentError } = await admin.from('orders').update({ customer_document: customerDocument })
       .eq('id', order.order_id).eq('customer_id', user.id);
     if (documentError) throw new Error('order_document_failed');
-    const preferenceItems = Number(order.discount || 0) > 0
-      ? [{ id: `order-${order.order_id}`, title: `Pedido Graphène${couponCode ? ` · cupom ${couponCode}` : ''}`, currency_id: 'BRL', quantity: 1, unit_price: Number(order.total) }]
-      : [
-        ...order.items.map((item: Record<string, unknown>) => ({ id: String(item.product_id), title: item.title, currency_id: 'BRL', quantity: item.quantity, unit_price: Number(item.unit_price) })),
-        // Frete calculado no pedido (painel admin > Frete e entrega).
-        ...(Number(order.shipping || 0) > 0 ? [{ id: 'frete', title: 'Entrega', currency_id: 'BRL', quantity: 1, unit_price: Number(order.shipping) }] : []),
-      ];
+    const preferenceItems = providerItems({
+      orderId: order.order_id, total: Number(order.total), discount: Number(order.discount || 0), shipping: Number(order.shipping || 0),
+      items: order.items, couponCode, currency: true,
+    });
 
-    const preferenceTotal = preferenceItems.reduce((sum, item) => sum + Math.round(item.unit_price * 100) * Number(item.quantity), 0);
-    if (preferenceTotal !== Math.round(Number(order.total) * 100)) return fail('invalid_order_total', 422);
+    if (itemsTotalCents(preferenceItems) !== Math.round(Number(order.total) * 100)) return fail('invalid_order_total', 422);
     stage = 'payment_provider';
-    let preferenceResponse: Response;
-    try {
-      preferenceResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json', 'X-Idempotency-Key': checkoutKey },
-      body: JSON.stringify({
+    const preferenceResponse = await mpFetch('/checkout/preferences', {
+      token: accessToken, method: 'POST', idempotencyKey: checkoutKey, timeoutMs: 20000,
+      body: {
         external_reference: order.order_id,
         items: preferenceItems,
         payer: { email: user.email, name: shipping.name, identification: { type: 'CPF', number: customerDocument } },
         back_urls: { success: `${siteUrl}/pedido/retorno?status=success`, pending: `${siteUrl}/pedido/retorno?status=pending`, failure: `${siteUrl}/pedido/retorno?status=failure` },
         auto_return: 'approved', notification_url: `${supabaseUrl}/functions/v1/payment-webhook`,
-      }),
-      signal: AbortSignal.timeout(20000),
-      });
-    } catch {
+      },
+    });
+    if (preferenceResponse.network) {
       console.error('checkout_provider_unavailable', { requestId, stage });
       return fail('payment_provider_unavailable', 502);
     }
-    const preference = await preferenceResponse.json().catch(() => null);
+    const preference = preferenceResponse.data;
     const nextUrl = paymentUrl(preference?.init_point);
     if (!preferenceResponse.ok || !nextUrl || !preference?.id) {
       const providerError = [401, 403].includes(preferenceResponse.status)
@@ -143,7 +148,7 @@ Deno.serve(async (req: Request) => {
       .update({ payment_reference: String(preference.id), payment_url: nextUrl, updated_at: new Date().toISOString() })
       .eq('id', order.order_id).eq('customer_id', user.id).in('payment_status', ['pending', 'failed']).select('id').single();
     if (saveError || !saved) throw new Error('order_payment_failed');
-    return json({ orderId: order.order_id, paymentUrl: nextUrl, requestId }, 200, origin);
+    return json({ orderId: order.order_id, paymentMode: 'redirect', paymentUrl: nextUrl, requestId }, 200, origin);
   } catch {
     console.error('checkout_failed', { requestId, stage });
     return fail('internal_error', 500);
